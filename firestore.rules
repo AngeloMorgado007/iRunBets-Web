@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- REUSABLE SECURITY PRIMITIVES ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'morgado.aam@gmail.com';
+    }
+
+    // Collection: Subscribers (Web and Landing registration)
+    match /subscribers/{subscriberId} {
+      allow read, write: if true;
+    }
+
+    // Collection: News (Public Read, Write)
+    match /news/{newsId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Utilizadores (Shared profile with iOS App)
+    match /utilizadores/{userId} {
+      allow read, write: if true;
+
+      // Sub-collections under User Profile (e.g. bankrollMovimentos, teamsMeta, movimentos)
+      match /{subcollection=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // Collection: Custom Pages
+    match /custom_pages/{pageId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Apostas (Bets)
+    match /apostas/{betId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Bankrolls
+    match /bankrolls/{bankrollId} {
+      allow read, write: if true;
+    }
+
+    // Collection: betSlips (Shared betting slips with iOS app)
+    match /betSlips/{slipId} {
+      allow read, write: if true;
+    }
+
+    // Collection: webBetSlips (Isolates web registered bets protecting iOS database)
+    match /webBetSlips/{slipId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Prognosticos
+    match /prognosticos/{progId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Football Predictions
+    match /football_predictions/{predictionId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Featured Matches
+    match /featured_matches/{matchId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Promotional Popups
+    match /promotional_popups/{popupId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Top Banners
+    match /top_banners/{bannerId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Banners
+    match /banners/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Collection: Predictions
+    match /predictions/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Collection: FCM Tokens & Push Alerts
+    match /fcm_tokens/{tokenId} {
+      allow read, write: if true;
+    }
+
+    match /push_alerts/{alertId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Settings (Public Read, Write)
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Collection: Presence (Realtime active users counter)
+    match /presence/{token} {
+      allow read, write: if true;
+    }
+
+    // Collection: Traffic History
+    match /traffic_history/{dateStr} {
+      allow read, write: if true;
+    }
+
+    // Collection: Test Connection Ping
+    match /test_connection_ping/{docId} {
+      allow read, write: if true;
+    }
+
+    // Default fallback rule for any newly created collections
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

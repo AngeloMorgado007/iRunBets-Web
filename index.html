@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Automatically catch and suppress any dev-time WebSocket & Vite HMR iframe warning logs 
+      window.addEventListener('error', function(e) {
+        if (e && e.message && (
+          e.message.indexOf('WebSocket') !== -1 ||
+          e.message.indexOf('vite') !== -1 ||
+          e.message.indexOf('hmr') !== -1 ||
+          e.message.indexOf('ws://') !== -1 ||
+          e.message.indexOf('wss://') !== -1
+        )) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var reason = (e && e.reason && e.reason.message) || String(e && e.reason || '');
+        if (reason.indexOf('WebSocket') !== -1 ||
+            reason.indexOf('vite') !== -1 ||
+            reason.indexOf('hmr') !== -1 ||
+            reason.indexOf('ws://') !== -1 ||
+            reason.indexOf('wss://') !== -1) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    </script>
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#0A0A0C" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="iRunBets" />
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then(function(reg) {
+              console.log('[PWA] FCM Service Worker registrado com sucesso:', reg.scope);
+            })
+            .catch(function(err) {
+              console.warn('[PWA] Falha ao registrar FCM Service Worker:', err);
+            });
+        });
+      }
+    </script>
+    <title>iRunBets - Vantagem Matemática e Gestão de Banca no Futebol com IA</title>
+    <meta name="description" content="A tua vantagem matemática e gestão inteligente da banca no futebol através de inteligência artificial de alta precisão." />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;1,400&display=swap');
+      
+      html {
+        scroll-behavior: smooth;
+        scroll-padding-top: 80px; /* Offset for fixed navbar */
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: #0A0A0C; /* Black/dark graphite */
+        color: #F4F4F5; /* Warm premium light gray */
+      }
+      
+      h1, h2, h3, h4, .font-display {
+        font-family: 'Space Grotesk', sans-serif;
+      }
+
+      /* Hide scrollbar for clean aesthetic */
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+
+      /* Animated Glowing Orbs and Tech Grids */
+      .tech-grid {
+        background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+        background-position: center center;
+      }
+
+      @keyframes pulse-glow {
+        0%, 100% { opacity: 0.3; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(1.15); }
+      }
+
+      .glow-orb-blue {
+        filter: blur(140px);
+        background: radial-gradient(circle, rgba(14, 165, 233, 0.25) 0%, rgba(14, 165, 233, 0) 70%);
+        animation: pulse-glow 10s ease-in-out infinite;
+      }
+
+      .glow-orb-orange {
+        filter: blur(140px);
+        background: radial-gradient(circle, rgba(249, 115, 22, 0.22) 0%, rgba(249, 115, 22, 0) 70%);
+        animation: pulse-glow 12s ease-in-out infinite alternate;
+      }
+
+      @keyframes fade-in-up {
+        0% { opacity: 0; transform: translateY(20px); }
+        100% { opacity: 1; transform: translateY(0); }
+      }
+
+      .animate-fade-in-up {
+        animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      
+      .animate-delay-100 { animation-delay: 0.1s; }
+      .animate-delay-200 { animation-delay: 0.2s; }
+      .animate-delay-300 { animation-delay: 0.3s; }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.29.0",
+    "react/": "https://esm.sh/react@^19.2.0/",
+    "react": "https://esm.sh/react@^19.2.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.0/"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>

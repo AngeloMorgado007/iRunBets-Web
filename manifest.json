@@ -1,0 +1,24 @@
+{
+  "short_name": "iRunBets",
+  "name": "iRunBets - Gestão de Banca e Prognósticos IA",
+  "icons": [
+    {
+      "src": "/irunbets_logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/irunbets_logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0A0A0C",
+  "theme_color": "#0A0A0C",
+  "display": "standalone",
+  "orientation": "portrait",
+  "gcm_sender_id": "103902299728"
+}

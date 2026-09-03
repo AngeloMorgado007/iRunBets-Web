@@ -1,0 +1,8 @@
+{
+  "name": "iRunBets",
+  "description": "A tua vantagem matemática e gestão inteligente da banca no futebol através de inteligência artificial.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

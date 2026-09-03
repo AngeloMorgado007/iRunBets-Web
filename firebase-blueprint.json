@@ -1,0 +1,130 @@
+{
+  "entities": {
+    "Subscriber": {
+      "title": "Subscriber",
+      "description": "Information about registered users and newsletter subscribers",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique auth identifier" },
+        "email": { "type": "string", "description": "User email address" },
+        "displayName": { "type": "string", "description": "User profile name" },
+        "provider": { "type": "string", "description": "Auth provider (google, facebook, password)" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Registration date" },
+        "status": { "type": "string", "enum": ["Gratuito", "Premium"], "description": "Membership tier eligibility" }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "NewsArticle": {
+      "title": "NewsArticle",
+      "description": "Latest news updates published by admin for public frontoffice",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Article ID" },
+        "title": { "type": "string", "description": "Title of the news update" },
+        "summary": { "type": "string", "description": "Short summary displayed in lists" },
+        "content": { "type": "string", "description": "Full details/story of the news" },
+        "author": { "type": "string", "description": "Name or email of author" },
+        "publishedAt": { "type": "string", "format": "date-time", "description": "Publication timestamp" }
+      },
+      "required": ["id", "title", "content", "publishedAt"]
+    },
+    "Utilizador": {
+      "title": "Utilizador",
+      "description": "Membro registado na plataforma iRunBets coincidindo com a estrutura iOS",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string", "description": "Nome do utilizador" },
+        "email": { "type": "string", "description": "E-mail registado" },
+        "clubePreferido": { "type": "string", "description": "Clube favorito" },
+        "isActive": { "type": "boolean", "description": "Se o utilizador se encontra ativo" },
+        "isTipster": { "type": "boolean", "description": "Elegibilidade como gestor de palpites" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Data de criação da conta" },
+        "lastActiveAt": { "type": "string", "format": "date-time", "description": "Último login registado" },
+        "fcmToken": { "type": "string", "description": "Push notification token" },
+        "fcmUpdatedAt": { "type": "string", "format": "date-time", "description": "Atualização do token de push" },
+        "ligasFavoritas": { "type": "array", "description": "Nomes de ligas prediletas" },
+        "favoriteTeams": { "type": "array", "description": "Estrutura complexa de equipas favoritas" }
+      },
+      "required": ["email", "nome", "createdAt"]
+    },
+    "Bet": {
+      "title": "Bet",
+      "description": "Registo individual de aposta efetuada por um utilizador",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Identificador único da aposta" },
+        "userId": { "type": "string", "description": "Identificador de utilizador criador da aposta" },
+        "game": { "type": "string", "description": "Jogo selecionado (ex: Benfica vs Porto)" },
+        "sport": { "type": "string", "description": "Modalidade desportiva" },
+        "marketType": { "type": "string", "description": "Mercado específico apostado" },
+        "league": { "type": "string", "description": "Liga ou campeonato" },
+        "marketCategory": { "type": "string", "description": "Categoria do mercado (TR, cantos, etc.)" },
+        "odd": { "type": "number", "description": "Cotação / Odd da aposta" },
+        "stake": { "type": "number", "description": "Montante apostado" },
+        "status": { "type": "string", "enum": ["Pendente", "Ganha", "Perdida", "Reembolsada"], "description": "Resultado da aposta" },
+        "date": { "type": "string", "format": "date-time", "description": "Data do registo da aposta" }
+      },
+      "required": ["id", "userId", "game", "sport", "marketType", "odd", "stake", "status", "date"]
+    },
+    "Bankroll": {
+      "title": "Bankroll",
+      "description": "Estado financeiro ou banca atualizada de um utilizador",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "UID do utilizador" },
+        "amount": { "type": "number", "description": "Banca atual de fundos" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp de modificação" }
+      },
+      "required": ["userId", "amount", "updatedAt"]
+    },
+    "BetSlip": {
+      "title": "BetSlip",
+      "description": "Boletim de aposta contendo múltiplas ou simples seleções, alinhado com a app de iOS",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "ID do boletim de apostas" },
+        "tipsterId": { "type": "string", "description": "UID do gestor de palpites / tipster" },
+        "tipsterName": { "type": "string", "description": "Nome do tipster" },
+        "stake": { "type": "number", "description": "Valor total apostado" },
+        "totalOdd": { "type": "number", "description": "Cotação multiplicada do boletim" },
+        "potentialProfit": { "type": "number", "description": "Ganhos possíveis" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Data de criação" },
+        "status": { "type": "string", "enum": ["pending", "won", "lost", "voided"], "description": "Estado do boletim" },
+        "kind": { "type": "string", "enum": ["simple", "multiple"], "description": "Boletim simples ou múltiplo" },
+        "templateName": { "type": "string", "description": "Nome do template usado, se aplicável" },
+        "bets": { "type": "array", "description": "Seleções de apostas agrupadas no boletim" }
+      },
+      "required": ["id", "tipsterId", "stake", "totalOdd", "potentialProfit", "createdAt", "status", "kind", "bets"]
+    }
+  },
+  "firestore": {
+    "/subscribers/{subscriberId}": {
+      "schema": "Subscriber",
+      "description": "Lista de utilizadores registados a partir do Painel Web e Landing Page"
+    },
+    "/news/{newsId}": {
+      "schema": "NewsArticle",
+      "description": "Últimas notícias publicações administradas"
+    },
+    "/utilizadores/{userId}": {
+      "schema": "Utilizador",
+      "description": "Contas de utilizadores partilhadas entre a aplicação de iOS e Web"
+    },
+    "/apostas/{betId}": {
+      "schema": "Bet",
+      "description": "Registos centralizados de todas as apostas com isolamento por userId"
+    },
+    "/bankrolls/{bankrollId}": {
+      "schema": "Bankroll",
+      "description": "Central de gestão de banca com isolamento por userId"
+    },
+    "/betSlips/{slipId}": {
+      "schema": "BetSlip",
+      "description": "Central de boletins (Simples e Múltiplas) alinhado com as publicações feitas na App iOS"
+    },
+    "/webBetSlips/{slipId}": {
+      "schema": "BetSlip",
+      "description": "Central isolada de boletins registados a partir do site Web, protegendo o histórico do iOS"
+    }
+  }
+}

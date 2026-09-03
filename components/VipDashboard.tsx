@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { labelsMap, getVipLabels } from '../services/vipLabels';
 import { Share2, Globe, Send, Mail, Copy, Check, MessageCircle, QrCode, X, Image, Printer } from 'lucide-react';
 import { sendMessageToGemini } from '../services/geminiService';
 import { useLanguage, translateCampaignTitle, translateCampaignDescription } from '../services/LanguageContext';
@@ -196,735 +197,6 @@ const LEAGUES_TEAMS_MAP = GLOBAL_LEAGUES_TEAMS_MAP;
 const VipDashboard: React.FC<VipDashboardProps> = ({ onBackToHome, initialTab, isPlatformPaid }) => {
   const { language } = useLanguage();
   const isPaidUser = isPlatformPaid || (typeof window !== 'undefined' && localStorage.getItem('irunbets_vip_paid') === 'true');
-
-  const labelsMap: Record<string, Record<string, string>> = {
-    pt: {
-      badge: 'Painel Executivo Ativo',
-      title: 'Dashboard VIP iRunBets',
-      desc: 'Análise probabilística e registo integrado para controlo absoluto de banca.',
-      tabBanca: '📊 Registo & Banca',
-      tabIa: '✨ IA iRunBets',
-      tabFavoritos: '⭐ Equipas & Ligas',
-      sportFilterTitle: 'Filtro de Desporto Ativo (1 Clique)',
-      sportFilterDesc: 'Recalcule instantaneamente ROI, Ganhos e Históricos de correspondência',
-      allSports: '🌍 Todos os Desportos',
-      football: '⚽ Futebol',
-      tennis: '🎾 Ténis',
-      basketball: '🏀 Basquetebol',
-      others: '🎲 Outros',
-      matrixBtn: '📊 MATRIX DE DETALHES LIGAS / MERCADOS',
-      bancaInicial: 'Banca Inicial',
-      casaPendente: 'CASA',
-      semCasa: '⚠️ SEM CASA',
-      editar: 'Editar',
-      bancaDeControlo: 'Banca de controlo de risco',
-      bancaGeralFinal: 'Banca Geral Final',
-      globalApostas: 'Global de todas as apostas',
-      lucroFiltro: 'Lucro no Filtro',
-      positivo: '▲ POSITIVO',
-      variancia: '▼ VARIÂNCIA',
-      roiFiltro: 'ROI do Filtro',
-      retornoDesporto: 'Retorno do desporto selecionado',
-      taxaAcerto: 'Taxa de Acerto',
-      resolvidas: 'resolvidas',
-      gaugeTitle: 'Leitura Rápida de Reds / Greens / Devolution',
-      gaugeDesc: 'Contagem e proporção corrente de apostas em:',
-      gaugeNoBets: 'Nenhuma aposta registada neste desporto para renderizar o Neon Gauge.',
-      ganhas: 'Ganhas',
-      perdidas: 'Perdidas',
-      devolvidas: 'Devolvidas',
-      pendentes: 'Pendentes',
-      simples: 'Simples',
-      multiplas: 'Múltiplas',
-      comparadorTitle: '🎯 Comparador Simples vs Múltiplas',
-      comparadorDesc: 'Taxa de eficácia de Greens/Reds integrados (iPhone iOS & Web)',
-      comparadorNoSlips: 'Nenhum boletim sincronizado (iPhone ou Web) para processar métricas.',
-      boletinsSimples: 'Boletins Simples',
-      boletinsMultiplos: 'Boletins Múltiplos',
-      apostasIphone: 'Apostas do iPhone:',
-      apostasWeb: 'Apostas da Web:',
-      total: 'Total',
-      eficacia: 'Eficácia (Greens):',
-      registarEntradaBadge: 'Registar Entrada Real',
-      multiplaPopup: 'Múltipla Pop-up ↗',
-      nomeEvento: 'Nome do Evento / Equipas',
-      desporto: 'Desporto',
-      mercadoLinha: 'Mercado / Linha',
-      competiçao: 'Liga / Competição',
-      tipoMercado: 'Tipo de Mercado',
-      oddOferecida: 'Odd Oferecida',
-      montante: 'Montante (€)',
-      estadoInicial: 'Estado Entrada Inicial',
-      registarBtn: 'Registar Entrada de Valor 🚀',
-      graficoBanca: 'Gráfico Evolutivo de Banca (Histórico Real)',
-      bancaAtual: 'Banca Atual:',
-      graficoNoBets: 'Registe as suas apostas ou selecione outro filtro de desporto para ver a evolução.',
-      historicoTitle: 'Histórico de Apostas Desportivas ({0} no filtro)',
-      historicoTip: 'Dica: Clique no estado para alternar os ganhos rapidamente',
-      historicoNoBets: 'Nenhuma aposta registada para este desporto. Use o formulário à esquerda para adicionar ou registar!',
-      tabelaJogo: 'Jogo / Desporto',
-      tabelaMercado: 'Mercado',
-      tabelaOdd: 'Odd',
-      tabelaStake: 'Stake',
-      tabelaLucro: 'Lucro/Prej.',
-      tabelaData: 'Data',
-      tabelaEstado: 'Estado',
-      tabelaAçao: 'Ação',
-      painelUnificadoTitle: 'Painel Unificado: Boletins de Apostas (iOS & Web)',
-      painelUnificadoDesc: 'Espaço segmentado e seguro em tempo real. Os seus registos do iPhone (betSlips) e do site (webBetSlips) agregam-se aqui sem risco de sobreposição.',
-      registarBoletimBtn: 'Registar Boletim Web 🖥️',
-      cloudSys: 'Cloud Sync Protegido',
-      iphoneLabel: '📱 iPhone',
-      webLabel: '🖥️ Web',
-      loginPrompt: 'Inicie sessão no painel iRunBets para ligar e visualizar os seus boletins em tempo real do iPhone.',
-      loadingMatches: 'Pesquisando correspondências no servidor...',
-      noSlipsCloud: 'Nenhum boletim de apostas ativo encontrado no Firebase para esta conta. Faça apostas na nossa aplicação nativa iOS e estas aparecerão listadas de imediato!',
-      boletimSimples: 'Boletim Simples',
-      boletimMultiplo: 'Boletim Múltiplo',
-      apagarPerm: 'Apagar permanente?',
-      sim: 'Sim 🚨',
-      nao: 'Não',
-      editarBtn: 'Editar 📝',
-      apagarBtn: 'Apagar 🗑️',
-      eventos: 'Eventos',
-      recolher: 'Recolher ▲',
-      expandir: 'Expandir ▼',
-      pE_titulo: 'Matriz de Resultados - Probabilidade Matemática Ajustada',
-      pE_noResult: 'Defina os fatores humanos à esquerda e clique no botão para computar as probabilidades de Poisson e fatores humanos combinados.',
-      pE_mercado1x2: 'Probabilidades do Mercado 1X2 (%)',
-      pE_btts: 'Ambas Marcam (BTTS)',
-      pE_mais15: 'Mais de 1.5 Golos',
-      pE_mais25: 'Mais de 2.5 Golos',
-      pE_empate: 'Empate (X)',
-      pE_vitoria: 'Vitória',
-      pE_casa: 'Casa',
-      pE_fora: 'Fora',
-      pE_gerarBtn: 'Gerar Análise IA Híbrida 🤖📊',
-      pE_gerandoText: 'IA A calcular Probabilidades Híbridas...',
-      pE_relatorioTitle: 'Relatório Analítico de Elite iRunBets Specialist',
-      pE_relatorioGerando: 'iR-Engine-v3.5 a cruzar matriz de Poisson com fatores de terreno humanos...',
-      pE_relatorioSecs: 'Isto pode demorar alguns segundos, a processar a recolha de conhecimento estatístico...',
-      pE_relatorioPrompt: 'Pronto para acionar redigenda especialista. Clique em "Gerar Análise IA Híbrida 🤖📊" para consultar o modelo avançado.',
-      pE_casaLabel: 'Equipa da Casa (Golos esperados standard)',
-      pE_foraLabel: 'Equipa de Fora (Golos esperados standard)',
-      pE_relvado: 'Estado do Relvado',
-      pE_lesões: 'Lesões Importantes (Última hora)',
-      pE_condições: 'Condições Climáticas',
-      pE_motivaçao: 'Motivação',
-      t_badge: '⚡ CONSOLA ESTATÍSTICA PREMIUM (MONITOR COCKPIT 14")',
-      t_sub: 'IrUnBets Advanced Analytical Core • Segmento de Mercado:',
-      t_fechar: '✕ FECHAR TERMINAL',
-      t_diagnostico: 'Diagnóstico Inteligente do Segmento',
-      t_diagnosticoDesc: 'Os dados estatísticos apresentados resultam de todas as apostas efetuadas baseando-se no desporto selecionado. O simulador recalculou todas as métricas em tempo de execução para alimentar este dashboard.',
-      t_resumo: 'Resumo do Estado',
-      t_leaguesTitle: 'Competições & Ligas Ativas (Eficiência 🏆)',
-      t_leaguesSub: 'Taxa de acerto real e retorno líquido acumulado por liga desportiva',
-      t_marketsTitle: 'Comportamento de Mercados (Foco 🎯)',
-      t_marketsSub: 'ROI de investimento proporcional a cada tipo de mercado',
-      t_vol: 'Volume Total de Stake',
-      t_med: 'Média por entrada:',
-      t_closeBtn: 'Fechar Consola',
-      s_estatuto: 'Estatuto de Subscrição do Utilizador (Sync iTunes & Web)',
-      s_proBadge: 'PRO NUVEM REAL-TIME',
-      s_basicBadge: 'BÁSICO SÓ LOCAL',
-      s_guestBadge: 'DEMO / VISITANTE',
-      s_proTitle: '💎 PLANO PREMIUM PRO ATIVO',
-      s_proDesc: 'Sincronização Firebase Real-time Engine ativa com sucesso. Os dados da sua banca inicial, casa de apostas, movimentos de saldo e boletins estão seguros, integrados e partilhados em tempo real entre o iPhone, Android e este painel Web.',
-      s_basicTitle: '⭐ PLANO PREMIUM BÁSICO ATIVO',
-      s_basicDesc: 'Acesso premium completo local ativado! Os dados estão salvaguardados apenas localmente neste navegador. Nota de privacidade: se mudar de aparelho ou limpar a cache, as estatísticas e boletins não serão preservados na nuvem.',
-      s_guestTitle: '🛠️ ASSINATURA IRUNBETS GUEST / GRATUITO',
-      s_guestDesc: 'Está a criar o seu portfólio no modo de demonstração. Para usufruir de segurança permanente desfrutando da nossa rede unificada iOS & Web, escolha o plano ideal:',
-      s_benef_1: '✓ Múltiplos Boletins',
-      s_benef_2: '✓ Estatísticas Avançadas',
-      s_benef_3: '✓ Gestão de Banca Inteligente',
-      s_benef_4: '✓ Dicas & Alertas Rápidos',
-      s_version: 'Modelo de Subscrições iRunBets v2.5 • iOS & Web Unificados',
-      m_regulamento: 'Regulamentos de Boletim (Web)',
-      m_observaçoes: 'Observações / Anotação do Evento (Opcional)',
-      m_adicionarEv: '+ Adicionar Evento',
-    },
-    en: {
-      badge: 'Active Executive Panel',
-      title: 'iRunBets VIP Dashboard',
-      desc: 'Probability analysis and integrated registry for absolute bankroll control.',
-      tabBanca: '📊 Register & Bankroll',
-      tabIa: '✨ IA iRunBets',
-      tabFavoritos: '⭐ Teams & Leagues',
-      sportFilterTitle: 'Active Sport Filter (1 Click)',
-      sportFilterDesc: 'Instantly recalculate ROI, Profits and match history',
-      allSports: '🌍 All Sports',
-      football: '⚽ Football',
-      tennis: '🎾 Tennis',
-      basketball: '🏀 Basketball',
-      others: '🎲 Others',
-      matrixBtn: '📊 LEAGUE / MARKET DETAIL MATRIX',
-      bancaInicial: 'Starting Bankroll',
-      casaPendente: 'BOOKIE',
-      semCasa: '⚠️ NO BOOKMAKER',
-      editar: 'Edit',
-      bancaDeControlo: 'Risk control bankroll',
-      bancaGeralFinal: 'Overall Bankroll',
-      globalApostas: 'Total of all bets',
-      lucroFiltro: 'Profit in Filter',
-      positivo: '▲ POSITIVE',
-      variancia: '▼ VARIANCE',
-      roiFiltro: 'Filter ROI',
-      retornoDesporto: 'Return of the selected sport',
-      taxaAcerto: 'Win Rate',
-      resolvidas: 'resolved',
-      gaugeTitle: 'Quick Read of Reds / Greens / Devolution',
-      gaugeDesc: 'Current count and proportion of bets in:',
-      gaugeNoBets: 'No bets registered in this sport to render the Neon Gauge.',
-      ganhas: 'Won',
-      perdidas: 'Lost',
-      devolvidas: 'Refunded',
-      pendentes: 'Pending',
-      simples: 'Singles',
-      multiplas: 'Multiples',
-      comparadorTitle: '🎯 Singles vs Multiples Comparator',
-      comparadorDesc: 'Effectiveness rate of integrated Greens/Reds (iPhone iOS & Web)',
-      comparadorNoSlips: 'No synchronized slip (iPhone or Web) to process metrics.',
-      boletinsSimples: 'Simple Slips',
-      boletinsMultiplos: 'Multiple Slips',
-      apostasIphone: 'iPhone Bets:',
-      apostasWeb: 'Web Bets:',
-      total: 'Total',
-      eficacia: 'Efficiency (Greens):',
-      registarEntradaBadge: 'Register Real Entry',
-      multiplaPopup: 'Multiple Pop-up ↗',
-      nomeEvento: 'Event Name / Teams',
-      desporto: 'Sport',
-      mercadoLinha: 'Market / Line',
-      competiçao: 'League / Competition',
-      tipoMercado: 'Market Type',
-      oddOferecida: 'Offered Odd',
-      montante: 'Amount (€)',
-      estadoInicial: 'Initial Entry Status',
-      registarBtn: 'Register Value Entry 🚀',
-      graficoBanca: 'Bankroll Evolution Chart (Real History)',
-      bancaAtual: 'Current Bankroll:',
-      graficoNoBets: 'Register your bets or select another sport filter to see the evolution.',
-      historicoTitle: 'Sports Betting History ({0} in filter)',
-      historicoTip: 'Tip: Click on status to toggle outcomes quickly',
-      historicoNoBets: 'No bets registered for this sport. Use the left form to add or register!',
-      tabelaJogo: 'Game / Sport',
-      tabelaMercado: 'Market',
-      tabelaOdd: 'Odd',
-      tabelaStake: 'Stake',
-      tabelaLucro: 'Profit/Loss',
-      tabelaData: 'Date',
-      tabelaEstado: 'Status',
-      tabelaAçao: 'Action',
-      painelUnificadoTitle: 'Unified Panel: Bet Slips (iOS & Web)',
-      painelUnificadoDesc: 'Segmented and secure real-time space. Your iPhone records (betSlips) and website records (webBetSlips) aggregate here without overlap risk.',
-      registarBoletimBtn: 'Register Web Slip 🖥️',
-      cloudSys: 'Protected Cloud Sync',
-      iphoneLabel: '📱 iPhone',
-      webLabel: '🖥️ Web',
-      loginPrompt: 'Log in to the iRunBets dashboard to connect and view your real-time slips from the iPhone.',
-      loadingMatches: 'Searching for matches on server...',
-      noSlipsCloud: 'No active bet slips found in Firebase for this account. Place bets on our native iOS app and they will appear here instantly!',
-      boletimSimples: 'Simple Slip',
-      boletimMultiplo: 'Multiple Slip',
-      apagarPerm: 'Delete permanently?',
-      sim: 'Yes 🚨',
-      nao: 'No',
-      editarBtn: 'Edit 📝',
-      apagarBtn: 'Delete 🗑️',
-      eventos: 'Events',
-      recolher: 'Collapse ▲',
-      expandir: 'Expand ▼',
-      pE_titulo: 'Results Matrix - Adjusted Mathematical Probability',
-      pE_noResult: 'Configure the human factors on the left and click the button to compute Poisson probabilities and combined human factors.',
-      pE_mercado1x2: '1X2 Market Probabilities (%)',
-      pE_btts: 'Both Teams to Score (BTTS)',
-      pE_mais15: 'Over 1.5 Goals',
-      pE_mais25: 'Over 2.5 Goals',
-      pE_empate: 'Draw (X)',
-      pE_vitoria: 'Victory',
-      pE_casa: 'Home',
-      pE_fora: 'Away',
-      pE_gerarBtn: 'Generate Hybrid AI Analysis 🤖📊',
-      pE_gerandoText: 'AI Calculating Hybrid Probabilities...',
-      pE_relatorioTitle: 'iRunBets Specialist Elite Analytical Report',
-      pE_relatorioGerando: 'iR-Engine-v3.5 crossing Poisson matrix with human pitch factors...',
-      pE_relatorioSecs: 'This may take a few seconds, processing statistical knowledge collection...',
-      pE_relatorioPrompt: 'Ready to write specialist report. Click "Generate Hybrid AI Analysis 🤖📊" to query the advanced model.',
-      pE_casaLabel: 'Home Team (Standard expected goals)',
-      pE_foraLabel: 'Away Team (Standard expected goals)',
-      pE_relvado: 'Pitch conditions',
-      pE_lesões: 'Important Injuries (Last minute)',
-      pE_condições: 'Weather Conditions',
-      pE_motivaçao: 'Motivation',
-      t_badge: '⚡ PREMIUM STATISTICA CONSOLE (14" COCKPIT MONITOR)',
-      t_sub: 'IrUnBets Advanced Analytical Core • Market Segment:',
-      t_fechar: '✕ CLOSE TERMINAL',
-      t_diagnostico: 'Intelligent Segment Diagnosis',
-      t_diagnosticoDesc: 'The statistical data presented results from all bets placed based on the selected sport. The simulator recalculated all metrics at runtime to power this dashboard.',
-      t_resumo: 'Status Summary',
-      t_leaguesTitle: 'Active Leagues & Competitions (Efficiency 🏆)',
-      t_leaguesSub: 'Real hit rate and accumulated net return by sports league',
-      t_marketsTitle: 'Markets Behavior (Focus 🎯)',
-      t_marketsSub: 'Investment ROI proportional to each type of market',
-      t_vol: 'Total Stake Volume',
-      t_med: 'Average per entry:',
-      t_closeBtn: 'Close Console',
-      s_estatuto: 'User Subscription Status (Sync iTunes & Web)',
-      s_proBadge: 'PRO CLOUD REAL-TIME',
-      s_basicBadge: 'BASIC LOCAL ONLY',
-      s_guestBadge: 'DEMO / GUEST',
-      s_proTitle: '💎 ACTIVE PREMIUM PRO PLAN',
-      s_proDesc: 'Firebase Real-time Engine synchronization active successfully. Your initial bankroll, bookmaker, balance movements and bet slips info are secure, integrated and shared in real-time between iPhone, Android and this Web panel.',
-      s_basicTitle: '⭐ ACTIVE PREMIUM BASIC PLAN',
-      s_basicDesc: 'Full local premium access activated! Data is saved only locally in this browser. Privacy note: if you change devices or clear cache, statistics and slips will not be preserved in the cloud.',
-      s_guestTitle: '🛠️ IRUNBETS GUEST / FREE SUBSCRIPTION',
-      s_guestDesc: 'You are using the classic demonstration mode. To enjoy permanent storage security and native real-time sync, select a plan below (mirrored with App Store):',
-      s_benef_1: '✓ Multiple Slips',
-      s_benef_2: '✓ Advanced Statistics',
-      s_benef_3: '✓ Smart Bankroll Management',
-      s_benef_4: '✓ Quick Tips & Alerts',
-      s_version: 'iRunBets Subscription Model v2.5 • iOS & Web Unified',
-      m_regulamento: 'Slip Regulations (Web)',
-      m_observaçoes: 'Observations / Event Note (Optional)',
-      m_adicionarEv: '+ Add Event',
-    },
-    fr: {
-      badge: 'Panneau exécutif actif',
-      title: 'Tableau de bord VIP iRunBets',
-      desc: 'Analyse probabiliste et registre intégré pour un contrôle absolu de la bankroll.',
-      tabBanca: '📊 Registre & Bankroll',
-      tabIa: '✨ IA iRunBets',
-      tabFavoritos: '⭐ Équipes & Ligues',
-      sportFilterTitle: 'Filtre de sport actif (1 Clic)',
-      sportFilterDesc: 'Recalculez instantanément le ROI, les gains et l\'historique des matchs',
-      allSports: '🌍 Tous les Sports',
-      football: '⚽ Football',
-      tennis: '🎾 Tennis',
-      basketball: '🏀 Basket-ball',
-      others: '🎲 Autres',
-      matrixBtn: '📊 MATRICE DES DETAILS LIGUES / MARCHES',
-      bancaInicial: 'Bankroll Initiale',
-      casaPendente: 'CASA',
-      semCasa: '⚠️ SANS BOOKMAKER',
-      editar: 'Modifier',
-      bancaDeControlo: 'Bankroll de contrôle des risques',
-      bancaGeralFinal: 'Bankroll Globale Finale',
-      globalApostas: 'Total de tous les paris',
-      lucroFiltro: 'Bénéfice du Filtre',
-      positivo: '▲ POSITIF',
-      variancia: '▼ VARIANCE',
-      roiFiltro: 'ROI du Filtre',
-      retornoDesporto: 'Retour du sport sélectionné',
-      taxaAcerto: 'Taux de Réussite',
-      resolvidas: 'résolus',
-      gaugeTitle: 'Lecture rapide des Reds / Greens / Devolution',
-      gaugeDesc: 'Compte courant et proportion des paris en:',
-      gaugeNoBets: 'Aucun pari enregistré dans ce sport pour afficher le Neon Gauge.',
-      ganhas: 'Gagnés',
-      perdidas: 'Perdus',
-      devolvidas: 'Remboursés',
-      pendentes: 'En attente',
-      simples: 'Simples',
-      multiplas: 'Multiples',
-      comparadorTitle: '🎯 Comparateur Simples vs Multiples',
-      comparadorDesc: 'Taux d\'efficacité des Greens/Reds intégrés (iPhone iOS & Web)',
-      comparadorNoSlips: 'Aucun bulletin synchronisé (iPhone ou Web) pour traiter les statistiques.',
-      boletinsSimples: 'Bulletins Simples',
-      boletinsMultiplos: 'Bulletins Multiples',
-      apostasIphone: 'Paris iPhone:',
-      apostasWeb: 'Paris Web:',
-      total: 'Total',
-      eficacia: 'Efficacité (Greens):',
-      registarEntradaBadge: 'Enregistrer Entrée Réelle',
-      multiplaPopup: 'Multiple Pop-up ↗',
-      nomeEvento: 'Nom de l\'événement / Équipes',
-      desporto: 'Sport',
-      mercadoLinha: 'Marché / Ligne',
-      competiçao: 'Ligue / Compétition',
-      tipoMercado: 'Type de Marché',
-      oddOferecida: 'Cote Offerte',
-      montante: 'Montant (€)',
-      estadoInicial: 'Statut d\'entrée initial',
-      registarBtn: 'Enregistrer l\'entrée de valeur 🚀',
-      graficoBanca: 'Graphique d\'évolution de la Bankroll (Historique réel)',
-      bancaAtual: 'Bankroll Actuelle:',
-      graficoNoBets: 'Enregistrez vos paris ou sélectionnez un autre filtre pour voir l\'évolution.',
-      historicoTitle: 'Historique des paris sportifs ({0} dans le filtre)',
-      historicoTip: 'Astuce : Cliquez sur le statut pour changer d\'issue rapidement',
-      historicoNoBets: 'Aucun pari enregistré pour ce sport. Utilisez le formulaire de gauche pour en ajouter !',
-      tabelaJogo: 'Match / Sport',
-      tabelaMercado: 'Marché',
-      tabelaOdd: 'Cote',
-      tabelaStake: 'Mise',
-      tabelaLucro: 'Bénéfice/Perte',
-      tabelaData: 'Date',
-      tabelaEstado: 'Statut',
-      tabelaAçao: 'Action',
-      painelUnificadoTitle: 'Panneau Unifié : Bulletins de Paris (iOS & Web)',
-      painelUnificadoDesc: 'Espace segmenté et sécurisé en temps réel. Vos enregistrements iPhone (betSlips) et site (webBetSlips) s\'agrègent ici sans risque de chevauchement.',
-      registarBoletimBtn: 'Enregistrer bulletin Web 🖥️',
-      cloudSys: 'Synchronisation Cloud Protégée',
-      iphoneLabel: '📱 iPhone',
-      webLabel: '🖥️ Web',
-      loginPrompt: 'Connectez-vous au panneau iRunBets pour lier et afficher vos bulletins en temps réel depuis l\'iPhone.',
-      loadingMatches: 'Recherche de correspondances sur le serveur...',
-      noSlipsCloud: 'Aucun bulletin de pari actif trouvé dans Firebase pour ce compte. Placez des paris sur notre application native iOS !',
-      boletimSimples: 'Bulletin Simple',
-      boletimMultiplo: 'Bulletin Multiple',
-      apagarPerm: 'Supprimer définitivement ?',
-      sim: 'Oui 🚨',
-      nao: 'Non',
-      editarBtn: 'Modifier 📝',
-      apagarBtn: 'Supprimer 🗑️',
-      eventos: 'Événements',
-      recolher: 'Plier ▲',
-      expandir: 'Déplier ▼',
-      pE_titulo: 'Matrice des Résultats - Probabilité Mathématique Ajustée',
-      pE_noResult: 'Définissez les facteurs humains à gauche et cliquez sur le bouton pour calculer les probabilités de Poisson et les facteurs humains combinés.',
-      pE_mercado1x2: 'Probabilités du Marché 1X2 (%)',
-      pE_btts: 'Les deux équipes marquent (BTTS)',
-      pE_mais15: 'Plus de 1.5 buts',
-      pE_mais25: 'Plus de 2.5 buts',
-      pE_empate: 'Nul (X)',
-      pE_vitoria: 'Victoire',
-      pE_casa: 'Domicile',
-      pE_fora: 'Extérieur',
-      pE_gerarBtn: 'Générer l\'analyse IA Hybride 🤖📊',
-      pE_gerandoText: 'IA En cours de calcul des probabilités...',
-      pE_relatorioTitle: 'Rapport Analytique d\'Élite iRunBets Specialist',
-      pE_relatorioGerando: 'iR-Engine-v3.5 croisant la matrice de Poisson avec les facteurs humains du terrain...',
-      pE_relatorioSecs: 'Cela peut prendre quelques secondes, traitement de la collecte des connaissances statistiques...',
-      pE_relatorioPrompt: 'Prêt à générer le rapport expert. Cliquez sur "Générer l\'analyse IA Hybride 🤖📊" pour consulter le modèle avancé.',
-      pE_casaLabel: 'Équipe Domicile (Buts attendus standards)',
-      pE_foraLabel: 'Équipe Extérieur (Buts attendus standards)',
-      pE_relvado: 'État du terrain',
-      pE_lesões: 'Blessures importantes (Dernière minute)',
-      pE_condições: 'Conditions Climatiques',
-      pE_motivaçao: 'Motivation',
-      t_badge: '⚡ CONSOLE PREMIUM DE STATISTIQUES (MONITEUR COCKPIT 14")',
-      t_sub: 'IrUnBets Advanced Analytical Core • Segment de Marché:',
-      t_fechar: '✕ FERMER LA CONSOLE',
-      t_diagnostico: 'Diagnostic Intelligent du Segment',
-      t_diagnosticoDesc: 'Les données statistiques présentées résultent de tous les paris placés sur le sport sélectionné. Le simulateur a recalculé toutes les métriques à l\'exécution.',
-      t_resumo: 'Résumé du statut',
-      t_leaguesTitle: 'Compétitions & Ligues Actives (Efficacité 🏆)',
-      t_leaguesSub: 'Taux de réussite réel et rendement net cumulé par ligue',
-      t_marketsTitle: 'Comportement des Marchés (Focus 🎯)',
-      t_marketsSub: 'ROI d\'investissement proportionnel à chaque type de marché',
-      t_vol: 'Volume Total des Mises',
-      t_med: 'Moyenne par entrée:',
-      t_closeBtn: 'Fermer la Console',
-      s_estatuto: 'Statut de l\'abonnement de l\'utilisateur (Sync iTunes & Web)',
-      s_proBadge: 'PRO CLOUD EN TEMPS REEL',
-      s_basicBadge: 'BASIQUE LOCAL SEULEMENT',
-      s_guestBadge: 'DEMO / INVITÉ',
-      s_proTitle: '💎 PLAN PREMIUM PRO ACTIF',
-      s_proDesc: 'Synchronisation Firebase Real-time Engine active avec succès. Votre bankroll, bookmaker, mouvements de solde et bulletins de paris sont sécurisés et partagés en temps réel.',
-      s_basicTitle: '⭐ PLAN PREMIUM BASIQUE ACTIF',
-      s_basicDesc: 'Accès premium local complet activé ! Les données sont sauvegardées uniquement dans ce navigateur.',
-      s_guestTitle: '🛠️ ABONNEMENT IRUNBETS GUEST / GRATUIT',
-      s_guestDesc: 'Vous utilisez le mode de démonstration. Pour bénéficier de la sécurité de stockage permanent, sélectionnez un forfait ci-dessous :',
-      s_benef_1: '✓ Bulletins Multiples',
-      s_benef_2: '✓ Statistiques Avancées',
-      s_benef_3: '✓ Gestion de la Bankroll',
-      s_benef_4: '✓ Conseils & Alertes',
-      s_version: 'Modèle d\'abonnements iRunBets v2.5 • iOS & Web Unifiés',
-      m_regulamento: 'Règlement des bulletins (Web)',
-      m_observaçoes: 'Observations / Note d\'événement (Optionnel)',
-      m_adicionarEv: '+ Ajouter Événement',
-    },
-    it: {
-      badge: 'Pannello esecutivo attivo',
-      title: 'Dashboard VIP iRunBets',
-      desc: 'Analisi probabilistica e registro integrato per il controllo assoluto del bankroll.',
-      tabBanca: '📊 Registro & Bankroll',
-      tabIa: '✨ IA iRunBets',
-      tabFavoritos: '⭐ Squadre & Leghe',
-      sportFilterTitle: 'Filtro Sport Attivo (1 Clic)',
-      sportFilterDesc: 'Ricalcola istantaneamente ROI, profitti e cronologia dei match',
-      allSports: '🌍 Tutti gli Sport',
-      football: '⚽ Calcio',
-      tennis: '🎾 Tennis',
-      basketball: '🏀 Pallacanestro',
-      others: '🎲 Altri',
-      matrixBtn: '📊 MATRICE DETTAGLI LEGHE / MERCATI',
-      bancaInicial: 'Bankroll Iniziale',
-      casaPendente: 'BOOKIE',
-      semCasa: '⚠️ SENZA BOOKMAKER',
-      editar: 'Modifica',
-      bancaDeControlo: 'Bankroll per il controllo del rischio',
-      bancaGeralFinal: 'Bankroll Finale Generale',
-      globalApostas: 'Totale di tutte le scommesse',
-      lucroFiltro: 'Profitto nel Filtro',
-      positivo: '▲ POSITIVO',
-      variancia: '▼ VARIANZA',
-      roiFiltro: 'ROI del Filtro',
-      retornoDesporto: 'Rendimento dello sport selezionato',
-      taxaAcerto: 'Percentuale di Successo',
-      resolvidas: 'risolte',
-      gaugeTitle: 'Lettura Rapida di Reds / Greens / Devolution',
-      gaugeDesc: 'Conteggio corrente e proporzione delle scommesse in:',
-      gaugeNoBets: 'Nessuna scommessa registrata in questo sport per mostrare il Neon Gauge.',
-      ganhas: 'Vinte',
-      perdidas: 'Perse',
-      devolvidas: 'Rimborsate',
-      pendentes: 'In attesa',
-      simples: 'Singole',
-      multiplas: 'Multiple',
-      comparadorTitle: '🎯 Comparatore Singole vs Multiple',
-      comparadorDesc: 'Tasso di efficacia dei Greens/Reds integrati (iPhone iOS & Web)',
-      comparadorNoSlips: 'Nessuna schedina sincronizzata (iPhone o Web) per elaborare le metriche.',
-      boletinsSimples: 'Schedine Singole',
-      boletinsMultiplos: 'Schedine Multiple',
-      apostasIphone: 'Scommesse iPhone:',
-      apostasWeb: 'Scommesse Web:',
-      total: 'Totale',
-      eficacia: 'Efficacia (Greens):',
-      registarEntradaBadge: 'Registra Scommessa Reale',
-      multiplaPopup: 'Multipla Pop-up ↗',
-      nomeEvento: 'Nome Evento / Squadre',
-      desporto: 'Sport',
-      mercadoLinha: 'Mercato / Linea',
-      competiçao: 'Lega / Competizione',
-      tipoMercado: 'Tipo di Mercato',
-      oddOferecida: 'Quota Offerta',
-      montante: 'Importo (€)',
-      estadoInicial: 'Stato Iniziale Scommessa',
-      registarBtn: 'Registra Scommessa di Valore 🚀',
-      graficoBanca: 'Grafico Evoluzione Bankroll (Cronologia Reale)',
-      bancaAtual: 'Bankroll Attuale:',
-      graficoNoBets: 'Registra le scommesse o seleziona un altro filtro per vedere l\'evoluzione.',
-      historicoTitle: 'Cronologia scommesse sportive ({0} nel filtro)',
-      historicoTip: 'Suggerimento: clicca sullo stato per cambiare rapidamente l\'esito',
-      historicoNoBets: 'Nessuna scommessa registrata per questo sport. Usa il modulo a sinistra per aggiungerne una!',
-      tabelaJogo: 'Partita / Sport',
-      tabelaMercado: 'Mercato',
-      tabelaOdd: 'Quota',
-      tabelaStake: 'Puntata',
-      tabelaLucro: 'Profitto/Perdita',
-      tabelaData: 'Data',
-      tabelaEstado: 'Stato',
-      tabelaAçao: 'Azione',
-      painelUnificadoTitle: 'Pannello Unificato: Schedine di Scommessa (iOS & Web)',
-      painelUnificadoDesc: 'Spazio segmentato e sicuro in tempo reale. I record del tuo iPhone (betSlips) e del sito (webBetSlips) si aggregano qui senza rischio di sovrapposizioni.',
-      registarBoletimBtn: 'Registra Schedina Web 🖥️',
-      cloudSys: 'Sincronizzazione Cloud Protetta',
-      iphoneLabel: '📱 iPhone',
-      webLabel: '🖥️ Web',
-      loginPrompt: 'Accedi al pannello iRunBets per collegare e visualizzare le schedine in tempo reale dall\'iPhone.',
-      loadingMatches: 'Ricerca match sul server...',
-      noSlipsCloud: 'Nessuna schedina attiva trovata in Firebase per questo account. Scommetti sulla nostra app nativa iOS !',
-      boletimSimples: 'Schedina Semplice',
-      boletimMultiplo: 'Schedina Multipla',
-      apagarPerm: 'Eliminare permanentemente?',
-      sim: 'Sì 🚨',
-      nao: 'No',
-      editarBtn: 'Modifica 📝',
-      apagarBtn: 'Elimina 🗑️',
-      eventos: 'Eventi',
-      recolher: 'Riduci ▲',
-      expandir: 'Espandi ▼',
-      pE_titulo: 'Matrice Risultati - Probabilità Matematica Regolata',
-      pE_noResult: 'Definisci i fattori umani a sinistra e clicca sul pannello per calcolare le probabilità di Poisson e i fattori umani combinati.',
-      pE_mercado1x2: 'Probabilità del Mercato 1X2 (%)',
-      pE_btts: 'Entrambe le Squadre Segnano (BTTS)',
-      pE_mais15: 'Più di 1.5 Gol',
-      pE_mais25: 'Più di 2.5 Gol',
-      pE_empate: 'Pareggio (X)',
-      pE_vitoria: 'Vittoria',
-      pE_casa: 'Casa',
-      pE_fora: 'Fuori',
-      pE_gerarBtn: 'Genera Analisi IA Ibrida 🤖📊',
-      pE_gerandoText: 'IA Calcolo delle probabilità ibride...',
-      pE_relatorioTitle: 'Rapporto Analitico d\'Élite Specialist iRunBets',
-      pE_relatorioGerando: 'iR-Engine-v3.5 incrocio tra Poisson e fattori umani del campo...',
-      pE_relatorioSecs: 'Questo potrebbe richiedere alcuni secondi, elaborazione dati statistici...',
-      pE_relatorioPrompt: 'Pronto per redigere il rapporto esperto. Clicca su "Genera Analisi IA Ibrida 🤖📊" per consultare il modello avanzato.',
-      pE_casaLabel: 'Squadra di casa (Gol attesi standard)',
-      pE_foraLabel: 'Squadra ospite (Gol attesi standard)',
-      pE_relvado: 'Stato del campo',
-      pE_lesões: 'Infortuni importanti (Ultimo minuto)',
-      pE_condições: 'Condizioni Climatiche',
-      pE_motivaçao: 'Motivazione',
-      t_badge: '⚡ PREMIUM CONSOLE STATISTICHE (MONITOR COCKPIT 14")',
-      t_sub: 'IrUnBets Advanced Analytical Core • Segmento di Mercato:',
-      t_fechar: '✕ CHIUDI CONSOLE',
-      t_diagnostico: 'Diagnostica Segmento Intelligente',
-      t_diagnosticoDesc: 'I dati statistici presentati derivano da tutte le scommesse piazzate sullo sport selezionato. Il simulatore ha ricalcolato le metriche in tempo di esecuzione.',
-      t_resumo: 'Riepilogo Stato',
-      t_leaguesTitle: 'Competizioni & Leghe Attive (Efficienza 🏆)',
-      t_leaguesSub: 'Tasso di vincita reale e rendimento netto accumulato per lega',
-      t_marketsTitle: 'Comportamento dei Mercati (Focus 🎯)',
-      t_marketsSub: 'ROI di investimento in proporzione a ciascun tipo di mercato',
-      t_vol: 'Volume di Puntata Totale',
-      t_med: 'Media per scommessa:',
-      t_closeBtn: 'Chiudi Console',
-      s_estatuto: 'Stato dell\'abbonamento utente (Sync iTunes & Web)',
-      s_proBadge: 'PRO CLOUD IN TEMPO REALE',
-      s_basicBadge: 'BASIC SOLO LOCALE',
-      s_guestBadge: 'DEMO / OSPITE',
-      s_proTitle: '💎 PIANO PREMIUM PRO ATTIVO',
-      s_proDesc: 'Sincronizzazione Firebase Real-time Engine attiva con successo. I dati del tuo bankroll, bookmaker, movimenti e schedine sono al sicuro e sincronizzati.',
-      s_basicTitle: '⭐ PIANO PREMIUM BASIC ATTIVO',
-      s_basicDesc: 'Accesso premium locale completo attivato! I dati sono salvati solo localmente su questo browser.',
-      s_guestTitle: '🛠️ ABONNEMENT IRUNBETS GUEST / GRATUITO',
-      s_guestDesc: 'Stai utilizzando la modalità dimostrazione. Per usufruire della sicurezza dei dati permanente, seleziona un piano qui sotto:',
-      s_benef_1: '✓ Schedine Multiple',
-      s_benef_2: '✓ Statistiche Avanzate',
-      s_benef_3: '✓ Bankroll Management Intelligente',
-      s_benef_4: '✓ Consigli & Allarmi Rapidi',
-      s_version: 'Modello di abbonamento iRunBets v2.5 • iOS & Web Unificato',
-      m_regulamento: 'Regolamenti Schedine (Web)',
-      m_observaçoes: 'Osservazioni / Note dell\'evento (Opzionale)',
-      m_adicionarEv: '+ Aggiungi Evento',
-    },
-    de: {
-      badge: 'Aktives Führungs-Panel',
-      title: 'iRunBets VIP-Dashboard',
-      desc: 'Wahrscheinlichkeitsanalyse und integriertes Register für die absolute Bankroll-Kontrolle.',
-      tabBanca: '📊 Register & Bankroll',
-      tabIa: '✨ KI iRunBets',
-      tabFavoritos: '⭐ Teams & Ligen',
-      sportFilterTitle: 'Aktiver Sportfilter (1 Klick)',
-      sportFilterDesc: 'Recalculieren Sie ROI, Gewinne und Match-Historie sofort neu.',
-      allSports: '🌍 Alle Sportarten',
-      football: '⚽ Fußball',
-      tennis: '🎾 Tennis',
-      basketball: '🏀 Basketball',
-      others: '🎲 Andere',
-      matrixBtn: '📊 LIGA- / MARKT-DETAIL-MATRIX',
-      bancaInicial: 'Startguthaben',
-      casaPendente: 'CASA',
-      semCasa: '⚠️ KEIN BUCHMACHER',
-      editar: 'Bearbeiten',
-      bancaDeControlo: 'Risikokontrolle Bankroll',
-      bancaGeralFinal: 'Gesamte Endbankroll',
-      globalApostas: 'Gesamtsumme aller Wetten',
-      lucroFiltro: 'Gewinn im Filter',
-      positivo: '▲ POSITIV',
-      variancia: '▼ VARIANZ',
-      roiFiltro: 'Filter-ROI',
-      retornoDesporto: 'Rendite der ausgewählten Sportart',
-      taxaAcerto: 'Erfolgsquote',
-      resolvidas: 'aufgelöst',
-      gaugeTitle: 'Schnellansicht von Reds / Greens / Devolution',
-      gaugeDesc: 'Aktuelle Wetten-Anzahl und Proportion in:',
-      gaugeNoBets: 'Es wurden keine Wetten für diese Sportart registriert, um den Neon Gauge anzuzeigen.',
-      ganhas: 'Gewonnen',
-      perdidas: 'Verloren',
-      devolvidas: 'Erstattet',
-      pendentes: 'Ausstehend',
-      simples: 'Einzelwetten',
-      multiplas: 'Kombiwetten',
-      comparadorTitle: '🎯 Einzel- vs. Kombiwettenvergleich',
-      comparadorDesc: 'Erfolgsquote integrierter Greens/Reds (iPhone iOS & Web)',
-      comparadorNoSlips: 'Kein synchronisierter Wettschein (iPhone oder Web) zur Datenverarbeitung vorhanden.',
-      boletinsSimples: 'Einzelscheine',
-      boletinsMultiplos: 'Kombischeine',
-      apostasIphone: 'iPhone-Wetten:',
-      apostasWeb: 'Web-Wetten:',
-      total: 'Gesamt',
-      eficacia: 'Effizienz (Greens):',
-      registarEntradaBadge: 'Echten Wetteintrag erfassen',
-      multiplaPopup: 'Kombi-Popup ↗',
-      nomeEvento: 'Event-Name / Teams',
-      desporto: 'Sportart',
-      mercadoLinha: 'Markt / Linie',
-      competiçao: 'Liga / Wettbewerb',
-      tipoMercado: 'Markttyp',
-      oddOferecida: 'Angebotene Quote',
-      montante: 'Einsatz (€)',
-      estadoInicial: 'Anfänglicher Wettstatus',
-      registarBtn: 'Wetteintrag buchen 🚀',
-      graficoBanca: 'Bankroll-Entwicklungschart (Reale Historie)',
-      bancaAtual: 'Aktuelles Guthaben:',
-      graficoNoBets: 'Registrieren Sie Ihre Wetten, um die Entwicklung zu sehen.',
-      historicoTitle: 'Sportwetten-Historie ({0} im Filter)',
-      historicoTip: 'Tipp: Klicken Sie auf den Status, um das Ergebnis schnell umzuschalten',
-      historicoNoBets: 'Keine Wetten für diesen Sport registriert. Verwenden Sie das linke Formular zum Hinzufügen!',
-      tabelaJogo: 'Spiel / Sportart',
-      tabelaMercado: 'Markt',
-      tabelaOdd: 'Quote',
-      tabelaStake: 'Einsatz',
-      tabelaLucro: 'Gewinn/Verlust',
-      tabelaData: 'Datum',
-      tabelaEstado: 'Status',
-      tabelaAçao: 'Aktion',
-      painelUnificadoTitle: 'Vereinheitlichtes Panel: Wettscheine (iOS & Web)',
-      painelUnificadoDesc: 'Segmentierter und sicherer Echtzeitbereich. Ihre iPhone-Einträge (betSlips) und Web-Einträge (webBetSlips) werden ohne Risiko von Überschneidungen zusammengeführt.',
-      registarBoletimBtn: 'Web-Wettschein registrieren 🖥️',
-      cloudSys: 'Geschützte Cloud-Sychronisierung',
-      iphoneLabel: '📱 iPhone',
-      webLabel: '🖥️ Web',
-      loginPrompt: 'Melden Sie sich im iRunBets-Panel an, um Ihre Wettscheine vom iPhone in Echtzeit anzuzeigen.',
-      loadingMatches: 'Suche nach Spielen auf dem Server...',
-      noSlipsCloud: 'Keine aktiven Wettscheine in Firebase für dieses Konto gefunden. Platzieren Sie Wetten auf unserer nativen iOS-App!',
-      boletimSimples: 'Einzelschein',
-      boletimMultiplo: 'Kombischein',
-      apagarPerm: 'Dauerhaft löschen?',
-      sim: 'Ja 🚨',
-      nao: 'Nein',
-      editarBtn: 'Bearbeiten 📝',
-      apagarBtn: 'Löschen 🗑️',
-      eventos: 'Ereignisse',
-      recolher: 'Einklappen ▲',
-      expandir: 'Ausklappen ▼',
-      pE_titulo: 'Ergebnis-Matrix - Angepasste mathematische Wahrscheinlichkeit',
-      pE_noResult: 'Definieren Sie links die menschlichen Faktoren und klicken Sie auf die Schaltfläche, um die Poisson-Wahrscheinlichkeiten und kombinierten Faktoren zu berechnen.',
-      pE_mercado1x2: 'Wahrscheinlichkeiten für den 1X2-Markt (%)',
-      pE_btts: 'Beide Teams treffen (BTTS)',
-      pE_mais15: 'Über 1.5 Tore',
-      pE_mais25: 'Über 2.5 Tore',
-      pE_empate: 'Unentschieden (X)',
-      pE_vitoria: 'Sieg',
-      pE_casa: 'Heim',
-      pE_fora: 'Auswärts',
-      pE_gerarBtn: 'Hybride KI-Analyse generieren 🤖📊',
-      pE_gerandoText: 'KI berechnet hybride Wahrscheinlichkeiten...',
-      pE_relatorioTitle: 'iRunBets Specialist Elite analytischer Bericht',
-      pE_relatorioGerando: 'iR-Engine-v3.5 kreuzt Poisson-Matrix mit menschlichen Spielfeldfaktoren...',
-      pE_relatorioSecs: 'Dies kann einige Sekunden dauern. Statistische Datensätze werden verarbeitet...',
-      pE_relatorioPrompt: 'Bereit für den Expertenbericht. Klicken Sie auf "Hybride KI-Analyse generieren 🤖📊", um das Modell abzufragen.',
-      pE_casaLabel: 'Heimmannschaft (Standarderwartete Tore)',
-      pE_foraLabel: 'Auswärtsmannschaft (Standarderwartete Tore)',
-      pE_relvado: 'Spielfeldzustand',
-      pE_lesões: 'Wichtige Verletzungen (Letzte Minute)',
-      pE_condições: 'Wettbedingungen',
-      pE_motivaçao: 'Motivation',
-      t_badge: '⚡ STATISTIKKONSOLE (14" COCKPIT-MONITOR)',
-      t_sub: 'IrUnBets Advanced Analytical Core • Marktsegment:',
-      t_fechar: '✕ TERMINAL SCHLIESSEN',
-      t_diagnostico: 'Intelligente Segmentdiagnose',
-      t_diagnosticoDesc: 'Die dargestellten statistischen Daten basieren auf allen Wetten der gewählten Sportart. Der Simulator berechnet alle Kennzahlen in Echtzeit neu.',
-      t_resumo: 'Statuszusammenfassung',
-      t_leaguesTitle: 'Aktive Ligen & Wettbewerbe (Effizienz 🏆)',
-      t_leaguesSub: 'Reale Trefferquote und kumulierte Nettorendite nach Sportliga',
-      t_marketsTitle: 'Marktverhalten (Fokus 🎯)',
-      t_marketsSub: 'Investitions-ROI proportional zu jeder Wettart',
-      t_vol: 'Gesamteinsatzvolumen',
-      t_med: 'Durchschnitt pro Eintrag:',
-      t_closeBtn: 'Konsole Schließen',
-      s_estatuto: 'Benutzer-Abonnementstatus (Sync iTunes & Web)',
-      s_proBadge: 'PRO ECHTZEIT-CLOUD',
-      s_basicBadge: 'BASIC NUR LOKAL',
-      s_guestBadge: 'DEMO / GAST',
-      s_proTitle: '💎 AKTIVER PREMIUM PRO PLAN',
-      s_proDesc: 'Firebase Real-Time Engine-Synchronisierung erfolgreich aktiv. Ihre Bankroll-, Buchmacher-, Kontobewegungen- und Wettschein-Daten sind sicher und synchronisiert.',
-      s_basicTitle: '⭐ AKTIVER PREMIUM BASIC PLAN',
-      s_basicDesc: 'Vollständiger lokaler Premium-Zugriff aktiviert! Daten werden nur lokal auf diesem Browser gespeichert.',
-      s_guestTitle: '🛠️ IRUNBETS GUEST / MEIN ABONNEMENT',
-      s_guestDesc: 'Sie verwenden den klassischen Demonstrationsmodus. Um von dauerhafter Datensicherheit zu profitieren, wählen Sie ein Paket aus:',
-      s_benef_1: '✓ Kombischeine',
-      s_benef_2: '✓ Erweiterte Statistiken',
-      s_benef_3: '✓ Intelligentes Bankroll-Management',
-      s_benef_4: '✓ Schnelle Tipps & Alarme',
-      s_version: 'iRunBets-Abonnementmodell v2.5 • iOS & Web vereint',
-      m_regulamento: 'Regulierung der Wettscheine (Web)',
-      m_observaçoes: 'Bemerkungen / Eventnotizen (Optional)',
-      m_adicionarEv: '+ Ereignis hinzufügen',
-    },
-  };
-
   const labels = labelsMap[language] || labelsMap.pt;
 
   const [activeTab, setActiveTab] = useState<'banca' | 'analise-ia' | 'favoritos' | 'rede-tipsters' | 'dashboard-tipster'>(() => {
@@ -10003,219 +9275,5130 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         type="text"
                         value={mentorInput}
                         onChange={(e) => setMentorInput(e.target.value)}
-                        placeholder={language === 'pt' ? 'Envie uma mensagem para o Mentor Gemini Pro...' : 'Sendx��ks#ו �}~�-�I� A�,UѪҀ ��I� Xj�\�J /��烏�a{z��'���m�Ǝ�c%��q�ǎ�	uG��z�,�����'�9��|"_ Y*����q��{އ)�����8s-�����#�b�t-�Z�._�����*�t���s��[�p�`Ty������X��m���\���u����{p��z���o���n>���ٖg�\�\�lrQ�b��ʦ��|��\�fy����bZ&L�VLGs5ˬ(:��+C>����m��t+�6�K�\�q�́纖��6��������8c��(������ms�U�֌�U��2�RT���hh��Vh[�lC��r�����Fk�i��N����ZxÚ(Cͽ�Պ/7�� 3�po2��Pqh݇�0�ʹ�rǍn]bK���Xvebi� � Ġué9]��s\����9R& b ����{����i��f�cW�eo��̇a�U�,����Vu����J��Z��{>�W�
-Mx���W�'L]15Cqyřh���7ס��!����1B��+]1G"����]��-��3M�����7���7����β@��u�鯾�~b�Fڽ�ɥ^Nt>����p��*�9���\k���:��9�Ț�7��v�g�6����f��Q{n\�T�ۮ�߭�I�^��� �6����D��+cMU�ɜ��¯:�;ↄ]C�����EE�����l ���֤2�=��`�(*�h�hC�'�Rr��sQ��{.��I��l�j�/ �=��{H`�TTq�� 0ζ��m9�����U�x�D.Ā�ƈ��[�gЖC�6���8�\�>�,Я{�*G�rf!$DۥǷa������N�r�]z��~��������h���7�mn�ݭ�ժ[�O�~�ѯ?�����4ifG�1�zʨ����̨����p^�Fin
-�uq���@�ᄻL��^m8h�;]��b{�^�}��>l����w�[�����wۇ-&���4�i���ś�����&�I3��?W��@�Vcp����V-���s�5��U:�j�Oxi�˴b�=�� �&��D|�E��`���w��kv�ӿ���k��O��x��m�X�	�Z�cG�v�0c)�!Ob����D��L�9ۊq=L�tV�.��ې�e�n����z&��X��儵�H�����i�P� x(��N?]�͙~�k�/p6����Ÿa��P�5�xc�	�E��LmK��7�4��|���?X	<�jC�p�fX���k�?����R����+6����\�ꞣ�)ȹ��yic  I-�.��].#S�˩���9�r�Y��#�%�Ι`
-��Ĺ�j�`� ���ȓ���mX�S��2[6ǵR����!���9.2!�b�����À1a�CW��3��c��:C[���\s��"Sę
-d�L
-�\���c&�,dq;���̦�O\#��!�J]<�``1a����t��� �Ua�-����˶����v*�,»� ���wR��N؊��jF�,�*��a��h�|�*�L�[ǰ,w�̮3��f�MV��mwe���D9����a
-��P�0����u�D<�w�&�;8�l,i���R� R�^�]�Kw��"�M�	��
-�~7����5��7j��F�pR�<*�<��g��Z��9	�D ���ǁ:�lI�T�?a��~�����`�ۡ�z��<'�x��,����}&���2���\�Z�kx.P�e$�@k&cM�k2�d��,��]�4aq���2�YV=�%\N�������T�Ih=�on6��ٵ�cg��ÇM|y����q�>�� Q:o�D�u�
-�$�ne����ֆ���obp#�.�������/�'��Ǭ���,'}�%d4�Ś� 	��U�3�GfOYȳ�`�5����<8�=ed��\��3�=Uef>��� V�088ؑy�}`'ܶ� W�O�� &���&�İDێf��(�h �#r�1�p[s@,��$N`���Ld�O����9a��0�8�@�T#����-�������X1��$�_F��\��fz|M�L����2���*���sck�X��U�9d���
-������/{&.��� 8�<�����7p��(�������K�@��yJv0����/l�}f�������%:�k�47X!�i\�?�����!��k�"�e��%.�#߀E��thM"�[��B8 ��D���7�ذ.ñC7��x&�g�p����ӌ	�=��)3>���4��#S�D�q\lP���B@�r�$����A�O�� �C��6�� �ǎ�8>��[U�0��M��G��#�ط,�a�X���������9\`�=�;L��܂붉�`�c�~L 5a=����]�s��p��0�;Wl�]�X���M{l�7���r]��0^��=\�.{�K�
-�x�� ���@�F�ar`a` � �V2� �&Y�5�	s�p߅��L�Ee����H�WD{�� �K�����u��8%mIA�>����a�Դ�[
-�l�EU�h��n�IԳO����7�dHӔ�HSz7*��+�u��|��^�5����<�<�選cѺ���a�?��/@ŭ�wTF��ʝ����0����}>W�Z���k��_����26���~A�9C�]�lH�j;�2o��S9�Ƕ�iB�(*��R���ÿ*C �h�Pw���wS�8M���)&��ĕ�S���Z��Q͌��Y
-�a��y���]��ķ��K#�S�Ɇ�|�r��u�&�"�$4��9�f6��GG"��b/@G2�HTՔ���ټ��r��v����Ӆt� �/���Ùk<�ߑ�VƄ�����|��9�r18:�(X��;��p�lLJ�s�;�$���`�i�gȍ�|����(�J������By�|`^dm����I�:1�K�� �2'�1c�u3�>g�eÛ��UL��u7J��g��l�� ��J,O_��Lzv�p}A,o�7*��ј\Xm<����.{�m�+���-��Jp�VQ�a]4UQ�8�r�2�W���_&k��N_�٘$�mј� M�o���s�%�Ļ
-��Оw����_��M�k1��{���\^�yi'}������adG�]�~��"kk�ޛ�)���@�4��9�n8R��Ϡ-�ԪP�6�/���W��!C�[���2ї�ǝa�h��6�b�> ���L_�$����o�;�T�U�C���>������(o�x۵��|'�\Ig�X裠1C,� ��,F�����aS��C�缭in����58���l�fQ�異�_��M-S�,x�r'G�+:�艙s��W�]4-~��Z�.��^�=[�mb7�ϧmm���e��u�?�̃���3EU�J�D�0������O*�L�Z���~���`{Zd��mPB���p�����kl�m�u�a�����8�w���r��'g\��z?R������`�w�ю�XCr�5����o����[��$2]��S(-���rn�v�}J����{Ĺ�\ӓ��d�q�{)��X�h7�3`��ڨ?���i@�b������y7WF�R������]K%W�5-��	�s�%�/ܱl�S;pa���[N����d� L;�ib9�H>��_fL��Yk��wi+}�w�;=�'��fk��eZ�w�v����F��ǭ��т�P��f����jCn������n=nu�v�q�����}x�g�U�=�V`�뚭 5���;�(���uQ��*������,�IP��|F9B}b|� ֕�����~��� ?i�`7��\qئ���0%8?�'�ߏuی`{�F%��#��|���R$$TK�К��^U���_3eb�-��8�jfWqA"f�m �q�0~.��#�C1�q&�n���C�����Kr/��L�$:���n�RI��i�w�,��T�bek�EwU��w��ЂZ��!lHc�5r�v
-���i�[��Z��'�r�D�.L�lKS��F1[��*���{���� V�σ��Ǌ��+�6􎢻}�{W�r��A�#���<}�Kh�7Ѹ��!w�d7�@3U�� �G��}��/��EC�$�s�tr�������@b'��	]��_�˹UV�*�=q�+4��.����V:��Ps|�����l���LGz��v�����'�5t�Y�o*25�b�>�`A��3��U]���	�����?g���5c�?D�I�y@����e�����1�����a���\�K����[#��1�fj��|��$s��ir�l���±iL3��!����Y��Z&��I.}*�)F`hVQә�Y�����h��ͻ�������� &{b�c�����mNNte�g�N���}��*&�>��a��+ctU=��8p�a��3A�Uj��o�{��L��Z�؝	8�R8��uj��\�7��à���k���Pt�/1��;�}�N�9bC�������/Y���M5�9}��`�θ.+ɡCvII���g&��!Òq�C�-�ʺ\�������^��x��(���()�Ïh��B�4H��jXkM��3@��a��"��sq��*� �.�L����0�yG�E�t_8�bX�e�e<�G1^M��D<F�Ds�皂>���ц�b��c���i(���5�,D<�Ǒ0�yX`��h��@����k}Xt`��i��DPp��&��*�	aXK����ge�#8	����1��YAfI>T����]M�*���@�0�"#H�Qb��N�qA'��F��r>6���1w��״е��z�@��fO����Ӊ�F��o{&�lx���ώl��S��`]�������t�W9� �����}�=[��Q5[��;�v�O�������j�L0���AKt�:��=�°`�@��x9C>�&�X;��D<�Wt����CE�m����p��E���AV��Ch6��s�!H�j��g��j��z�1H�%Z��*�)z��~�rZX�"��S�|��"-3� )P����!pi���^�R�P:tŁ7��d�K��D"j ��#`�%�FFv,��P\�(N�����hK�s�T(8V�� �aP�_��rd"\�����DG�QU���0�Afm1H<�T�] �a{_`��F8D��3{����� U��	cθ����r/0�$�h�ES9@>���et�0�C���R�&W��F�m9Z����6�c��樄��?��9lA���)�	�0�
-7tW�@��]51�%��UL?��9�j�ӈC�� ��ʨ�W�,4�)XH��S<s�c��V��:ȥ��a�ax
-��٘��֒v�ز���zdۓ�Ҏ���W��.f�?PT����2�~^�l��˝�`�Ba�s���A�p�u��+�R���j0�D%;�d��/�)������(�l��9��6�"��E�N��bӿ�VZl	i�oD�ӾJ�Ǎ�nC�2�P�6����4�o7����R��j�m��:���ۍ�λK���3&�{Ɲ[����b䤏���K=zO�o'3�����c3�µ����B_z�هD��דQ���{���%	�B@��0�'A�P���3<��Y�:�8W8ð��>;Z8 Dze(����ޒ�'��k8,��� ޔjj�)����ⷓ��/����?�<�'ȝ�b4������:���/�?�P�Lr�JDs�p�g��u���~�i**���{����S��5��ўX5QO�۔�Z���k ݙ�O����/в��g"a�:D�{!|����#0�"Z c���:����ɞq�9��&0��ЗU�Ǌ�$���ȅ^���g>�k�!Pb��LL��{EHw�3��g�~�>˵l��X(Q�X� 1h ^�બ����[OC���� ,8p� |��]M[�?G�j�5Д�l*����"�8�3A�%i�C���'I�#LJ� �,�Y���	�F�Q��(�Z���(nz&�&b�<>~+�*a
-���W��I���L�u9k�<4[(`Ϭ@��:!����g��F��"� Pyt%�~UbC����f�-7eS8�*dr�Yi�� ��,H���Xrs�Y�\�N���x"�l�<E���&��U���v�8zp��։������'�[t2�ȝ��X	X�Uj%�R�6�A|emD�5�.�W}�e'@��̲I�qlU�5�G��Y4�g������
-� &P?���FA�4��� X3�>��$�4�LQ�H�!c���/}(���8B���`wr�E^H��mN2�L�5��r�r��
-?�S��"�ri��oi9���3�݈Ԁ�4�� ]�>��>�7�18�)�dj�|q?���!7Ǟ����lt�j�r�i�z0��b�Q��D���v�c���󐒓(,B:���8M��/b�|�,ԗ �(̸��Ȣh��C+�o��-�����9 2l����!Z�#}�NY����)��&}����kg���-#�����D�!a�>T���	�d���D���l��5��@�µ0��p���M�.|�PB�A���<�<���d�b���~α��PL���sUAs %��N-�c׃N(q4�y�C ~kaK�d[?E��%昴��`�9EҸ�����x�8lL9���.eC��'6�"��6�	�4J�F9-:��l����"��lɒ��Ų}\�"�P��cx���W�qH�M%�q-���+���D6T���v9��F�yZ�c�u��t8FАt�qJ�~�M?�A��
-814u�`��m.?�'	l	-�|1'�� H�$J@vL/=��d(A���:��q�I��[qz(���h5�ʲ
-���7�#Eb����I��$���h�����UJ��#�	Vgd��vl���,vQ�+B�6��:&T�����2.�D�5��1�Q�u$0���m�Xhʆ)�En� �Ǜ:$4�!�����O$,���<7��}��<S�U�<$�Ȩ�	�� >��!	6�	o#�Z�Lxc�۠1��������4\��-cN<<ŵ`w�M�T��o�S�	�;B�!�@O-8Nȥ�Lo�t�T��6���ɇc�l[���7}��;�7�p�v"t6	T��1��M�,؁�m?ϟ���)��@~�3�	���G�;�0�3N��T� �F��)��u����(N���$�r~g��fEٜf��s�����L~�@f%�+K� �l���WLYZ-��t.s`Ē�0�ϟ7i�*��;H9��d�@��hVR�D�(�<�Lqv���u,�+n~�af�C���^ �ӑb�`D�Y�7l�7@�亃�R�"_�I�#��<p SnĚ���E?%uǘ��<
-��u�Q�!#y��ɲ����<���e{C�f򯡳�~�w�^cC�{ ���&M�d�J�j|�i��EJ'����\
-H�D��0�`����.��2���0|�R�"�b��0��s�����e��	�"/-W���(.229+G�!w�[�n�8'����YX�~���癗�#м1���p�����r��3�':��o�z�����Dt؆�q���8l�ĕ��N����1� 0d�J���O�H�����LHbܞ��>�lU�����)dQ�F���_:��ۑ؉/�l�=.~vTz�DA]ψ)��3ҝ��p|55��Yt������s8��G|P�D�8��7�8�q�c5WA9�b��
-������W$��Π^�5�O8���$.�"q�0����˷�>��g��:��*�r�^�$F�d锘�<�?H�W�I O�(�PՃ,�����vޚ�[��b�)���"�>{(q�Ȣ�9��ʄ����I�WD�g���U&FL�zf!S/��%\�8�˩��}��� �(�7�f�H�I�����*A9��x^�o[�h֥��`����04�l�����L���ri�g2����*p�z/�0͋�8S��]T��򞤩�T���?�G�{�=�5�s��R�Ѧ�m���Ǜ�n���DӺ��9�>WՔMz��s�6���;�x�o�s@�|���g�6̘tO�]3)��k"�n�ko�:�	5����󊺨��#y��Ŕ�(�g�j�-��23�A�(t+k���ɉ��8�~c� 5sJϩl�<�Q+�O�R��=��ҽ ��2���4sa��n��f@�`��G��L?�v�:�!���8fM�=ZgMJ��]������<���<�;A��u&�ãAo��nc��˅���b���<��_umf�O r3 T�nk=FXY���'�������X�	�[��1=3d��f��e����m#$ �QU������5@:H,�늍f�ؔߨ�!Wj����\�M&h	?G��#��͓��
-d�Ő�~.�z�^�d^cmq4x��Z�	N��������H���	PN��C�����y�W�	|mcȇ]��Z$t{9�@����q�6�*�RŢp�x.|�|c�:W�K9��ߒ_�+s���X���(��N�A%�j�u0b�8� �#�Xim�\�F`s�^� fb��|U�����G��˯��0}��P�Eְ���e��2@���v3����`��UC2�@��"s�gA6��2M`u���z!��-M)h?�jx|��s�)��i��k8��i�,YN]0�vVm���qP_"�]�x��\�H4ϰՈ�68E�a#�T�'#J%�76�]�ѿ��1��&n�d�c2�����	���!e��>�P]��cI��5�4��a�0�|���E�9G��<�θ�j(��òT���]��>5c�����T��sK,�������@+~7$P������6��a�ɨ��T��ה�fV]=����h��1xC���A6 ���)2QJG�Ț�����!Ïȏ�(����[�����O-����u���<��1W�D�U `�(l	g�������p)eI�9'bE�|/�D�S3�&�Qe�\d��?�X���$�� j���I�:o�*�9ߕ���Ɇu�e�t������n�qp�<[�R��V�|��G��8�%�d֥���ɺ�a�M�^��^������Q%�)q_Oߺl�^rGrb� ����1��s�;���m���An2Ҵz��Y�5����N��[�=�������r;4�Z���m��Xg��i�Z]�:��N���@1SF��8������^���q����o���l�����V��6��}#��`"��??~�/��2�{8�^��m=ju[����cF�t�Z[�Y��L"��\̋B��c���JQ���P�,��k6fSZ4����u��]Q����D���ͅ� �h���	S3BwJ����d�k�1�lB����vE�UM��uĜ�ۅ|��d?	F�I,��85z)����-�@�>�����4e$HXSs�q�W���.'�Gf��$���n�_���$�c�r|�\�L�z69������9����g�9���Q;,����u��ky%�pɌ������
-}��7���0�b��"N�]i/K6?���������P�]�@b����g��j�);�{��$��r[T%��H ��Rg��+�N��S��t��oL���p��˗��Q.]#l�Е|�����&�b�¸�޶XRG^FH���r2��rJ^Q�1��P.�����$������挞��o���z��:����q���~���퇧�@�	&���U��?��������������G���I���_fg�=��TڄE&��pa��/���2v�<+��z��-0DVC>�3�_~W��Hv7��}SzOn���M,�=i��^���z��m]���\��t��(����<��Ք�ъآ-J��8y�Ts��'\&�%�L'6��!B%-�4���y���*\{dT����;!��YU�5�7'晘.J8�����!(��k�飙Z�Y9B��Md%7v�	�g&��Iύ9�*��b(�/Ix/��u`
-9��^]�]|�YS�hK���N�9�k�Ps�?�gnk����7�V���L�=��J�&���L�_�6���«"U��ѧU�1l�,�.v�W��i��D~kv�`� �gV�瓳Y%���:��\�>ir	�S�=g�$�H�P_qiV�>Y�1�A/O��W}����Kڄ�
-'��.�l_~,��ů`gD���V>��oW	���1�̱�xĹ|�e"��n�E)�B�� ��j_�ę�7m�/:�A.�,~�X�����_q 7F �J��\�:�(0��ïS`�K�jm�,6�B'|���Q��3�?2���aM�I�IZ�?Hd�+�co��D��P�%2_���
-�@��Ƣ�X)ԡ��w��2�ba��2#�^Y�&�.�k)��F��l�ؕ{/�2�?3je�X:z��(�#=�"~'3���.@���R�>����*�D�sE{�J��eT
-��zB::�?\�tۡ��Dï�`�#t�/����}��s�kv�G��;�ch���α�Ǌ3T�==N��*#P_�aL�(��k�p�L䢢|����m�𡮳8p�J�#�H�UW��a��Ɩ��	|)v3�ML�M<Hxe�E��f	�\,������Y��$G��! ٫7���v�(#TF,�[9��3��`��\#(=DJ~7ti��d%��g4`W8��#�tdߖ�a�?�8��p��b�=�,[`��R�a3��t���cP�"�������*��M00t&GMY/�YO3JÃn��͖H�,If�2O4���)�C	f�[2D6�ul�)1`PAoMэ��������}��~�bOZݽv�Ϛ��^��ÊpN�ϥ����pM��G���+��g��������&HROkoP#(s浣r 6WߵS����aS۹l�o���4�bL�PjK��1��l,���9C���4�E�a���σȄ�G����Y2- \"��jJ�A������U�F}u�������~o5{ᚊ>�Tְ%��{�C�[Y�t�[S�!]�8��}��6��Qv�9��,*>�D-˼��;=��T���cp�U�
-E�Ȇ�56 ���lP���5V��B9ǳ5�E�����!u����S�深�;U~1��GT��c�N�)��[�5�����i K Zz�b�eC��+!5ZO}�p>ٰ�t�6������1��R�?!�9@2�3!4a��m�Q//��1��w�%m"�!�����z��\��+cM��=����kw���֓�a��V0$��M�Z�,�^��h�9�l�qQ_͘K�@:Wa$�ig�Wy���'��y�Ǫ�6&s��C��OaJ����\�N_��!1��}����<�I[0�V4ݯ���c������<u�E�D���(���~s�P]Vgl*q���1Z$��k�uM�;��ݻ��~ԝ��q{��4=T���s�͏���
-��7F��>�����w=E�8K�L@nlb���%��{����1�����a���`{�u�sw(}��_�U�g����_˽n��LA����")�ǵK��r̈A�=)��or�{�~�;Ō���y���٨�������ng���Wz��D���-ld�;"zb�œ�6Gh��.���6]�0]��'6Q���V��N��}�)�d X�(% &~T������W
-���y��c�ˆ�Q���'��g��hZ�}�Y��Yn��&f�dT��P�{B)|��� ��N�P�v<�����l�tZ�/�dQ零M�Ǖ��������u:��q���&||IK�Z��~b����\��y����o2�(�s�59|�?�o�wX������_L�]�T����C	�u0�1HhaЏJl��F�u��������=쳵st.�(��fٳ=��s��]J���b8��`ĳT���$_�0���o�=|i�[D���rURaI�LyiL�0Yg@jI�$�� hOs|�!�n��/�0P�]F�ADт�.�ճԲj߼�Kg��W7�q)D�)���$Ը3��d�,\�h����g�E��}!��`h%�ϷHH�~�h�%���ȴw  �ifJ����b�2)C�1Lk4.�:��D�!.���_=��R��LkE�#��!��Z�k��h�fA���G��'�&�(��:�*@.�<�����*TT��Է_�.�_��n#�"�ƄB�`�d�=4�`W4	L-�=�1��n�L���{��55�?���J.~�0��e-L7�L�\�ab�]�Kʻ�r�0�2}g�0��@�x��d�a,���x@�����f(|]�,�t!�Sp�GO���E��aF*�|��ٚ�0kz��#U	ҧ�R�Ү�2Vh}���<��W��.1Z<Ä����2�h����������~�T�,o�T�	4�(�!>7X�t�дɷ�� �ۙ5���9�O)Y��Z�w"�.��L�P�w1�B��1?;�V̀/*����)#+A�pNώ0�#�,$w5��8�D��e��.G|1���2Qo���U�z�]pu��z��O~+������T�.ĳ;�J�`��5"l�g�������9�)8p�z�3h�g_(���!]���b<�@�@�/�|ǃP�*��1�J� [�%,ёna�b����jv0���sSu)��3�|�*�0���+M��:����E`2ʬ�|I�v� �OA"���a�[�� �+@}s,�JT�N�M�F�1˭>��]�:���I�ԍ��n¦&�Kgf�ERf8�_�y&/,�dy�!�2��G��N����;����K��;A=իeV���E`�k�r��R���a>f >�t 2A�[h
-�f�!F�hy+�ݯ_[���I��&����q��U�j�Ѵe��:�h�HЍ:��`��;Q�B�AH��+#�UC��YH:��o�[�b}��z���(e;0�t�����H��l/0�Q��)�BŹ�D�'���bw�bN�8k�&�װt����=�tbka��j��'{����IϨ��V�K������u�Xk4��ѝ���+&J��8ٹ�ⴷ��U��<疇�1e��!T5Xa�\�EQ�|
-��SxF"`���w�aZ@K���?�0�1 �9����1���z?k�}.���am�z� AZ^0yNɺ4����Jz);�`k�n4壑� Q; �����
-�I9٤�c�l�����CwB/��ϼ�����I-�dD��	�tm�G�-dkKc-ki�ߨղS����m�~}��Hɶ�z��Vz-������ÃV���F��n���`���Ӌ%�zP��W�J,�'#����)�"���UD�	:�)�[�z��EZR�����F�F�|eY�$�y�)�����d�A�*Ow���[%K����6o�2����(4��.:��]Ja%]^|8��.�YT��jv@��I�Ғ,��3,e<�oR�f����d1>�J�M�+��L9�@F!,F�|�M�{�B �X����"?�g��^�B�����\ә�3�}�͐�P~�H�ҧ�w����W�~�s���W�s P�)zCԒL���2�=� ��lT�Zs��t�~R��l��!�fܘ�ɏlau��XP%��j �B��	�b����i��(�:�ؔ_�H�f�{R���5X	<Ze��L�+�U$[���[T�!-�&y5����4��"@�(��8�=��M��t�w�� ��?ӔȘc.9� Cr�wYN(r��p���!�4���~�������@�޷Ge������}omcc�V��^}*ա��*�x|��_�������BB�ix�d��I�LP3�g@�8���#�!_�+��l9�t��[\j��D�z��l5�n�~��ӝ����g?�;8>�k7�S�������NG�@_q�����T�Yɥ2l�
-�Qh��(,pj&e��]r�!w�-��E=�śjF��7�Ǜ)@�~��(�bDc��	B�c��=uE�j�0�'+汦b����0ᔺV��"����Z�Lk�W;�Cl�+��&,�fT���2�kkO��@��#�*�j����5�S�G5̱��a��[U�)D���9����ǘr�q6ڞ(�I�i�Q�&�[X��n��¿g�1�ln�Q���ɖ���0j�BgZ,4c;�_�h����(1r�ց۶(�I�b�t���ټ�^�`�6A*�XO�����rӛ�}�F&��gӊ��AWdU��ĥB��,�A��"�\���tw��Ôs�2&)>�T ]�����������^���.&�L�Q�9g�%�a`�k���j�@��E,Sk���9�F�"Y���ǔ�/��w���)�T�D;Z�2A��@�_�5;�\@.�*d&L�n'����LlE,��y��Y"���S���P�s��ĝ rE��6E��J�Ŷ9V�5�iv����]]�7��`��qd[�����\�uD�NЃ�����wt�R(� 	5�?��@�Ԃ��x��Z��*�VA6�/\�ߧAt��Z���\�k�3>�(43힁�+��(�������l��#n��N�'6�B�Ӄ��ZŴe�xkф��e��{�apwl�Nz�tL��f/�\��N-.��4p��pء8��#�e����xc��Z}�~:/>������a�����xbg�bţ�f����^�O�c�?=ju�0��O"���e��~y,�V�an��n �f�#_���*yɑ9�Ֆ��F�,D��bJ/�9ܞ����gdgV���9��	����Uє��	֡3��D��M�f˔��Y�*�e�V
-)0���[��R=���7����2�-r��Ő�(�a!��qLpcMp43�Q��n)��M)f9>��(��
-Oc����(�����{��Uc���y��4aT��gg� R��^���W�t�� ����5�!��x�����>WFO�(�<?fkb6�{%�3���C����@@ 蚰x
-@v��i�K��y��� �rF�Q��q��K�oN�����t��7p��/�#X.�
-J2' l�0�7�8�-�8������Aܛk�#
-V��m�F���'}������j^��y�)����̓Kob��E�ҼO��30 |O]�Q+�����g��t�oŚ�����^�֟6��{�'��#s�y��3��mV��j���)]B��2��L���-�%�,���[�w;�wRO�q�_�[T���z���-1d=8{Pc�D�*
-M�wn�J1���
-�F(��cC,���J����z��	� 2�W�
-�C������(":5���:�3�ą	�I��K�Vh��Z��Bd;�&��D8쑚Q�n2�
-�׏+���Ÿ��L�����2=�šx"�6�J�A�����ͷx��4C�:��T��#,sS���k��,���唉�N�
-���Ht�X��X��L��N�$<���W
-p<��Q�}��q���Z|���_ch�-��L��D���wC蜛X�X�+w�ًy���1���<�<������9װt�U<�e�N��Z�I��M�˲e@#�,J �����V\��[�Da�eCt���@�IQ�]J�7B��g�&|�h/�|�Lq[�����w|�g�+�z�X�7�G�<T(�.л�U���f��v1V�[T�!uM�~n�৭$�-S���Д4%�pw
-�f�܋:�e��8���0��f��G�q��o�j3��}x��#&-�1�L.=o*���/$��Q_�(w����D�Ռ)���?����jh&� )o�z����)��0��ro�~�bJ�J|K����v|�^E���Rhs�D�0W����T+�b\d�����s�yJ����;xP�F�2+[�=d-��hi�+�@:tZv���}�Q/�V�CL��@r|��*R��9�^��.(�i̇����, ����#~;g3���P� y��JNXi��8�6��%,>#f:H�=<#��[]������I������7�f)%�#�o�5;a��_����b�C���S����,�L#�@��Jd��H�4Áa��t�"�=����Y��s���yZ�+�&ɧ���Fm ��<�qbE��u>��Y�.�����n`xٸ��v��Vߪ��e�i��*P�yMA�ҩh�9�:	�+s��YJ�-�T�J���Ax��Lox���A��g����(-�!������=� �ة�������dV�LK]�C� �B��<w�B�-WRK�_��	�g��?�駬�v��N縏BC��k6���;���Y����N1U�yBf,"F~.����xM}��*A�̜��t㒼���ي`=�3&�{�u{{��S�n�>��&�NArYa�ij{����*F�"4��1���#'� �.���O�lU�斥��"�po�}[[�ƒX�UP*���y!����y��J` +^c��-�}��{�~m����F���l`����W(�u(~����.�H�
-�	N���uo�
-�H$䫋:��s�^">���B�+r��.v�����J��W���,�Lx��|�|����5�D>���s��B�H�-�8P�]O�T�����gL���z�S~D��TSdc��G?�){r
-&�񑇥|�Esu� �ٖk��\������F<}|�W�0����ЩH�������!�e[[��δ	f��J`��;�ݐt0���b��z��K���'�2����"9��-�3��s*7̿�B? ��^�Q�%�#�g��i�3u�L?28��[?E|����������W��Z�W}��ڬ��i� `���`n#�"��x��1�G��Y����������o�����AϕIa3f��*�e��;����䍧L0�8CH�{���{Og��O�.q�z��R��rւ���ͧ�q��t��8��~�q�kP2� ПR�ؔ�P��� �?���e
-�^/u9-�5
-3YDP�y�x���[�b�����~��g�����}LO�l����	����m��Fo��>��;]|�Q{���	���hF��B/�B����1B����M4K<7s&����"t1T���~�gbF�*�F�q���G���q��跟���G��'BCzvZ�l��L�l�� %}{�3��Zey9'=|���'܁�L���;���9zǪʬ�5}~پ��N�V���b	�G�C�{֍ ���ɇ���'��S>G��j1�_TH�t$����������-gy�-���#�^�� V^*����:[z���<`���ք踜r�%�o�p�Q��Dv��Q�s�ߏૅ_vm�m����(*��t]�䶉�k6l~����������`k�UpPi���
-�:�:��_`/���baS1-�2��/l,i,V3fl8��!�2�HU/�dյ5ce5�H/���p �[־u��&А����4��ǫ@Tt���V��q��e>��B 'Ħ�aQO�%a�0�>��r?�P<#��\�˰���k9��V���?�!{/���.�n�,	�5W���9��v)�?���{����e�ZPD�9V�E�8ʁәA~ak(_B�c���U��2���K[�(��ӻ��2irW�I�\g���<�*L	�O�� �a���'��}���pÑȬ�X]� �4^��U�Qf�6|�3�́�Nb�_�������{�UQI8�ܪ���.�?�A8�A�������G3��f�p4r�Dc1�n	�(h��7�Q,\q�r�+��߰_�K���眭M�Z���}�iE9l����d��V�bHn�����p��$A�A���>3W�7���;ru2���"i(����cd�b�eWK.�3i�T�s��ޣ֣G���c���r��v�c1��d���a�6��i̖\G��!&5u��]�<]^K�'9���-䛲n�<��[E��k�YO�M���!g?�0Im�����}�Q57�@�{ܶ-W4�f?����VH��J]Y��{C�b��<����~����DV���類W&i��g���c�ʐD`��|�~`i���w � h���L
-	��n)��ʊ��4����3Qub��ᆧ�[�Ԑ�n��Ɗ;7䱱d���`��"xRx�2��M�!ޤq1���}�z����GV�ȾQ��zҒ|�m�V�E�O}`����F:Y2�*C�����ȫly5�!o���q ��2��{���܃�gĢe���}_ng���9�����OG��(��TVR�ɒbbd�&�d̾�z�r�n��L~��'+�}<]cWdK������wб����=����25�նg#�9��W�6��3��]����漈��X�z--^o霌�Jz��U��5\J����1������un�/��L�=���ҬI:��}���߼�5�CCR�v��sQ������0�˫�՞^Waٞ�v�o`��Ue�I��cMWWp`�#F��t�'ޤ���6y�9�G˫��ga�ezw�4G��d%jLߌV63Mϗ�6U[��ȧ�f�@����V��Js:t� �2��T���E��������zN'��FCb��,��0��e��g9�0����i�@� ���7Ǘ��ǀ.=�L����|�����"J��*��a�XB�U.�-`ֹ��֨a-�œ���jE4�&���~&�j��\�<~��cRf^�(B��ڞV�lS�>CA�ҩ�/ z7�J^�↲�d�QpjДD�HW��,����������Rb��B�L����X���C�1TZ�V��[�=�(,���),B�,���fk��oT١ept���l��?��|R��*���U�S�'`6k�Ђ��}Ϲ������bF���<��cL���j�����+�
-�6�n�/(���~��C��Z���DX��O}��R�\��'U��cD,m�b~y�I�ĢGn汗��*����I��Z8|}�� �G��[��;�6J7���vq���	'� �oTgó"�Z��'}P���`(� ͍��dَ�r��)�����DfH��K�0�IF��E�l&�x�ߑ��u��\G�����}��lZ���ыʿ�ڎؓp�?��/y�Y��B�z[��L(=�i���c̷�\j_(X���?�� ��jj��]�������=t97�(8��-�<�$��7���ULzc�a+��^��QFr��#���u.X�BF����&�
-�n�������z��n?	 .��WI����LVܣ��L����WƵ��C�S����-��ު�7
-\h��1Q�j8}�S|/����26�5&�|�0���'��с�i�K�Q&�HB�!�S͋��R������E�o� �5��m�c�;�m������N��5�i���Pރ�O3
-Z%Х�Wf�4���U��"�`SX1@�uh�2ɍ����<] ʮ[�,��X���߽���kIw�2����J%�M!fD@K j�v�S$��$�F�;^���hVv���9���lx���-��l�𷰜�kUd	�������wõE�B�-������
-o��v�E��N4��9x�Ηz
-1�M̀�!U��\2��G���|����	�1�K[��I���s��E�,L���{K8'�s���W~����n&:��O�7;���8N�Q>�b�:.l��6:�S�( T���9�wG�=x�\?�d����M���:�{�d��&>�i8գ�|�vN��=��R�[�������V/�R]��t�H今@	z�v�ch���%�,��:fS�Z�D�s���툺��%~�g�ɳ�b��62Wh�W�8pK�\&�(E��b�F�g�� ~�8?V�G��M)�>3@�Q�m?��%G�Tc�1�K�����6kY%��>;����=J_��T���"���E�?bI�x�D�ǲM_?�.Z�}�*�FeP?e��O�F�eV�yR|8�+�{��
-�G�e��/�5!����z�eX�Zf�E�a�����9��g�:מdk�js-p�m+�?���ܺ��c�n�N�J$�],�Z�HYz�9� �w��se3��1�H"�d�o"@8+η^K��Q	�x�m�Z�j=��cM��"kR�*K,@�WO�nJ��(�-&F�:���Fc���ҏ������%g��ί݌щɽ9�}�-���1d�ʹ&[xx���o�����+1����]86���ybn~~��Rl���u�K�+F�9wسo�d�_{Ʈ�q�K��TeԞ���U�#�\�R38@��0y��'0�K��� ����c���
-���`��_58�y��ؗ �C��XVӽ��"&G�hEQ	�7�n$����%�O冣��q	 �ޡ���������h��n8��Fs�<���Ƞ��z�K8������y�9�s�]��.&�;���aY�4�bq~�ۡ�9���������Gx�)'^�⤦1_pm2��_����L��'X��f�ᘁ�NƘD?�A&?�7�)(�N��QTe�H#� R\۵HCAU$��2��r��K%�͕���� �O��WTB)��j�W�!��[+WX�a���؀��3ͲwزcX�H�hM�d�L~f�vg���|t�B�j4�)��],�e�Aj�Ōv+%�)���;��������?s���M���{g^�ZQDR�Y���E>�k��O]8J��>�O��|��5����c����U�3� X�cs\��+�1-�6�Q�+7�e�Cn�#��ӷ9V�V9S,�2b�V4բ�TsV.���ؔ�w2n���`��&昈/{,�i}���0{�1���7���=�o��\�x��ʢ%l��|������V�i�w"Y���17PJ��fe#��S���Zp꽙g�&��v3o���V¿G������?d�i��j���I���0_�?I����Jz�ױ�ϒƳ��me�[hT���1t{�laA�kJ��R5J�L�MAr�L�"ky�Ty,�&2���ت�r'��r7Y�;u��s��J ��i�7��͔T�o<-�jP�zFŰ���x5=�����]xz�L�o:g#va��`i캓��������fo�^����%<��Kddg?ߵ.,��d�o��Ḱ�ꔿ�ʹW[����%��M��.ŕ��l�KI��j�rG/WhQụpQو.1}=��<)�͉\��>��P�ȚK����&��>X:ب�m܇�6�F����Qݮ���0޸��W�0{�z�D�Dj�Lx�5�(�� �L*x��jp��Z��ؖ!��LS*L=PG�ƪ(� ����������9{�?�����O:��F�5:A&m,h��.�%έ�F�B�{I��<h�)������(MP��a|r�ָ��lx��H�ˠ'ʌ氐)��(��e�����!-#R�ɐz7kq�W�C1�"�7W؍
-~>uq�ļ/"GN�Ӣ�O�fmVcF�3j���g`�`n86=��5��'��Đ?�<���g���)B熚����+dfoZ�v����W�_(Z�=��E�W,]�q;�$J��2(6��G��7'GfL]�l�*W��Z���SK��XQ5*6o��~�\-gULv�vZ��Nk켲Y�d�+��H���h�ۦ���U�]GzI��t%�E����2��
-x$e�&�A���b�\��KT�(�9�e	�c�g�})�u�K;Qnaڳ�dg���L�("�<S�Y�2�����jzN!��5���+�&;W
-U����um�>�������7�ʝ� ���˫Vhm9�vؓV�����˟cqJ��q=����J�� �#�0 P���S�Ek�E��.�W�����i�x̾�{�c��i\�+��,�f�TQ��r�)k��D->q^�.\n7��S��o����<QӿZ�fy%�1'��t����"7�~�����@�Ʒ����R��o�
-@�!��G�x�J���r�.�W�՗ I@Bk���>�х�XM��}�n�@���7[�J`���\���!Ov�%�;t���;��u�{�:��zK0��~žgy}،Wq���Rnq��/9ā0�E_䂋>���_ Ѕc�������ņ��髁;�ԵN� ��~��P�rE�9_��>�����A]8�ۡu����i�:}% w2���"����KvDS�������p�v�+�H��K�r.�s�j�L§�i'�:rg�:����Z���ۖ<d�m��/Љ��}'���c�5��~�1��_�t��L�O�9F+D��@����O�%�
-|�7B��p3�r�6E��� �M�(O����-)LTD���~����QJ��\ȷ�d�v�ؔ��`�TE��b���h��j��sf���Dθ�����aܵ��Î��9������x~�-���f�1��X/d��F����E��L�s[�xHQR��H����ۥ�W
-���C����+�)@�ږ9J+g�p�8	,=,�����K��"`�,�)�no�e.��
-g����.qc�����\Y2X-=���ۚI����V��(�J$b%��+��U��&���ݠ�(�m��i�^���_�.���.������Ne{����qH�ٮezM��i�=In��b%7�f��8��a-`T�rE�J��r��t~����d�ط].A�� ����Nvx�C���F��������M�}�w�^�٬)TZ��U�6��a�/���a*�#Y�x�#�v����5@�	�Y^����7{��3�:��ȹ3A0�l0���N��5��-�Eރ���)ìy8^���k)b-�'�RM̥����������5+t��C��:t	)�~k^sҡ�X6�3 g�e\,0�mi�
-@ d;�{+���e<r4xT�S�uNb�����ɠ�/	D���֣��f�i�����#p��}�X�!�
-�ҁ����]�:5�Sn;o�����բ��EpJ�H�ձ,E[��G���5��b��/
-�K�F���ޏ~17��ޒ;}�ؖa�1��-�l囱K׫�PY�C-Q>B��t����ٝTڍ֏;9���9�c���E��<�4��&�g�AIǐ�jX4Tpt��a{UT45,�\����� �7R�P�
-2>��e"H4%�ў����e�������j�a��g�DQyE�NȔV7�18Q� �ϫ ���~����c������n���ӟ����V��!��ZǬ�8l���+~[X��Pcu;�u��i�{��LC�
-<~�PiW������5Y�4"GhZ��H����	"I�f�b�n�~\b�j���s�*�������o��H���_i�,���bM�v��W
-nbd��W���D�Y�I�bm��G��t�p*�i~=pI~�0�ba(�!}����?R�H�&�ۆ���<��M׀+{��Q�ga��Sf}t�X1`�[� K��~ H�/�pn��b���o����&\԰�ܑ�9�M-��(�E�/%�4��������nvX([�?-BE��w��F$���?n�_��m�W%�,|3��D^�k9�]�mz��N����ߚ\'��S��z��s��E����R-DR���ɽӄ/�&o�q:_��n������Ǟb� *5��R��z���A�\���21>��,���C�֞f󡋚���6��j�# ^%T\s鳂���$����sk���p�<۷�& ò��,�i�&�0��l�0�i~�^�t����B]�����{��v�4��u;��?����N��A�bo��$�g�:o]�r�u1��4G6��'~"1P@٢��)	���}z����e@E��!&�9�в�r����%2���������R9L�ߦ��.��e�^�$���ߘ���h�ӝWĵ���Ǩ���e?ޝ�a���Pi��Mteg�Y���/�ߏTpϨ��K��<�`cZ�٘��B=P�S�.
-���B遢�)��-�r��/�vT�L������< 
-#ɇ(`;&�j��F>�d�1tqC ިn�:e|��^��nZHMX�mU~��c�xQ���& �)[~�m���ٲL��jus7��"kB��X�%�9zT��g�=����ܷT��բ\Bj���1�&���4�)#����K�I˕f��F�E��uz��H1T�N�¢Cԝ(�� �����*�����q���G���+aCeZp's+W�W���Bm*�^�a���������lOqyմ�WV�U�����=o�Z�o��-z�o�i 5�+b)1b9���E8��v�0C�v	�Oѫx���EBV����Rv�m���p)�UZΕժk�[�Z���sm��+� �G��5v5�<LZ[���Hsኡ��\�^��:W���R��U z�e�r��ae-�Z��.��Y2t8��?�RL�[.J����˿��N�ӥ� ���d�͘���*�&-�:Q�٨o�F��4�^�_m�P��|���
-�K�Zg
-�C����tѥu6s��VU��l���q��Ú��n���~�I���G=�:������Q��9�ԏG�^��e<���`����z���z�gG���>�� O��;:��o7���۽~頶�:�^*�n�J�/���QF�e�VI���Z�F� o:�<j�{�� ���=���;�q�I[����w�[x5�����s�o�b5�S�§�{s���~��J�_4��X=�6�������wd��۠�g�(C��j��SAt���ˡ��"b�z�#j:)LEr9�ܽ￮D�׳+9ʟ�%���WRϔ��3+�$&��-"i��z_�� ��}�O��K��M��S.�rd���<�����<W"t7��hJ ���k�	��RyJ����
-,����Au$�D��J�_.�7��j�b>R}�ㇶc�B����$�(]r67���_h-'��Z�/M�fYE>2z��g����Ai	D��  ^r� ���OXK���V"*-
-������6���~>��O�?۲�c]�XǗ����V�5�9l�Z�W2�OͱxTn�1"�쳿��_��u�z���Ŋ�}ً��b��,�߽�%�]�p3}y+���l?��?i�5^�ڔ��\����O�*T�v�J��x�H\�]��D�b�N˂���r~��l;��9M�6���"&�����-�B����B\^����ZEv�T��X��9j>����	�w}/]�� #BI��9�V�_D_Fx��<����ywI/�	��E�(��H�7o�2#=�u�6�ت}w�@�L�0,�w�d^��j�f��9J�Ϩ`���Z�٤S[���;g��	�M�%m�s�W�#�X�rq���_���O)�I,�A<��z5��z�DNJ7%pRȸ]��-(e��&m_i��g�~���E�^
-ax�x�&�.�x~���ż�D�?�W��o�((��īۆ~h_��Ϝ7�j��+�;r���xE��������g�1QF�}�XPR#S��)�N��H���Me�tۏߎ���IG?��i���c�n��g@�g��7;�BZ�E�~%2Ia0Z����:�^�Z�������>���m{�ʷ�^�G��,ZG���>VCМ#ES������5�r<i�f��h���P݄��D'����WwV4���9S�{5�6�e��m��	��w��[��Nǫ�/�@���X������+t7��&%���s���:֊f���z�UȏLGC�]8�l�cc���P�"]�^�抟9F~^���ۍzl����_��:�����A/��(��<�F$ڋ;z̵.����(d����9췦���m6������)�1@��k&
-�8F�M:�3��ѕ��<C�*L�ǔ���ĶF��S����1���l��f��q%D.�!��w�`��,?!�U��m
-��1)"C�'��`1G3詝����a(�7��*|7�)��D3�1;� 6c�_ԒN#��sFm�P]�w*��r>9o��S�2"�v��Cg�2�r�M��K crl��$�NA��~�{&�6y�m�6��ֆ�v�JǔN�J͛�m(���uc�� E)��C%��$]�4��S��à�HII3�Fϊ3E_Y6p%����SB��s�ȥto�H�\�LUY�+�..�@J_ar��ƬWz��%u��%p��}=U`!lv 0VVe$�2������qžu"wɱ��_�s~J��$/���WA���ͤ.�����G�t/�P"uf�Q�%��:� �N���6k�n|�*o/��GV��o��~���I?��M(?�7_~ �������G�ҊT���!���tf����/�@��|O�����x��'��~kϏ�)�`(>1_ Er=O�ͣ(�   ���}w#�u'�UJc�#$��p5r0�$ Y�g��&��tC��!��9vv���Y;���9��s&�G��Ξ}l?��I������G�{��߫��A�CIYѨ����u���bcyp���f�pNc)�E*� ?jr��UάPέPˮ��7�,�j��G�X����6�)r�T�<�˃�E?4�ϚS�l 7c��p���/��|
-�U!��򾉆�&����a�sMM)��2czJXS3�"���ů�3������3�/~�2K*��'�����o^y:K����Ni�Oj�1���$/�%r����$�\6�e3��"K���L�/ł���r����9_a���/c�$��3S"�,K7�|m�03&�^#� ��I�Ę�1�)9�h�%°��u���ה&S(򚢽�%���;��}Qߗ��+�wS\�C�$��E}�s?א���a������"�O5��{=�o)1�Y�����#_OrL�=Y��k�3_O�̕%˼�=�Sf
-���i3���T�6
-V ��r^t&�m�����ʹ�٦aȾ�R�r[�����>9:#�>&q�7�92$Q��(X��1�1�:x>�W��s>�́��'z�.H��[d��'�c��>�F�h{&��m�JD����zd��
-~�A���1au4X���x��z��x����5�H��a
-=A�zx����A��q{��Ǻ3��%��l�߷���'6F`c�Xmn�+�g���%�m�:7`���>�m�S�=���n8Xnn�y�9��^��kcxF�Tm�86��o���4[�g�H2H���Ƃ!��s��e�
-��^���mZV�"��d8�e��g�Y��p ��EI�g�ǰr���}�0�AN#�/����=G ս	�1飳20XZ�s�8c`�w�=��T34�홰 }���7_Bo�;e�
-v&��#�Q��#�N
-7[�\,���?�m�Ǿ������1��7><�4��̩q!nK����N'��r-���<�fܑ�V�q��S�9C�]n8{ A���t�)�L:x�6��O0���a�>^���˳l���W��&��*���ҷ��2M��8�z���ϖ�R�E�(Mz�s�b�P<�"2��x�~�lBQ� �G�ܡ�S}bh�1��8�޶�?���+�=mad0-�@g�2B_(ɏV��>��NN�؃#�T��\Zۼ�����Z^�\|̃-�ů^���|���߿���;������h���`~2g��&��o���$���j�OY�hf�t�Ud9�;ս����*���Z��ۍ*S�;ܯ5�M!��y�5G��4�J5'˥yQ�y�p&#�LY;@=��3Q��\u'�j<�0�Fv�1Lc���N�Exk�64�Dn�
-2J�4����j��`��K�H*Ia��.���
-�YV�u<�-SsQw!( �%T�=P+�:ShJh36�4V��,qO7l�g�vx������x�0���~�z	~�X�J@k��+ �]���]��	���R@ ϫp�q4���ְ���D�ލ�dj�M��������b�A_��� VO�cjTU�mo�k�<`��g�\գ�6� �&2�,P1�y���"'��M��D:P�ec��㠐�IwR�1�jT:��j���Q�ב@s��{Xe�+�|`٠��xx=~ys�N�ֈ�g�}�@��E��p����r���p�ė��#ҏ�ڑ t6��;7#r�b�Uk���q�x�e�ф�I6/Xz�?��L������)��/��PN��N��4�C���9����t~��z��� ����	��ȁm0�Y�7�\�&���DZ;m���v֠�.zt� �����t��6ޥ�=����1NHN�l�ѱ�&���l@�#[0?�4�1��0�?�w�xpT���['�t���Ƶ;�3���NF��v�L|����`�� {���%�cx*.��X��hp?�xKA8���t�����g�/Gp2�ؙN8����T���9nM< �c��=�.�.�#�f���@��_f��yvQ�a@�U��ׯO�m,�mm.U��c��D���_�z�W?�������y��4g�>��|Pm�כd����䛤z��lTk-Q%�/�����$M��U�j:�DQ���ڇsu*�F����"W���Zf��2�6�bQ=M��n|{)*�x��K�L_�-��Ɔ�L��Z��f��7��tB�6|�Sw�0; 5J�D���#J����g�ݦ��7�+���P����P'�AZ��Ԃw����:aT�R�Q�����?�	�OZz4�"/��3R3Д�����Bu GQb_ƶ��|�[�c	�k����.#��F*��-`h�w��i���	�����P�#ѐ5��6um�I��D̬��J�%�J�b�F�T-��'P�07��Hv((X���:�c
-LRoI�o��W���hϔ�<7m�15�������c����h�}u�t����^�|�6*7�W���%�6�����d'ی���o�zK��BX�h�]��#S"DGA�vZ�'�=����$<��3,����V���So�[Һ��iTX�o�U�7[��\G�n�a�
-�f�W+��"H4P�Fd֏�r|��(��Q���@{*d�~�HT�Ke�)�'t���˝z�acGT3N�ӆ%�DQ\ab-xkL�QQXvu��=e;u�r�]!��糖s�	<`H��s�oi �x���4zK��B���]o@]�0:�h9��9��ӳ���_J��9��F'��Eu�tv�@�P:A��F�Y���j<�"�T����I��y�ݪ�Tt�);�X/�@���5cD�y�� H�����,�<�����a{&�{�A�/� �vbf��Ԏ��^���1��6&M@ۡ�dXr�2������HeM?�[�g�ŧ���u��q����I�$[^���j�T,O���΃��wH�>9�I@�U� �j�v}����1�-�D.���X�F������ݥ"�����:6�~��iz�CY���0j�?��<c�@(}+�PA<�	ZX��4�֞z�b*�_�~�]����W����i�ZD��6��!�0+b�ݭya'(�l��w���+Fq59B�G1`�(	��@��U���bG����O~@���t�#"UW{RC@ܬ<L�������g�$�ؠ�`ȔǱ*-ք��uPu�1c�V��3}��NE}�m+�*b�-�-�-�v�~Nu$�"���L>�h����o3�G��HP��z� ^��x� �"0r�iG��Ў�!2"��>�*�8}~�B�+Tν�B-�aN<Wȏ�5l���N����=�w�sCiW��1��qaa�Bޙe�1���yI�����6빤��$<��2}bF@(<��aEu����69���Eh�� ���Q�iĭbؤ��*6�=꣱�<g���;�L�[�K-����*� Wd�C�a}��z��薔�c�{�h6@uX̣c�Q�Q�����S��AA�f:�`9����s$7KFY�gC�d�y��˿�K����_�˶4�ëF�Rj�(D�>�txy�6�~����[���������:ڞH�C=f��_��%�A�"%ug����S@��^������o�;�܄3��Ҕz�����cw��4��Z!b����Oo1#S����aZG���������4u#�u^O���=���R{a�	)��?�o��6�U)�\�Cg����xG��0K��!LM  qѿ�1`�tU5��AV	v����D5ކ�2�`X7��0
-�w����3ӵ����6aaǶH�5ah󡺜�CL[����^Yq�c$�GO�'�D���$�ϣ8��w~�V��藌TYŴX���KSvmc\ZL��6�m��p`��X;�����q�X*�ă�$�W��ЂQ��WfV;��7�씦���Y��1y�@�!{�;,�,�.�?m��[07�dm?ҁ$,�mn�|�]�X+4�l�怆���1��7��l�K�&&��m�_���F�G�!;*ɛ҉n�D~�ml#І�	���&�My[?�=�2��z��Q���#+�����T�����V��s9�9�Gt�|�#�^{�\�����BfSʹTZ�K}l��r��#KsK�r�r�|�N�Q�:�ˬ��;�Ռ�
-�̷ɣ��� G��3����W\w��`����ZK��Ϯw���0��K�eN3�k=�ku��Ұ���E����z���F�Y�(eL'���(�@K$�~ e� �4��!%���܅4���X�=�����	܀�]
-8eXhj������VӐ�Io�4��W,��D��t4��
-=;k�	����(Z?��Zyu�q~�4�.��De��O�m`s���n��l�T����)�Rr\-��6s��L���?3�z9BZ����a�SҬ�V�O�Z�٫~��� tH�UI���K\&/��һ=��B��.m�X#x�}=��ï��!�MwzO,o�X���&�5��7��;M 2#�����aZO&<'�s�����{���|��Yx�.�x�פ7��#��=M���6v��[�p�ui���:�}����ICZ�ý},�Fq�w1خ�baw"��(���w-�W�#��yMZ���<k����N	TFN�ڔ+}�R�"r<Z�}l�{�g,q�x#���d��/�5ߣ\�*V��oj�Y%I��C4����q�C�)eĎ �8�ye8�������,�&�D�a���?�A�(*A���ϠG���f�dC1K���*B�V{���^~�qs�@�@�x�Q��'ǰ���q+�7P��#󆔑*���k��1��H]E
-��Mby��O�}�S�z\��-����?y �92��a$�B���U�[�~fQ/�\�Y����Z��Ӗo�I�T�aVxӉN�	�q>���v�|<���U&1X��(��δ���n�A�}26y�d�n�&��G��m��Ltsw(��������)6��y�m�6�7���p(
-OZ�R�}'�����k=��z�1�faP�����W~t�!)|��t?o/�@^�T�����)7�J^�9[.kWr⫸�sD� ~��"�3C�ŭ
-ʉ�[�����x����d�����]*qBw٢\,���q,��d� ��[�t
-�e9�)��,�bf��8~;H^�;RJE�lF��q���`G����{P�a��zyP��-��12�'0�cC��3����lD[\k
-�p}��Fr�p�߰��n,+��q����|hy]�H'�q2=�|HW�Kx��$=�K�h6�����,��*��ל��������vcYE,�C��ߓ.����wY��H�|�t6]ğ������WrDb�����o�ll7��DaX��!�#]�Y�zF`��G:)!1,�f�
-��䏊�z���?_	���y[�7,D6�<R�'F��E��*�<���H$H�Fm���䄿���UTb��ud��"A4�V�}�@�,�a�ؘ!r�@r'B�&z�t���ǭ�q����1��l[	��2�|�wA�\�Q����Y�u��Pt}�pn+`�aK���AX(Kl�v0u��E������:���Q���p(�yֈ'�Lq��U�~���@��}B�x��l�yK��E_�0���E�($n*^v�O�ˮ�Xw�vI<���*��8�������w�:�s�3b�C�s� y�2�F?#�R�vy�љz��0���Z�˯�x�e�3rX�]\0
-_��A��gwϱ�����P`�;�����S�p Y�,����pE��ul� K��\����wRu_U��O��������]1h(OUT��}�2�Q!����t/�u��Ar�g�� �.\�м5���_!���1��D����:ru,�UYE ������Z�X�pv�"֠��/���?��s�f��M��b���>-�a:�M!|�3�N�<N��L?���`�l� �ɉP���!*/�����>K�#zj�W�+t#jj�b�3|������\�9���J��C�<�1�f�&�G9�+<ܠ���"h�|Q�l�汲F G�@�|@�Ħ�B]�?|�ۙ��Jg�^�� U��o2��Ǟ�ޕ�]L|���"�9=��.�>)�����Ko=o��rq�Yn���cES�L��M#�1�rW�\J�<dL��Ԉ�Y���E8m�g�)�����<q+W�rn-hʦ��v�����Z�L&�r�H���;n�S)�Q�x�Y%�c��Ԫ5jR^�,�(/L��3�C�5/w~�%0@Z�Lb����W�n��Wwd93[�ʠi'��*�:�JL�hp�n��r^z+𫉕����#�`�0��EZ�>�-���/�լ�o�ڬO���?i��OP}��*9��X?7ü��}8/zc���6m�
-�"�.p���!��l��<d�-�� ��ik���d�}/����R@�+�ڡ~q��f���k�$HE�Mɪ��G��F�N���\E%N^��ѯ��&�$p`����<2����h�=���aAhV��Q����;�E��c��"$2R�K�"2 �x�Ï�y9}O��sٜ9u�pA���VC�[J���eV
-6y�|+��^fZb���
-9Db��m���2�>����
-c^�h�.��o~"y��:w_dk:~��ݳ�����D����7��+��;�S<>��Fsy�F��̌^� 4�>���l>����ţ�`��8����y��c��ܷB�}�K�(f��	���O�@���h�3���16}���'{g^Љ��`iA���L�!C?�#-��S�$'
-�u�IUB�eT4*���JFT�J'��f�|� �0Йn�K�����aX�����2HD����Y>㡳�	�?��ڠ;%ѿY@�����ħ�`��Wc���⾀��I��C�_������*a}	q�$�s�e�n;_Y�"��kU����=�mY�B��zF0��N��G��Zc�[�Ѫ���ߩ����>����^u��[߫�w��V�4[��а�T��i��9`�GǛ�q�0X*�M�\�����;6G�OhxTPǒ�x�R�s�ɶod��7�
-��|�`Y�#Ϙhs$S8f��9���Я���"�^� �{�	4��j������Ϟ����FΖXs��r����D�{��L/����R4���*�w���O��*��\U��}�7�5V�e�Vl]��'wo��W3���Hg#_��R��V���e �KE�J~�Y�Z�8�W�S�R��.��l�w&(s�����}� j�^�po�jö9!�����&��ˊ�q��]{��ҠԵ��JU�T?|9).�X4)�O{#�1N����7(R:q�u����&IG��[Q����h�z���K���q��9��l�I�r�Q�ޤ��z�y��pnP�
-^�E�C��%��凇g?!����8vs�~�Z8��_S6��ż`���"�����#��{�~?V*- *Jcp��� ظ�#���d��*� ���ǷG�ӥ+-�]�ia(���7�ح݅EX���,h�5Ɖ�K�#��.Ze�o.�ӣE��K�b1���U�	�n����F�7��*�����)V%�6v�P����֙?��-j\y�8 �yB�r0#��"�gv����[��5���25~��9�� �f���轫$��u�ѿ�^��������vL^�������w��� `j{ØO:��b���@�"��,W�7�-�3:D�UV����]�j" �Zby#U��K�",��Y:<^��=0�`���>Zڴ���t���(
-����ˏ֩���?Y��G�sQ��C�^�j�~��n������v��%�ank��=Z�+�F��"�����e�	�J8�ϟF�:���upF]��k���6�=jE,Ђ5�c�S}�l�f��W.����ݜss0{e�y^1� �)Z��<(Ҡ�N�v#z�L�$`�L� $	�8�G����Uv�	[x����z�TY̭�Vt�Yu��D���C�RqHJ*��gߧ�]*�������[3ܬo�(��y���]<]�r��;8~S[���0W�f���n^�O�щ����XГ���}N�)0�O�K�r��G����cT�4ed��.�L��'��Q�L�}���?u;�����P3ϊĥ�#��&e�%I-Awէ��a�; Ն|�S����X��Y
-,�e���?j1^�C�yj=�e)�����p�{��?^�s�t��1�>��fB�\�/D��@�jA�5�#l����3BNW�I�z���04��!k
-5��zd���3X�wHe�r��u�1b���C{Ujt�!e
-x}Y�&�N�w��RX��&�(�	77�b���O��U�a"�nk��/��}��8����~�U�.�O�Co���'�H���]�������MGZTȜ�q����[����T�u�J�7�}r8�f�1���-�D��A,�:�s���eg���{}�:�I����ecޱ�b��®�[�j~��5�*]\����b)��D���0���Zϑ��=�����C(�	����J��;r�����C���>y���|�J}[���q{�����i�����Z__6��aW�E�����{�}IĬ��4�����Q�<�`m�6�p�E(E��˕	�84� ��3�] ]�>Y}����'��H+m-�ݮ,U�*K������a�)�rީ�'N�/4J��H�'������"��I_�Y6B��i����hG�5�\���Sxu���)�?�|i�kXv�e���x�����l��Zj�]`@V�w^�����3�3�s���cH���@�鵌" ��lc0�"�&�jpy���Z�����.�˷Q����:���Z�8F�fq�K��M�j��;����G���������1�b[gv��N�.�'
-٨8����A�St�YE�eq�ԒsNC�����H��톙vIX���|[���&ڭ�
-�xB�hLE��������a�N�����G�B��紖�]�� 2�h*�d���v����u����}@���36���%�4�́��O��1��&� �d��&�6m�mbu���FT`��n�Av��0ݮ�����&�v��O��VC������Vg]o���]��q���eP�����d�%�w;1��t�3(N���&"�1���7�<A�!��G��Zש�8>���h��.�hI����`(y&�'��0JQ����X�5[��*�Ld1}�ӳ�t?��=���K���x���R�k�+�"���/�$�>�H���aB��O�+�+�u�>#5�YX仦Ë(u�	�':hy��#=��Y;E����px�p�m�=k����*J���t1��v�I�0M�r�ΤƊ�D�G����|%�ǵ-��	��fB��Q ���Ɨu��s��I*ᥢ���%w\:�D&�|G�Lz�<��]M�+�I͔R~�7;�mr�SЖ��]O�k�`����@{��2��Z�՟�{�z�=�� O6�4ViN��g�_¢Q@�����������q�;��I##"�2��\$2��9������������d�#@�������*�K�ﯮnnfz�3�}�v�p�nuJ��MrğQÓЯԱ+%V)u
-��H�+���p��$�Ȳ4�>OP\2G`�2�8GI�2���b�������	pw�M��}������0Kpt_"�vZ��K�
-��4g��&����q�,vc�A��dq��������ȟY���X;,^6�k� ���`���/r�&l�#Η@҄:ى5�R����ޚ���L_r�������ٗ�I�C�rJ���rK�{��-@�l��J�!Z���d��y�����Gh BI/����X��Qx�Y���$mĎ����z��v�U{@xVQf�io�b:��K�:_��(�J�7�s�.���?��13�o6��{|6؅<�ǰ{�H�����<`AHDX���b3E�}wo�E�4Z߸ X�L� �����]�R;g>$�%1Æur�3N]s��.j���CT?sfݵ��cݦ�ށ��`p�@�aRM�w��dRp�p��s��5'h�d�i�Ё9���=b�qPmZ� Lk��Ml>L��j�X~=�f�P}9tSa�Y|�e�M*��Z�R+�by6q�_��8��u'�6�P6ρ��|-	�d7r���6���[D�IИ�{��D��u�ߗ�|ؖ1W�G����~���Yuo�5lݳb��L?�S���1N���J�,��߹�����mn�2/X�{����c�V�#[�N�����4�#O5�4�[hn�(���9_W(˝pyY��/>�7��64��"Olq��N%�x ;ktF�ǘ�	/R:��yʾh[�'���WG��-��[�	�����a���ݿ{f+�(�4�c�3AX3@{�0��!U�&Xh��a�M���c�zm3%��a4��6�۶����� �<B�+�P@�+���
-���J��	gRD�KS�ȋ�5��%��
-}��ӏP�˱�T-J��Ӟ�4��yf��TA��Dbqh42�.5�'I��|l��M\�B�`����Z,z%�QY��F�~�묂��4�n,�;�#�ELl�1����P�~:*">�v�l�;Y���9��d��a( ��ٰ�}2E�-N�nPu�*���~Lqh�E��̨��#`ONϘ����dT��b��c�`P��`����6�U@��0hD���ak��a.Ct�(��d[L8"��#&�I�D�h��x��k $����x��ވ~��q�BX����K]���U�G:_!���5�r׫ky�u�.�9��VM��i�J�QƆ�������7p_`��0���r1����b�b����m�H�K�5�z.��<�Ǳ�`ȏ�����	t��O�R��"~��z��1
-�H'CX���tX1|:��o�(�����LxZ3t��u/tc�º��p^��;�?0y�h�����-l.�$�N���ϧ7�=t"���e�p(R�[(��lUL���A�`s5���� �&	�yv@ECS��MO[@����x���"� ��f�?��jEl��3��K���p8E��Y4�o-���%+R�̢P\�~�B�J&�⯻o��[^�4��{��1�0�T�y��7�M�Qu�l�ИwR~*��`qUmah��� �i��U"����5A&,BDb�Ɔ��5-p�c*��.u���g����"�N��<yg/��g�8�Y����Oq!9=����J	�f�;�����y [��PP��>���Wc��b0Hk3���j���[p�*6UKg����B��|[r� ���j�|�������Gӟ�;䠺_o",ƭu$uQ�Vz|0� ��]��hL���ԓ���Zx�Hq� �۷0��f.?�ؐo&�5_ ������F�"��<GX"$Q7�LFR3BTar �MS�dV⎨D2x3iې;�R��xG�!	k9d ³iPj�G��#��v�Ov9C�q
-(��G��f5���[��JE�G�k��G#��!_FԎO�9U�Aa	x��Y^��s�~��P�P^��Ȟl����.{>*��\�PT��4!��Sv���6�0}��'����;R=�@����/4P#�F]SW�o�2P��g*Y�7�ʁ�D�� u:oLպ�0h�<<�/<���	�����T$>G����jL�&�����Π�LYjɔ�+9��
-��&U�G��)�S^$����\�q(���Iqe)�C�9��cs[�&,����J.O��)������l"`)�ޑ�]Z�2*s�2ˁb^�������f[��ص@1*�-x�>��2J3�B��L�3t��p�h*3�j����8�ꤺ�oɞ�Ot�
-?�*ΈN#���L�?�����)<����Y�pltNt�y��r��x�O��a�܁�~���Gp��w������-��������G��[�E���i�a����a��*#���VshӒ?6(�4���G}��M�L��ֱ5��Q����F�{͎B��L�Kqz�u��c���?�?�3�Td�	��M�$w�+���_2�u�����x/$~x�_(͸%�f��t����_"����2���WW7����Kh �L��쉵�~df�I��ˇ�4��*h�%@��ϫqs�-|��Y��D��R�+�c�v����ԯIs@����@�u���w��k�&��l0��!�e j�ұ�I|4�$6���g�w=: Pl/H��X`q۲���۝�bv��Fi[�lX���V�Ka2&�Q��)3y�}�^. �Ļ�"�#�0��L�p�g&��?�Vc��o�p��SP�=a�n����tAlo�,�7v�o7i��_��(1��;�9h&���G����y�G�>쓻�sHQ�d(�6��9#�u��m7����~��Ә���N��_���*���������-0pk�77��U6p3��f�惚��k+,��+g���}^��܄+C̦��:5l�5��tv���=������ة�B6}`���,��YCC�A��v�X�?-f�>��ˀ[��p�����C�|���=����Z�@Ǽo����Vk\EVHRd���zq�f�BPk��*���Z̢m�bЖ� =�Y�ν��N�=��n�;�t`{�l̹e Kuo��)r���lT��67��jyuc1�~���3�w�������/3�L�N�\j�DG�,��h��B3c���Q%���67�����e&� �#��M�M��ˏ\`v\�-0;:5���KMnG3݂����O>/03�����m6��ƻ�s+2�����=}}3k�w����南�痤e3�q�L"<҅��S\��-�����`�.*�O��e�Չ�!A�D���`���fUj�0uD��jh#���f���`>�JU�ѐ�h������|>�����������d�F�)��d�ȮBSl�>7�oh���2%�3h���d�cL��̅��@���g�T3}�U;�x�g��<E�n���sy�rc<��-OS��q�/�`���Xq2�%�~l].eR�;��}�L��E' ��؊���_�'B9$�{��@�1__9mʨ���p�e�����{��'#���Y��<��}l�Qh �T'�K�g�h��]++b"n��F�P%�6�����zyS�2Qp�*�m��-Q�G ��4�	pg��3��F휶N�c�\�>Ȭ��"��^�@�ԄH���W!(/�����Z�x?WH�/�-�C:����yU��Ri:ɽ�B���Y�������z.yF���2ٯ@:��n���Mj�n�Ѭ��A�����t;���~u���1��[��~�u��=�W���fk�C{�W�����г�Gp����j����LS
-�1HL��
-갳�o�ǡ�uB �l��KNBAa}���z��v}���H��?�Sx�-���W=��5"]7�۝Vg&H�;28�p
-�d��j��iQOI����,_�z�m-�ڻ��ƟTk�����s@E5�	Ӗ����10�{D�}O�k�0���z���D�c,m`{����'��O?��SKy�,�Ec�K��m4Ԝ2U�j��#X�h> ng]�	j�?�&�9�R�����86h�1.����L�P(�W��������
-k�q�3�}�4�DO�f���oVV)�6P���R&u�r�K��9�*]����9�s����v�o��uy�M���uA�o��sS��{uo9r��͢1���w�FlnfEl�,�s6/����Z�P�dn�3���o��>��螻.!3����/aRT/�m[�����:&b��Tb�^��1V�B���z�p�x�r��HD�ƂH/H��)n��_���Ŋa��<6�!Υ%�]輰�<�D+��n��M��Ey�l"L��`Ug��8ߊ�I�/>��v�1���k[� �xƚ(/����H�%��%1Zׯ�zv@!sl�=#Έ�����ЀvY���ǰ��0�+
-�|���lY�F�34�)��ټ�e��Z��&-��rc&������v`��i�#��j��N�/�V=kt?$�;��)��.p�d%`詶��gL�7����7��G�2 }�ɿ���~�լ�W[�&����N�E�7���;�F�EZm���3!i�#yTeW�5��F$���f�$�6:����;�v�;���F�۔j���l�|�i�C�V�x�w{�#�Ap}��������a��21������O���T�3�D���4��ꁺ�� Ű#�tS�)*�	�������m��H�VZe��0���1�՞��յ�Wǀ� ���{/4B12�YcbZc���:���n���M�ǀ���i�fG�XĠ�|8a�f�tö�ke&�����,��	bjcj2���:��MF�x�Z�d/���Z�}�Umא5 _�5����V'C}���2���x���ˏo�?A -m;9��z��g�$��i�a�%���:��4�	�y�����k��J�n`�#��j;�D����؊�e��1`}�E#������KY)ݜ�Ւ/�j��N,bR�;��<uN�k�GeQ`���tDͦG�o�D�.2�*�E�d=0j����tCnzL��=�c%V?4a��碲׬d����H��̒Ic�Z��1������/Hd�+�+��0�1��;�9p�i̳�9^ݜBg���/��JSv�JŲw0�6�U�Woq>F�ܸ͘��nu�A�۴В�6Y�K	�Y5��"������?���"�}���K�/>�[d(�w�ӟ0g�ڬ��UrPoת�� ��{�2�~��G��[$&��1ya�j�p���7������E��棫́�'"�����P~y#�ӟW/?���*��������j��٢X$!"H�/�T��L�5���,cfX�*KL	~q���jm�⛏�ݴ�=Ek3ڄ�uW2�X�M5JK��ų��俠&��l���xT`��wwZ�:��� �����z��L��C�Ãn�����F�|#��ze"r}�ȃ�c��������y�
-9Gw;C�9�m�t��]@0Q��_O���|76���Օ��o���bbm����[I x��F"���M��pt8�7�@����[��"8tUh=���q��l��g���̫�$=Ti�	a3z#`P�\3��ٻ|?gW&v��b�0�GS?h�>X��w��~�~P����{���[�&�k=����ժMR�k�w���r��a�����>w���`�1Ғ��7#*TJ!s'�	��Lk �w�r�B#���5Y���}��|+؇�V��F7U�&��9���r�)�Q��{����j�Bm+���|��xf��%]Ŝ��>Y}����м୥�ە��Zei�\�\|��V�;��a�I�b�;gG�=��g��Ik =��,��˽#U��ŝ��S�S	�{f�٘�rbh���Y�wZ�JX�*gg0��1���KT��1�^� R��!W�{Q�j��YN�o#/��E�Es�@�S_Z����s��y���#��<L�m�M�7њW�J%B�p=�8��w|$�\��=.�~/K	�ֿ��S��tZ���.(�D��S-�D{jЮ�7�K�T2��a�(���y��
-�ǯ��B�O��_���?>l����f!��ՠy �|� *bm�R/\3G��)E�y�Sa�BEV����7���o��3N1�ׅ�%�ZKYee�H����6�u̩�i�|챊�+4�ok�A���%�9���y��c�m�U;��������ٚmh�ɰ�����H�kL,���'��($�Yj�$.���ꔊ^���͘�k�	=8�Y?��p����؞�N�R�7���Е�E%�0G��Y=h��/fN�ղy����\�oc���}Є�mYȨ�
-�1��{��)��嵴��f;}܏�bjijK%���D�O~H:�{{����;r����N��J<2`CY�SȖ�f���W���U<��j��g����@7�z	nA�/�m{$�ǃ��,1��hA��2��X����a��1��g�D:Ͷi���8���5S��q&���˟�����[��@��v�R<���ė �f�9?��H�%2F�2.c�!�����ZX,C�^O/�o���"Lyc��|��<}	})��k�d��/X��a3b�P�X-��Ѳ��k�G��l���_�f�au�[eZ��y��t�\�G��f�z�_>bl�As��N�y�C�iƩv��8�������Fb����u�Ũ5�0WZ��anl���}�谩�������~��'��P&j��K������ۈ��Y�!{�S������ZN�&��Q	+²ߢP�hj�������	?�������`�O�ۧ�&���-Ҭ�O�81�w���f�g�B<�75�M`X�,��������js��ث�	El�(c8�v�����=jf�W��{��v�q�X�*6�	��!Y��{��'�jb�O��7lDr@X�L�nh�Hd���B�,�aN<Wb�BĆ)Kl�����L�-�[������%ݷ,�'�-�e8ft�ɤ~�	��>���wo�O�I���g��F��vjg�OLe�A6a^ݣo�U��w�IE��@���>��udf��<��]R�xl�<'��/��q��l�6��D�,L3���o%��ڗ�����"އ�wa��w�L��R8�J�4���G�;CHr��y�9��GzOF�Q���&9�)Aq����gR»:jbg/h<w���ZTH�u��M	��������M�}���X�Ł���{�ӧXLo�NR���y~��3d��Xm� ����E��`t)~G��>�t�$a1���-J��۪U7���ʌי�ۡj\A���V����j%���?�oƝ�v�P���c��J�x��A�M>d���~z'<D�����n�T���ta�O�ׁ]Wۭ�Ð�i�k�a���(w<}�ۊ���-�<��/?/\�ɠ�pĢ�$a�#� @�  ٝ�^~�oD�F���Zu�$�`��~a�>�0�7���h`�I�XH�t���id����z-zV/�rM]��QfD�rg�2�!�m$���9C8�'���O����'�։��Akb~� ֮��$d��e,���')�-�v4��Y��c7X=ux��hkS
-��:�Z?#ȵe�	[e�J�4�$lj�?y�-0��a*��zj�n5���[q�{��>ߠ��m��A���i7�fVk]r<���?>�a.���j�W\	4�Y:�ؾ��q�;l�+L;���{�_m)Q�dR�{�:�##����|F��~��ʣ�/�����#�N�g{'Mz@��� -���Q����Z+#�*�[̣�]Ju�B�R�<a��G%H^gTU���8�{�N=�xbu�?3��(8ԥW�E��f[\	܁�(�f����U �d\�&ۍ�F?fQQ���)~���)��: =��|�"
-	E�Bn� H4�Ҹ܇����i�/v\�Sia�.t/��J)��6g��l�g�[�'}`Ԉ���9�<{�,T�)2\y��z��Z�&G�"�}fz!� ���/�V�� �z/��W��}��)`J���i�T"�-�M���R���+�C݇~�O��y��
-��~"�;��6j�\H��
-0�㧙��NUK��e켒Pن��G������L���ڽ�F��:�9��0�� �O�S ���Z���+�q�ɮT��O2;H͘Du���>T�V4a(a��j��Ǵ�hVh��ę�t�RR(��D�E����;U���}E��<�S� ���$�CD��R��-���B���*���&�w�<h�����AI� Me��e�������>%��ثȏ@J��nA��'Q�fbY�tT��0�\:��r���FL��PcH@J�����L������K�\�ZR?T)me�D58Aβ�>�Ҳ��?j
-��w��Fv�(��XV_u�l�cdq�'�+_ߝv��Ӑ��f_���.�ct�����	S̫U>D>4���{��.�Tg�.��'���BQ�H��p>�*F���B(֒)���(��8��[O�����25#�c$�4E�!���B������a�]���^Z��Y��2��된TK&u��Z}1nMܬ״�x��+xG��Q�٧Zŋ��*�6�I�%��R���ƃ�	v����[_}�}��h`S+�oW(��>�-�pwR8��>W���ؠi^*�d�� HS��<���n�W/?�H����<~�DjM�.�K\%��9��i��#pCur4H�J�$�@�>��\���[jo��p����>2Ɔ���LZ�u��s�\]6�)��."���d�����B�O���s-Y��)��e!�4�@�\�9E��X��}�r y�:�w�����(�����w����Ohe��a�]&��Ui�����l��h��G�Alc���I(�i���v��|]�]e�s��+���M��{�k|/hE�ڦ����<-� >��ˏ�A�#3S��ZQ�ps<����9� ~����U�I��x�����U66��6o/��}��x�����Nx� |!�A��)G��˝�!��v_~>_:��YF������e[�y��R:_� �PZ|fqa�,,��e���7xrs lR�iU/�$��l�G`��n���Ԗ-H�� |YA�j��#X� i��4}A��%!�"��֟~�����	`*�GS�g�垁t��`d ��4Y��㰊l�#C�q/��O��f�̴�������\,W�e���Y��Ŋ׊�f@w�
-�,�D��g�a�V+���o�������v�<.\�n��:�v|e���n��6�a�_1xd�5����}j�0A����_Z��c�)��!���e)+���Q�ZcA�A�i����bnS�}�G�S@VՄ7Jv�ԙk �=�/Y.�)��v��&\ۥ$B�Id�j��|�u�)>N�X�t���;��Y�1gR{@�M��7%��5>�U�H��s��Q���Ƚ���.�����SO�5���{�Oq����e�͝
-E:e�֘�ȏ��b��T�@���4�D����h@I,�d]��A��pG<
-	�_��Gcf*RP�l;=c��^~��घܨ��ww�M����۲f�6U<d���B%�KVi��L_���	*Ϗ��Rw�@VyJ�^�ݣߒ72�wo�H���7�2�_�=gܥ�z�Ľ{�|:r2��Q�l�5�#��֘�2���c1�Г�]���䱀.n㘔<G��哷��
-�ɀ��>k��_\c��� %5ە<|0�m�>M8HUGpN(�8�Y6WV�,�ַz���ݭ��i��Y�_Z������=\��aex�ga��r������,b9��3ޔ�ˌ�Z�U�2�U6�X%k��*Y35V��6�m~������ln)�z,���87�z��k!6�H�*hyzT�5v��d!��d�E�n��"�v���`qZ�]�6��,p�i/�H�*��G\
-�!r�TEp�a
-��}�Gט�:hX� �� �A��-���\O3q������	�(�O�؆]���mk`�����X������T�xg�g}�[��ӏ��|�����G��}��V�v�w\�N�o�?��"ï�AMZԮw[���
-E��'�4غ�cV��+�N�]�������s���4������ �)�Hws5��SwbER�����>�Ciasu!�N��a,e,P�9L���̡��u#�������E,W�_�V�S�C:dj�DG�h.��7�f�<�iX`�rK����wt�$��Q��/4����V������L?������w�������z�ߧ���v����?���g�N0��鿟�����?��d�ӏ�?��|���O�?"�W�QX���N�����r®ܬa�u}��h����kt��,h����x0s�F�U�np��K]c}	S�â���ܾɚ����u���	�̄k�4�p�����i����P7���[T��/�q`�'���΋�K��KI�����c�>�=Q��:A�ET0nU��#���1@" }d���$b�=��Z;���r߲�W��<�rh����p���|28C�QYM��e	LH��Uh��E;%,=�R �DJ��o=�ۻ��k�����=���L��&(�j[�@8�Bփbļ�C�`�(����&�q�$p� ��Y:s�(�s�؋���}E��e�G�h�+�N6��`���MÉ���M��Z��X�i�G��\�#�y�ߘ�僲�g_�*�0؂������茒+
-Io��4�Ѵ����{36/5���djo �&-K�1_�pI�a:�uQRc{
-�ҥEh���r�A�؇��f�X	��E_
-�K�M�����L
-S滂T��S�I&�F?���A���/�K���@?R�_S�,%������ө���� h��wiiՉE��*�TyM�ӌGt�Ndz<wv�Ϊ|�t�p�kA�V|��9�C�J`�s[[M�:I�c�CW)�S��?�|��羁M����L�*r9���`O#�5�� C�16]8&԰�����M\��ziu�l.^���Sc�38�SJ
-h�}��Xޡ�`�¿��%ŧ7e�&�TE��|G!��|��
-�@*P����H����Y���?�\�u!
-U"=��Z�DI�ˏ���x4���&��+�wf���TH���F����BL�$�A�ܸ�����}c�h����8�LSdtb#W�uK��I�o��Ȏ�Π�j0� ;l�B|��5�t6f��/E�06��8D����a(�����1UK��N3�
-^�*�k���LE=&þ�   ���}{w�u���EZ^"����\�8Z ���^Q<˞��L/{�g�dx��[��N,�'�����r����$�����o��`?B�U�]�]���䮤Y�
-�S]]]u����&�Y5t�o+�|�b�=-���!�Խ���aycrF�Hq_
-���o)�8��@E��/~�'eڗ#�r�No��|��4��~��4\,Ȅ�2�u�I  �������)*��"w�oP��Z\&RՄ���HBq�!���,&R�NE�[gP�b%��C.(��/0�D{�!d��f���;��&;l,���#�>�uZ�	"	Ѧ�v'!�бG=�N*C$UBAJ�7��UJ�zdb��n���[)��g�BM��S��f�\��{��P���#�$�% ⯞�5���o<^�s;��h��$�STӖ��tg�^�ZZ_G���ť��~^[�Vn/>N�j��v>~+]��Ҧ�dj7{� �01	�נݖ-�s��@(/��Bk�.m��&%g�9��m���\��PU��2�n6��� ��� ��6���F��i�z��/?���uD2�˚6��Ѐ@�����N\�#O������2�*�|���A��:�Ԭ�t>�M2§ �F�ra�=�J�ϧ��� <�5����L����8،�������~14�z�}\����|�	��[:2�0m����v����R�f/��:}5@��hɫ�=��=�Q�w������x�hCY�%i4
-Z�:����h��}��]��fB7��pR�X_&��,�_>&G�+��9@S>����\�;}�Y�2���r�EIC�q��M�(a-�����$�j��b �*�9��Mg�6����S�ڄ����:8�0̀de'K���4����t���L]�l�
-�3�'̤^Oג�R������4�-^�y��V�8S��"�-��q�`�J#k a���r�\�cR	��!iy9���8$��7������,|��{_���c��ﮊ�Juz���H���Z�42�Ƣ辠A�b��&��q�}�r�N��59k��|�;�\���ҠgѨ�(���TmL��:���NC�r�N�.�d8^�vb�~�,�1�g�'�/hPm�g��r0ZV��'A<�_*uݰ,���S�"�n0�|�����Y�3<�
-���q>
-;��t�-��)��`��x��ߪ�y0U�߁�Ό�����7�aWgp�8C��À۾�Q�$���"��r9@�)���k:�P넷'e�T�j�B;ٝ�>��E�'�,�q����K\���-VY�g��՞��2���Î��9��@������[�z���+���#g0��iS?��毛����9@"��g�wA�Ƅ�vE���؎kx��.>d������?l^��l�$Y�Ŵ*�6�Q�����"O4�|��ԙ��f�n �y)���?��FW]E��Iα5V�1#z�L��9%���'Q�!�/�(llt)���%���v��";2���"o�U6@�]� E�hv�DsbUJ��t�����p�cP<~�3��B�	*zK\�2��\��K_�::4ӄj�{z����z� 0,��C�8q��C_���+hQ�9����^���X��@��9��[ϙ�rJL٦�&��?c�*t{ĭ1�$�dH.�������0�8�?��7��4
-����
-m�~���p~��7��T��
-F-�����?X�r~��%����x�:á�-�9��R.�
-�k-���r�1��]N"�M��Lj��z��!ě�c"�����2.q+�s�����b��͌/���p9L���1fU�XFDR�����y�͞m��d#cZ�G������۴Ě�(�#v�0���ʊp���S��k(��+�)��[�á�����L	p#@��a�P=��/��(Շ���ؼ���5;�7�U����Innx����T���m��-��T0
-}�Qц���l��f��Կ�R�A��6�~3d�!�ܘ��Miz6��@�(q����/~�o��#v������(��:��mW������_5B�g�(��}s��4b����x�Rx7\�D�P�<l�-�����z|�r?,�p��#	k�,������y�iT����]vÄ�?��1 J~���H��ߞL����hr@!��i��1z��L<f[�e��c����Y}1�K��Ĭl����k\�0Y��}�p�Zt�����Jr���U�ؚ|�?_~���=G�>鴿�$|G���8w���i���A��~�+�I��<����a�����^�}�S��e+�]Ъ8�٢���9�Qc>�r[$x:�w\��Aj~���X�M�!��..�?�0?]�Ɩ�mj�:%�=����N�@n=����`v�A��Ι�_��j12o����1]�TW��0����lI�w"���P�P�����a�6���CY'/C6i�<�:c%7e�ݫ�q����N�)`�Q��d=��μ �r�������n��'��E���K�7���n�ӷ���+�\4o�ڭL�U2�WQˇ���bd�Mf�7W,zP��V	��?��N��8�u{�Vo�m|�-cF�M��@�cǶVXT}�r��S[V���?l7z�ٱ�i��@?�muA��p�}�?=�N���;�QWe��g���|j�x����u<����O��egM��4�G���\�l0�RMؕ�Ϗy߅��1:�����ז�7חַ6a3�o����_ϠEU���U�3)DW��/���I��������;�鲎�{La(;���N�l�6��6$�]�)���tH}^l4M�������ΚH�D���5E���q#=�fk&I#r`޾3�}zq��!*�QYN�ZWo�:x���tVX�}p6�_\Sd�����0�Ǌ�sn��
-����#����	�a��j�ll w�U�=%�
-�K�v�7��L��
-{86|v���1�|
-dMtpa�c�Mx+~c1�K����,�T��92������L.�������`a�g�:�HԆ�]�;��F�R�@�6T~؅�GT��H�VW��j�'p���K:���.��?IԌd�L8
-�d瞶�qa\R���Dږ�\��Iwbˡ\T����}.x��׬�KEn����!�pXmy+$e�t��\kU/w���SR��x�8*�xN��׷�1�K�X@��T)�Hn��>fz��(�s�o�����վd�B�K`�gF`��䘺���Ym�K��4ç�e����ʥ��k}q?�8�B�]tLV�J�@��VVV�Z����uj.�r�P�}��&��p���X�oհ�z�yM���WU5\�SNO<B�Wt���0�ܢ�s��r�O�'��9�Ĕ�s�5B��/A�6f����9�ȹL(�@+�X� �{�*B�8X�W�Ө(����+߳��k�H9B\�~*ԋ�k��< �m$m>���rC��RԘ��l37����5�`�+�����7�	��F���>�#0@1�T��4+�)�=L+D"P@����s�͵�ʘ#j���Y����q_��,�>�d��R�������ʝۏ3��yF���/[C��O���y	���]fD���Ѻ��d@4�D?d3�vT�#d�@���K��m��t���EH����뻘`�ʱ��G�2ιP�A)(�[=Bs�g}�a��b���%e�!ZX��k�@��<(XRȿ��=������l�Nl��L��z ��K�	���{cx�=�(�ZG=6��,�����GPr�g#6�������#���q ������c���DW�k��#֕�ӚB\ԫ�]�p�M2�׾�KSb>JX�#�u�E�,��;֡1��y�X��b��:�������ur/������#���vc�>��q��5z�M��h��fW �����wр�u���!6���L�R�.�DM�I��HV��S�}�֙��x��"����B����X����?��8�(�-���W�������#n�%{�ۨߒ� ����J�/~��%�B�J������]���R�sЕ;aKb�\V,}�D�|CKs� W���q��/�o�� J��,uAi�S��x�����u�͒�>
-s�w_$�*Se\��R���z�����/O�e��8pM�|I.���ݘt����W�%�'��y����եE��k�����E{9E�x�=e��I�O]�<){[�ɧ�8(��M�<Am������kg�%zohn�^Nm��+�f���)�ɧ�����yBj�9��<@�$�#`P�}���0qn`����i�L��Ş�`� ��̾���w_�&����6�&�E�j�M\R&�g�5¿2\�aF��a����`����!��|���4oL��征I�)I�	����'��i�I�uDU���֔.��/ՑuA��a�y�·H\̶ƽ150Ym^U��Pg�����9�,���i���N�G4��v[]�G�vO�l��k/�����}��W)4�~�W\�^�뭟�2�g��SCʨ>e��ק�Ta�;������P����W4�膈�Co�������� ��&��m�/[��%�ܚ����"�~����^c���keW����
-�WS�v���~�C.�����ԽlZ��Ā�ƾa�ѹ�DGw̙�G����0�2�����<�3�3�sG���G��!���o�6@��ǈ�/��ۀ����Q��Xav,�@�9|R|�:�;���=�W��\ǲp�r���] �p^Ӽl���Uc��/zd�p���ik#3ND��TlZe�RiDu�W���"-�A�#�nYFv������z�[o�;�O	{D�>�B"��%���p ��V&o�b�jt������
-�ķ��;�__2k�����b.k%*�xsT*�Xa-D  �PI�-��\Ш4��atI*�+&�*6����]�$=�;<�f�F��+g�:(���V?�wV�D]-���4'Z�~�@�뢺�� �5uJ̅s��N:�P�X�y�Z@�����mϦ@C8��kٞ��Ye1 �fw�a_�Ȃ_*��3���g,,�\��/@����aA�j��Ko����D��j��;&F��O��Ņ�Ն�nټ=���JJ�Fi�j}-��et�JA+y�Z_E����]W��*����jvo����!�9����m��Nt4�J8N�7^#��ӯ��U�o���mNLDi�F�Y��\�"�~T�b�t���r��h�6��]�f9(i}b��Z�9;�XƎ=h�hE��![֨yN^�8�3I*�@n2�}��t���3��Ϯ��8�:��p���a��c]����F'J@��j/Ԭ�0c�&U�Mx�z]&/ݪ���<����rn���J¼|Zo�����Z|��b�H
-;á���qWy�KǺB��+R{�(�*B���{�x�b���+��|�)�ɝO�%6S���A3��FGM�U�Z��c��������ڳ���r�;*r�l�2~d>1�5��D��g�5�n�7�������<�%[B�~)ᩑ9:2L�6M?�G4��p�w&�.�G4���8����k��F�KP�<�Z�����l���V%c�Zt
-[����+�A�y� M)�R�������ͦ�3 ��be�xƔ�}A��;m,:_�?1:�o�u��^�3A9���j�Q�W\�\���"(�TF����G�a�f�2K��[�:M;a��l}ﭵD��N-��$�G�@��3��SLL&�
-��O�2��/OV�:��q֙}6E��m[w��<�V�6���H(�!9F���*�9.5�s��Ir�5?��0t����K�r�h])��l�8w\�7��2%�w~ke+b�6�[)�r.�bߵ���;it����O,0��!廊Ï4�C>j����Pbc�hЦr�#�O�����fN}���e�[�lc|p��j�x�V�@V��հ)���K#�.�	��]>j|�����88mv?�4����]����!����Ź3�RJZmA(����s��K��<C}���V�Q����⹯W�u�}&��V�%��٢I�8��,gu�x�z��9��)�0f�aYHg�`4B�/�mm147�Ty�yrDH�BJ�C����܈����8�՞���4����3��=�E��5�W@U�j����GG���P��p����"�8b�v�C��+��.�r"o�󽈠tʼL����(����Z0��}�$d� �-�q���x�S�L|�H�%�G�RK0v1�5|���O̷/{�l�/�f�)�V�2��s� ��\lS,܀*\-�UQ�J#m̱U�Δ7KjNש;霸�2�Ѐ��(�?F�?��O��B����Wa��<I�#-RÎ@��:s�?�Ӈ������K���.oR}eEt�\��BDkj�5�Zc5�&[+P-�����ak�E��Zok�E�����T%,��&��T���@�T'�� ��W����XK�G�O�x��RN=�t�c ��,��3�����>�e��f��{����%������$�<.bN����ې�
-g�Rɿ��\��r^U4Ryf�5hnJ	țC���^!�`G"r���ڂ��+��؛d����KXE��Pq���2B��"]��z�������g.'��\+x��jRS^��N.ܪ�����@�6~=v�������vC}e3���|uv��E�U�_��H��.-��j��+����1׿���U�kr;�'ڰ�^*y������5��:|x���L����?w�s��\/{���a-W�&k+ѥ��;�=PE�}��#��m<S]_G�*���i"�B%9\B
-����hU�骆^d��aU����qFy���BJX�o�)�61���6�^��~u���dp�.�Й��6��fu*�x�,�� ��K�`w�����\aɪ�S�VQ�B�S_��s6�cU�d9 B'm�wa��!�;��2*rޱ�uB������ɠ��gGN ѧ�ֺ�AW��)���R�my�ZLG@�+G	�T�7,/����RE�?G �z�VX�\	�ͤ0��V�:5o���Ő�|��� �Q�з�~+�ZG����V��ry��(�hU���#ޯ5O&/8#�.�.����c������	3؀�>nP�4�w��A���&����\�T]���W{O��p9�3��ǅa�>a�3��v�RM�R�-���ɏH�Go9�'?�P�SV(�^d/���5��@}��g~����|��0߰.
- ��O�J]�p�ZJ�ÆTG��f*���֒q�)8�TE~i��e��3o���em�l^2����Bޫ<��v�O��(Qд��X���*�E�W�d���0:��E(�*fYj�\���HU��I�MJ�"][�VO(Ks�I*,�P�6�L~��sٙ�U\��[�T���ւJe/����]�L�K�"))N����"m�o-�@T	�1��m�uӿ\N�Je�
-&V��kA���A`�C�]Y!`C^�U�aQ0�V����{�U�s�v��=���vZ'�"�V�I��mu{���&����.�9lﾟ����6]�--�;���ܼ�%}����k���D+�>����pP,7�Y�F -�본�i�œ1��Dz$ɇo�@�:�'%����--�����s�a˅͐B�����ao���൭��Dt2�[[��?y�cI�;�(���Z ��J�G࣠h����������a���e>�9q�,����X��f�i�!g.=��Y�����;��yh}o�����W~��G�װ,|<� ?�>��b���������s�I�A��b��w���Ly����ʿ�©�ىb҅�C�At]d|<���"�I>�P�P�ztR��\��5%�m-ތ	7��ۛk������fǧ�G��l.�ZGM�gx=��vۧ{Z4\��[��ޕg.����w��Ni
-�ƛ�;)�f�;�wm��f�V��j��fSxb�*�*�`���n5"�[ko����Gm�ւ�h�eɋ��+?!)P_"���49�y"uC�����&�^�F���C�z͹�O��*��2.+� ����*���a��"���h�Lc�}|�<j���*v%eIc�j`W4�6�ժ>.)/6wp<���h�1_Qo����e�OP�ʠU��Bx���sU��ٖq��8������n�����a�v��4��y�OЪ��z�E��������8�	�ȣk�Z���,#D�3�w
-h�G�2�n����<��̫A����̀U�A�e�ﴛ�ҪV��ھ�9N�o�!2����������R�i�>���<s`0���:������z�XQ�Դ�\zr?p��������^�ԇ�q�w��g�
-��V|-�	eG�]�Q��,v�yXM#Ǭ}� Ja�g٧��p;1aW6x/���b�����=�)q�mL�0�$<ZV�)���y�k/^o<W)�o?��C�ۦ]J�C�h��]��v;��)�e�8�/{Q�ϖ7����^="M����,s��X�D,�p��__��ę�_|�v-'RM�`�@���cU�s����2��4��Ճ\F�y6-�`�0��3�|�����&�����V�Y���� ڬ��"7��}*h�!OF._T�h5�.pM�Z���� ��0�K,�L�~'�(��}.�,��3�>�e��g7^��Z�Ѐ�r�)xw5Є���&J����������/�������?��<k���N�uz���ƚ����>Z휔�DW���~���v.t�䰪�Kj�j74����׼�4��b��J��H�~]:99?X���]Z��^[x�������as�@Ǐ^�_�_�O��Fq/��I�#�{���iOu"�+� F�5Bz�L��9+��`���7�V^2&�'�A~sx��~�5uV|g����_..1؜�<n�Ū0��w�oPi�l�O�sBN��3,�ʸ�k���wΐ�{1@�ATx
-�P�6�u1���hV��U�c���� �7�L���~u�/a�ŷ�� �"\�f��4�	���F���fE����(\HІƸ���à�Z�1��!>���~歰8��m�/4�cj�%W��8O'�S���5l����#<Cns����)�W.l������5�`�0o�� T�=�Z#�ͦ��_õʬ���PWY'���]�v��r6-��s-�l�	,�n���>��w`;�B}�q`{�16ċ'j��ʤm��B�9h���H�Iil��R6<)�l�O��ƕ����ʋ3�qHǋS~-���fr7�G��g�5r�93�),,��+���=�;v���	��]��9ĥ�y���x�=���ԆY�}\�9�6�34��x�0�3i��w�t%,Rs0��s�g�/L��ά�C9�_=u��9Kv=�?�8J�m����+�<-�ZT�=H���n��w�;�(,]�@k�+dq���>�h����^���đχK�+h<.��U�d8��WH��Ǧ��Ģ�袅ɋ��x��.�8 ��uߋſ6S@��.{ �c��UͲ@M�7D'%,�@���U��oc��a�:J+�����¯A���	&�Z<�G��l���x���d�����F7����竡�/����?1���Iw:��t~fRM� �H��(d��6�s`��,ӣ��s�54@�qץ@ �̅N�j�->4g����V����19L'G�,VT�5�E>�F�l`�:
-;�J��c>|#�[|2��9�0R*�޴��P�D�E����ٹ�*���+
-��.����`�t�FDq�!7`�bS3Z��τv�"������dJ5�*���I@�a�d����{�Ξ���m��d=Å� 4F����p;YB�����Z`üY�SXqSNjC�|o9-!)�AH_*'7�9��z̑��iwtK,��@��;(=r½4-���5��!?7\W���J��8&x#έ(���<�p�ט��uM��=_~�gt���v[Ǎ�i��Z���f�+����?�z�RF�W��wwg�׍;n?h�f?��.߳�{nv����v���2h��®�iht{�У*0�{z�8>(�[ӏ�N�Gͣ�f�{�u�����$tmC�B���}���bKglp1>ptK$�b����#O�1��ԏ�0q��0]cW2���[�&�O��R���/sȻAFw��<w9��#'��B���Yᇽ�L9�va�r[:�6��O�?�o����*�oZ�I�e�]�[�'M����@,b��7���+��q��<�*@��"�#��K!���T;ԙ�q��@z
-w��JK2$���X��}�>4�\��:}����^��s���	�AW+x�tx�J ��ѷjX�З\�^Bk�0�4�I�=�֙6=���`��`��E�M���D����$_�k7œ`���s \"�*K��C�2��Ǽ4�A�
-k-�>�âGQg�X,Zd�%��.y��s'Ih~���Dͥ�����/�q}]�H#D���g���ݛ��A��i��g?��`]zPy�������(�l&ݫ�<ԓ�TCk��g�F�<��(F��D,�gLXqx��1=��U���.�k�ᶬ�*
-������g���1p!��a$����s�ݑ_/z#tsb��99���Õp�a6p���M�0�h-X�U�<�K�X�q�\(�32�S�A3�m*M܃��`��R%�%S��������S�cNj�X3�B/	���!�/���.|d��%��|�	�
-k$�œ��EO�U�+/��3�P�an9_D�?_p˿@��h ,I/��'ߢW~�����^�ݞ�c��K�� �!���5�Ip��в�%�	j��\�/�N�y��i�b�t���]9�O�g�2�^_�CG�k66m��̀�c�R5q�\�@��i����cG�t���_�cp��Y�=w�}���'c�ۅ���2K���G�u�e!ƹ����[&���o�?��	��0�ъ�]�������Hk ����]҈�?�N�1����m��u�H��4��3NIXq�(C��8�]}~��ǃ�Lg�D�@���e���3F� Lȝ+���r5�j�w�D�n����GH�� �e�gn l�/
-����8��Y��'s%��q�$�W���$�r�Z���}�|���t]�}t��1������]`]��S�(���>��M��=n��
-�g��|:3&��-0Jy���>�CW�<�ǩo�GmS璶���<�[�.eP��Hsg /����y8z���(1C%�Va>�T��64'��<o�)+y�I�3t�C'2o�pcP)��^��R'�a�[�LP60p:�����	dV�k��8���(C�)���V���q�4���`�v�L1Gz}'��@�.�ڍ������@�{|��w%[%��x\&���J!�����#GlbbԤ��/d��\�x��
-^ۃ�j�\�KH�%�=:�1�K⛒��S|K��A\
-7W�[�E���P���~�/�Fy�8{���`6Ư��M���`���K~f�5���$�kr��Las��uQ�]�U��Q$�u%�	#�ו�u�rMA�v[ -� ����ͳ��D.��2�c)Dk��t�_'��|���������'!��bFQpx:G9$bP7���#!Ψq��g<E�_��0 �2%�#2�����(�e��G�e#��N�iHS�5��-c��)T۫��k9(�Fv�w��(~SC��[:���ʥ�ͯ,�_�ƿ����NO:��&����k�^������*����N"�U�Q3�U�||��p�y����|����?����6����^/�/� �WS��Q�n8��R1�!��gd�FӭNN�M�)�?��HQ�C�ٗ���~���1o��2A7�F1�\�+���m���'�x�@]ue�B�0B}tgݽI�5���%^EI������(����*uWp46�,�5��|���k_��0�-�h��q=�0$�w�E-����)�]k�%��!��m~f����S�m���3hF>�:�O.L,�1E�:衍6U&�+W��B4�:d�̼edDD��������ǫ��n�˓/���{ ���#���74�f�L�qN>����u ��Cjւ�-s$������h��a���ԙ}6�9Z�'�^M��>=�]�O�)��>r��Ja>a ��	l�5e爧�n��D�Ԗ��^�-��y�$�Ix�>�5A����M~�XQa;/��j�����f����`q�}c��;[�9L~W0�[ⵅ�=gƐ/�6�C���׷wy2,�CV�m�g'�BQ� !��
-�&��@zc���EAzf9�cs�N���Z����Tߺ�T�#v�b��S4��
-���"}�$�>��<1�1@���������\���pI��T:e
-H!���x�>�	�q��nc��a`�����l�Vb#DzY6P.����hȼfÊk�1-GH�������jƤ5��<<b�����{�yY�U�:x"�l^��'�DB��͘�/�+���o��������JA���J�$'O[�a�	�F�/K#�h��A��������^�Ԝ����(h�����]�>7��H���q{M���(+*�J�q������k���Vʜ�t!��;���"/u�˿{�gX�e�#L������j	&b������t���j��9:��嘱��x��ݛ��^�6ϸ`���\sh��!S����[�3��;7�X��"�-1������&e+S��rxט0iB���a�/�c>�L[��J�ݴHA���1�$��h0KXu<��O���
-ˡ��+�:�r�53��\���zUP�5���P?��5���j>���v���`آ�D��=g���.�u	0�=+�[��6[]ŲH�6���!:���<P�}�6�Z����^]5��Ɣȕ�3YH=��O]���/�g�\���3�w����9|��۩�>q��[���/|�15W>qED&�a���:�� ��'�2f^���������g��; ��������pnc��NK�:)P���Hd�L/?pM�)#[��6�͑�;0x��y�M���W�1�3���[��NM>��n�S���9�N�ע��?3,�/.������}/�o/�Wr9,��pO�~3���Pт����t�d�*�{<ǀȘ�F��0#�bH���D�*���Iɼ	Z�f�y7���đ�w	�:�2[1�z����|��*%��'�|��g���C�ɰw;9�[0�[ک�#�4�\h�4[��֫4UM��`�h��i��4*%��`���g�����"�hNU }�O�in1���v�=Lm�\�bYP%Tjv�q �L�u�9�}Q�R
-&,Q�T�ä�ctaʥd�Р���F��Tnf�a~Wր+ۙ���6Dxb4}��&-7U��Zl�f��I?Z�-U�����8�K�S�4�,���}���d��Z�D�ń��ԏ���j�H�a�1��SB@W*���7�Iܿ���"(��7亮�/zǻ��Ls�^�{cQ8*�u�7.��9�.�r��/_�)�Bc�i�=�;z����/~�o+�}�~�G��,��g)-"�+�]EDG[R��^^��rX��֜5"��m
-�%�3�:VM�M]�G�Cyr��
-���(L̑K9+��Gހ�{=#��%�f¸&��`�(J`6���&�?<�� |BU��"��w��<�����E�Yh��r^�ļz�Ҷʅ-�D�����׵� �B~R��P����C��C�.���ZT��LVU��QJ*�7r��۶u��BV\}��+����r{k^����XK��`�b��q^DI.xU�m��bQ;�Dv\�)5Qߣ�(s�Yϥ:?隷dQ/*�h�r]����3їD8����=����s�T����~)溺Q�vEo���0P9�D���01���ɻ��ɓ�n%v�f9���Ji�:
-��n-h�js�n��'�r���zwO����i���V���{{]���9n`1���}rz�p���P����k��B��z�%��u�sq�i�'��KY"V���T{�X����t�)]/�?sKQG�fdGg��a��0�Ƥ�ۇ�����cty�;�6��c��yG=��_�����(�z�]�X޼�>B�OC}-U��]�rw,�sDPR�^�1}�0Mܴ��B烽�����=�9$�>�р�/r�+��{A���f��̫��S"�%rf?�;=lc�H�yp�i�~���l�q����������!4�=��z���^�|������2$kfu��k��O��Ѳ��2x��q���K��0Rs�C٥}۬s/��f�Y��r1'������<?���e���-�T����XʰWD��	���M�b�NX��+��q	hS0�q9�	�Ro
-jc�����h)��T�[�'��3<�ed>�蜻��:�2��+eͶt`U�Gs�}�<�k��6k>h��`��~��^�����һ�T�h�z��6�bH�})���7t�9S�U��cO���hZ���IP��؁���B���X}6Im�L&+A+�Xv+���_��N`�ZcQ��RB*���c[��X��� D�x�e>��'��2l�	���pRV���'%�Ti֢4�U�Yֈ���9s����:	�z���v��tL?CR0�Dօ� %��|V��XE����-��k��	���R__X\T�~��j	�o�M���p�8	���,	��g�x"c
-dD��8M���R�	�!H��s��Zj��p	�c�n."v2�IѬ���S����߄I[_W�}|��e��l� (�R�hˡ���1���v�Or�ԁ�c��怋*qg�Z }�DQ����;X�nI b\8.�?�����3�?yT������X1� 	Qu�aO$V�9� �^�5��6Z�uw
-���zq�vQL6�x[ʋ=U�C[	��(�Qt�ӑ�4�|��W.Vr�`��֖"��u�<�-K��n�+*���4��7�o��6{���"��y�~S��v�c���N���i5�9gع�Y����oe<�U�.v*�50d�ȋr	;:RV(��	�sH�� Rڐ'd�>�&AJ�oB�9�ѣ�C�aYT�\+k����$�瓾AJ�;1m'(zģ���ߨo����-�E}�8[(�)`�m�qp��!Ύ��>;���J�S�7�FL�����0�l��L����2�i�o@G�	!D�ڝ������"� �����id �C�&1!��1�$&�͖x���pO�b��d�#��T1�Y���9�o��b�"A�S��A�u��XPZ�$�~I4��Z6,�1\R�(�]�♓,�1r���s��]���?� $�h��u��
-k-�!���	��V�W��?A��!
-'��*��>�0 >)�t�'A+9<khz.�ң�qC�>�� �.���|���� ���X@r���ˉs�Y�CU��HU�ǡ��'�o-�r[~mV�7�E�l�)R&���	`���,�D�}Sn��aa�:z/B�)ǳ���v� ��X�:h�t�qg�����[H�k�,�X�H7KH�aб1<�Im��b�j7�o�����d�#��и* �s� @��V�Wj9eodIE6�e����"��~+v)n�����]p�����"�X�5���Q4��Ǖ����_�F������q��
-�$��O������i�N����i�t�� ���h����D�@A���?�,������NtT�8�5;�T��˺��Nk�� -5B�7Y����}Ȏ�ؑNA���%k@#R Vi����ϤΛZ ��u�k�Q�-��Ǹ�}ӂ+Ș��l;&�}ǝ��ڜa�6q�M0�E7�!xJ,n{�B��s�`E��S>a"&v��X�/֛b�t� U>�����0��΢2��u9����bM�sy�B�7��<2��C��*�MVk#�%\XT�РL���S�y#�7�<@g�6��N���B�I;!�╞���*� ���g�N�0����7�W��]�����<�2~#T��اT�'ܛ8iw�sCE�U�♰���xBU0�k�6	2�I�;%����]Oy�F@G���%W�t� ��)rrcH<]+G]Ӱ��s�8��x��^gM㔏@5����8�$��R`
-� ���A%�d h�4p΀��^���Y�U��=�~Dc)�Z����O=�@c�Ex�瘾r{�D<�j�
-7 z�Ӓ�Sg`W8/� @ �,g��8x�������#���Q9�}o�]i0x�k�]���Rq0/4���1rt`�6)������!R�m�n-�{��aXs丵�??�(xoA�՗��Wh�ҁ�p�4jF8<M܆�d����%|2�M �qS��3ӝP0��95�3�����T$���g(e�l?��$b�3�6��P�Z��4}�'5IͰA,ᡔÂ����vb��l�`���=�r�%��EkR<���	�C�?�?�����}�f5^�2`H�
-�n�DV)���ѭdh�<�Rb�¢E[j0z_ӊ'(Y�໔Ωa%�d��d(1�e�ǝ�얒b���,WA�"7AOD?������.wFO����R�O��AA���'��	W\CI@���m^��J�~�[�dD��Ƞ�;�^����ʂ2퀗\ݬ +�Z��R�b{�x>a�7&�wȍQ�U���P6e���M�¶����/�t{�����{U�ښ����+cZ�a_Ds��dG��?�w_`��aس��(�9���ES�}T<�������%�D;ڣ�wڝ��,5�X��.�Vt�xŭ�#m�1�_�:An ,0Ϝ�e�F`��9��J�_�   �� �׷
+                        placeholder={language === 'pt' ? 'Envie uma mensagem para o Mentor Gemini Pro...' : 'Send a message to Gemini Pro Mentor...'}
+                        className="flex-1 text-xs bg-zinc-950 border border-zinc-900 hover:border-zinc-800 focus:border-[#8B5CF6] rounded-xl px-4 py-3 text-white focus:outline-none transition-all placeholder-zinc-500 font-light"
+                      />
+                      <button
+                        type="submit"
+                        disabled={!mentorInput.trim() || loadingMentorAi}
+                        className="px-5 py-3 bg-[#8B5CF6] hover:bg-[#7C3AED] disabled:bg-[#8B5CF6]/40 disabled:opacity-50 text-white font-bold text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1 min-w-[100px]"
+                      >
+                        {loadingMentorAi ? (
+                          <div className="h-4.5 w-4.5 border-2 border-white/80 border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <span>{language === 'pt' ? 'Enviar' : 'Send'}</span>
+                        )}
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : userPlan === 'gratuito' && !isMundialActive ? (
+            <div className="bg-[#0C0C10]/80 border border-zinc-850/60 p-8 rounded-3xl relative overflow-hidden shadow-2xl text-center max-w-2xl mx-auto my-6 backdrop-blur-sm animate-fade-in text-left">
+              <div className="absolute top-0 right-0 h-48 w-48 bg-gradient-to-br from-rose-500/10 to-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              
+              <div className="space-y-6 max-w-md mx-auto py-8 relative text-center">
+                <span className="text-5xl select-none filter drop-shadow-[0_0_15px_rgba(239,35,60,0.4)]">🧠🔒</span>
+                
+                <div className="space-y-2">
+                  <h3 className="text-lg font-black text-white uppercase tracking-tight font-display">
+                    {language === 'pt' ? 'MENTOR DE DISCIPLINA BLOQUEADO 🧠' : 'DISCIPINE MENTOR LOCKED 🧠'}
+                  </h3>
+                  <span className="inline-block text-[10px] bg-rose-500/10 text-rose-400 border border-rose-500/30 px-2.5 py-0.5 rounded-full font-mono font-black tracking-wider animate-pulse uppercase">
+                    {language === 'pt' ? 'REQUER SUBSCRIÇÃO ATIVA' : 'REQUIRES ACTIVE SUBSCRIPTION'}
+                  </span>
+                </div>
+
+                <p className="text-xs text-zinc-400 font-light leading-relaxed bg-zinc-950/60 border border-zinc-900 p-4 rounded-xl text-left">
+                  {language === 'pt' 
+                    ? 'O Mentor de Disciplina Pró, análise de perfil de risco emocional, semáforo de controlo de ruína e deteção automática de teimosia com equipas e ligas estão reservados exclusivamente para membros com assinatura ativa.'
+                    : 'The behavioral discipline mentor, psychological fatigue tracker, risk semaphore, and automatic persistent target biases are strictly reserved for subscribers with an active plan.'}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const scrollEl = document.getElementById('plans-pricing-section');
+                    if (scrollEl) {
+                      scrollEl.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      alert("Por favor use a secção de Upgrade ou contacte o suporte para activar!");
+                    }
+                  }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-mono font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg hover:shadow-rose-500/10 cursor-pointer active:scale-95"
+                >
+                  {language === 'pt' ? '⚡ OBTER SUBSCRIÇÃO DE MEMBRO' : '⚡ GET ACTIVE SUBSCRIPTION'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8 font-sans">
+                
+                {/* Author's core philosophy Quote Banner */}
+                <div className="bg-gradient-to-r from-zinc-950 to-[#0A0A0E] border-l-4 border-[#EF233C] p-5 sm:p-6 rounded-r-2xl border border-y-zinc-850/60 border-r-zinc-850/60 shadow-lg">
+                  <div className="flex items-start gap-4">
+                    <span className="text-3xl text-[#EF233C] leading-none select-none">🛡️</span>
+                    <div className="space-y-2">
+                      <p className="text-xs sm:text-sm text-zinc-200 italic font-medium leading-relaxed">
+                        {language === 'pt' ? '"A sorte não é contínua, mas o azar também não. O objetivo principal desta ferramenta não é fazer ninguém rico, mas sim prevenir-te de ficares mais pobre, alertando-te e ensinando-te a gerir a tua mente desportiva."' :
+                         language === 'fr' ? '"La chance n\'est pas continue, mais la malchance non plus. Le but principal de cet outil n\'est pas de rendre quelqu\'un riche, mais de vous empêcher de vous appauvrir, de vous alerter et de vous apprendre à gérer votre esprit sportif."' :
+                         language === 'it' ? '"La fortuna non è continua, ma non lo è nemmeno la sfortuna. Lo scopo principale di questo strumento non è arricchire nessuno, ma evitare che tu ti impoverisca, allertandoti e insegnandoti a gestire la tua mente sportiva."' :
+                         language === 'de' ? '"Glück hält nicht ewig, aber Pech auch nicht. Das Hauptziel dieses Tools ist es nicht, jemanden reich zu machen, sondern zu verhindern, dass Sie ärmer werden, indem es Sie warnt und lehrt, Ihre mentale Einstellung beim Sport zu steuern."' :
+                         '"Luck isn\'t continuous, but neither is bad luck. The main goal of this tool is not to make anyone rich, but to prevent you from getting poorer, alerting you and teaching you to manage your sports mind."'}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="h-0.5 w-6 bg-zinc-700"></div>
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-400 font-mono">
+                          {language === 'pt' ? 'Slogan iRunBets • Prevenção e Disciplina' :
+                           language === 'fr' ? 'Slogan iRunBets • Prévention & Discipline' :
+                           language === 'it' ? 'Slogan iRunBets • Prevenzione e Disciplina' :
+                           language === 'de' ? 'Slogan iRunBets • Prävention & Disziplin' :
+                           'Slogan iRunBets • Prevention & Discipline'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Grid metrics blocks */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* Panel 1: traffic light semaphore */}
+                  <div className={`p-5 sm:p-6 rounded-2xl border ${riskBorderClass} ${riskBgClass} shadow-md space-y-4`}>
+                     <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Semáforo de Controlo' :
+                         language === 'fr' ? 'Sémaphore de Contrôle' :
+                         language === 'it' ? 'Semaforo di Controllo' :
+                         language === 'de' ? 'Kontroll-Ampel' :
+                         'Control Semaphore'}
+                      </span>
+                      <div className="flex gap-1.5">
+                        <span className={`h-2.5 w-2.5 rounded-full ${riskTier === 'verde' ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-950/60'}`}></span>
+                        <span className={`h-2.5 w-2.5 rounded-full ${riskTier === 'amarelo' ? 'bg-yellow-500 animate-pulse' : 'bg-yellow-950/60'}`}></span>
+                        <span className={`h-2.5 w-2.5 rounded-full ${riskTier === 'vermelho' ? 'bg-red-500 animate-pulse' : 'bg-red-950/60'}`}></span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <span className={`text-[11px] font-black uppercase tracking-wider font-mono ${riskColorClass}`}>
+                        {riskLabel}
+                      </span>
+                      <h4 className="text-lg font-black text-white font-display">
+                        {totalBetsCount < 3 
+                          ? (language === 'pt' ? 'Aguardando Atividade' :
+                             language === 'fr' ? 'En Attente d\'Activité' :
+                             language === 'it' ? 'In Attesa di Attività' :
+                             language === 'de' ? 'Warten Auf Aktivität' :
+                             'Waiting for Activity')
+                          : (language === 'pt' ? `Score de Risco: ${riskScore}%` :
+                             language === 'fr' ? `Score de Risque: ${riskScore}%` :
+                             language === 'it' ? `Punteggio Rischio: ${riskScore}%` :
+                             language === 'de' ? `Risiko-Score: ${riskScore}%` :
+                             `Risk Score: ${riskScore}%`)
+                        }
+                      </h4>
+                    </div>
+
+                    <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                      {riskDesc}
+                    </p>
+
+                    {totalBetsCount >= 3 && (
+                      <div className="pt-2 border-t border-zinc-850/40">
+                        <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500">
+                          <span>
+                            {language === 'pt' ? 'Volatilidade de Stake:' :
+                             language === 'fr' ? 'Volatilité de la mise :' :
+                             language === 'it' ? 'Volatilità dello Stake:' :
+                             language === 'de' ? 'Einsatz-Volatilität:' :
+                             'Stake Volatility:'}
+                          </span>
+                          <span className={`${stakeVolCoef > 0.6 ? 'text-yellow-405' : 'text-emerald-450'} font-bold`}>
+                            {stakeVolCoef > 0.6 
+                              ? (language === 'pt' ? 'Elevada (Inconsistente)' :
+                                 language === 'fr' ? 'Élevée (Inconstante)' :
+                                 language === 'it' ? 'Elevata (Inconsistente)' :
+                                 language === 'de' ? 'Hoch (Inkonsistent)' :
+                                 'High (Inconsistent)')
+                              : (language === 'pt' ? 'Baixa (Estável)' :
+                                 language === 'fr' ? 'Faible (Stable)' :
+                                 language === 'it' ? 'Bassa (Stabile)' :
+                                 language === 'de' ? 'Niedrig (Stabil)' :
+                                 'Low (Stable)')}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Panel 2: Feeling VS cold math metrics */}
+                  <div className="p-5 sm:p-6 bg-[#0E0E12] border border-zinc-850 rounded-2xl shadow-xl space-y-4">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 font-mono block">
+                      {language === 'pt' ? 'Metodologia Competente' :
+                       language === 'fr' ? 'Méthodologie Compétente' :
+                       language === 'it' ? 'Metodologia Competente' :
+                       language === 'de' ? 'Kompetente Methodik' :
+                       'Competent Methodology'}
+                    </span>
+                    <h4 className="text-base font-black text-white font-display">
+                      {language === 'pt' ? 'GOLOS VS VENCEDOR 1X2' :
+                       language === 'fr' ? 'BUTS VS VAINQUEUR 1X2' :
+                       language === 'it' ? 'GOL VS VINCITORE 1X2' :
+                       language === 'de' ? 'TORE VS 1X2 SIEGER' :
+                       'GOALS VS 1X2 WINNER'}
+                    </h4>
+                    
+                    <div className="space-y-4 pt-1">
+                      {/* Goals feeling */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-bold font-mono">
+                          <span className="text-zinc-450">
+                            {language === 'pt' ? 'Feeling de GOLOS (Overs/BTTS):' :
+                             language === 'fr' ? 'Feeling de BUTS (Overs/BTTS) :' :
+                             language === 'it' ? 'Feeling dei GOL (Overs/BTTS):' :
+                             language === 'de' ? 'Gefühl für TORE (Overs/BTTS):' :
+                             'GOALS Feeling (Overs/BTTS):'}
+                          </span>
+                          <span className="text-[#EF233C] font-black">{goalBets.length} apr • {goalsWinRate}% Green</span>
+                        </div>
+                        <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-red-500 to-[#EF233C] h-1.5 rounded-full" 
+                            style={{ width: `${Math.max(4, goalsWinRate)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+
+                      {/* 1X2 winner match */}
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-bold font-mono">
+                          <span className="text-zinc-450">
+                            {language === 'pt' ? 'Frieza 1X2 (Vencedor TR):' :
+                             language === 'fr' ? 'Froid de canard 1X2 (Vainqueur TR) :' :
+                             language === 'it' ? 'Freddezza 1X2 (Vincitore TR):' :
+                             language === 'de' ? '1X2 Kaltblütigkeit (Sieger reguläre Spielzeit):' :
+                             '1X2 Cold Mind (Winner Full Time):'}
+                          </span>
+                          <span className="text-white font-black">{trBets.length} apr • {trWinRate}% Green</span>
+                        </div>
+                        <div className="w-full bg-zinc-950 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className="bg-gradient-to-r from-zinc-700 to-white h-1.5 rounded-full" 
+                            style={{ width: `${Math.max(4, trWinRate)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-zinc-400 leading-relaxed font-light pt-2 border-t border-zinc-850/40">
+                      {totalBetsCount < 3 
+                        ? (language === 'pt' ? 'Precisas de registar palpites para a IA comparar onde reside o teu verdadeiro olho clínico.' :
+                           language === 'fr' ? 'Vous devez enregistrer des pronostics pour que l\'IA puisse comparer où se situe votre véritable sens clinique.' :
+                           language === 'it' ? 'Devi registrare i pronostici in modo che l\'IA possa confrontare dove risiede il tuo vero occhio clinico.' :
+                           language === 'de' ? 'Sie müssen Vorhersagen registrieren, damit die KI vergleichen kann, wo Ihr wahres klinisches Gespür liegt.' :
+                           'You need to register predictions so the AI can compare where your true clinical eye lies.')
+                        : goalsWinRate > trWinRate 
+                          ? (language === 'pt' ? '👉 O teu rendimento é visivelmente mais rentável apostando na emoção dos golos. Reduz apostas em 1X2 seco.' :
+                             language === 'fr' ? '👉 Votre rendement est visiblement plus rentable en pariant sur l\'émotion des buts. Réduisez les paris secs en 1X2.' :
+                             language === 'it' ? '👉 La tua performance è visibilmente più redditizia scommettendo sull\'emozione dei gol. Riduci le scommesse fisse 1X2.' :
+                             language === 'de' ? '👉 Ihre Leistung ist sichtlich profitabler, wenn Sie auf die Emotion von Toren wetten. Reduzieren Sie reine 1X2-Siegwetten.' :
+                             '👉 Your performance is visibly more profitable betting on the emotion of goals. Reduce flat 1X2 winner bets.')
+                          : trWinRate > goalsWinRate
+                            ? (language === 'pt' ? '👉 Consegues ser mais cirúrgico a escolher vencedores frios. Protege a tua banca concentrando-te em TR.' :
+                               language === 'fr' ? '👉 Vous êtes plus chirurgical pour choisir des vainqueurs à froid. Protégez votre capital en vous concentrant sur le TR.' :
+                               language === 'it' ? '👉 Sei più chirurgico nel scegliere i vincitori freddi. Proteggi la tua cassa concentrandoti su TR.' :
+                               language === 'de' ? '👉 Sie sind chirurgisch präziser bei der Auswahl kalter Sieger. Schützen Sie Ihre Bankroll, indem Sie sich auf die reguläre Spielzeit konzentrieren.' :
+                               '👉 You are more surgical at picking cold winners. Protect your bankroll by focusing on Full Time.')
+                            : (language === 'pt' ? '👉 Estás empatado entre ambos os mercados nacionais. Mantém a stake estrita e monitoriza as odds.' :
+                               language === 'fr' ? '👉 Vous êtes à égalité entre les deux marchés majeurs. Maintenez des mises strictes et surveillez les cotes.' :
+                               language === 'it' ? '👉 Sei in parità tra entrambi i mercati principali. Mantieni gli stake rigorosi e monitora attentamente le quote.' :
+                               language === 'de' ? '👉 Sie liegen in beiden Hauptmärkten gleichauf. Halten Sie sich an strenge Einsätze und überwachen Sie die Quoten.' :
+                               '👉 You are tied between both major markets. Maintain strict stakes and monitor the odds carefully.')
+                      }
+                    </p>
+                  </div>
+
+                  {/* Panel 3: Shadow targets emotional targets */}
+                  <div className="p-5 sm:p-6 bg-[#0E0E12] border border-zinc-850 rounded-2xl shadow-xl space-y-4">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-zinc-400 font-mono block">
+                      {language === 'pt' ? 'Radar de Teimosia' :
+                       language === 'fr' ? 'Radar d\'Obstination' :
+                       language === 'it' ? 'Radar della Ostinazione' :
+                       language === 'de' ? 'Eigensinn-Radar' :
+                       'Obstinacy Radar'}
+                    </span>
+                    <h4 className="text-base font-black text-white font-display">
+                      {language === 'pt' ? 'A TUA EQUIPA "SOMBRA"' :
+                       language === 'fr' ? 'VOTRE ÉQUIPE "OMBRE"' :
+                       language === 'it' ? 'LA TUA SQUADRA "OMBRA"' :
+                       language === 'de' ? 'IHR "SCHATTEN"-TEAM' :
+                       'YOUR "SHADOW" TEAM'}
+                    </h4>
+
+                    {worstTeam ? (
+                      <div className="space-y-2.5">
+                        <div className="bg-red-500/5 border border-red-500/10 p-3 rounded-xl flex items-center gap-3">
+                          <span className="text-xl">⚠️</span>
+                          <div className="leading-tight">
+                            <span className="text-[9px] uppercase tracking-wider text-red-400 font-bold font-mono">
+                              {language === 'pt' ? 'Perdas acumuladas' :
+                               language === 'fr' ? 'Pertes cumulées' :
+                               language === 'it' ? 'Perdite accumulate' :
+                               language === 'de' ? 'Kumulierte Verluste' :
+                               'Cumulative losses'}
+                            </span>
+                            <div className="text-sm font-bold text-white mt-0.5">{worstTeam}</div>
+                          </div>
+                        </div>
+                        <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                          {language === 'pt' ? `Estás a registar perda de banca líquida em jogos do ` :
+                           language === 'fr' ? `Vous enregistrez des pertes nettes de capital sur les matchs de ` :
+                           language === 'it' ? `Stai registrando perdite nette di cassa nei match riguardanti il ` :
+                           language === 'de' ? `Sie verzeichnen Netto-Bankroll-Verluste bei Spielen von ` :
+                           `You are recording net bankroll losses in matches involving `}
+                          <strong className="text-white font-bold">{worstTeam}</strong>
+                          {language === 'pt' ? `. Isto ocorre muitas vezes por otimismo sentimental (teimosia). A IA iRunBets aconselha-te a suspender temporariamente palpites nesta equipa!` :
+                           language === 'fr' ? `. Cela est souvent dû à un optimisme sentimental (obstination). L'IA d'iRunBets vous conseille de suspendre temporairement vos paris sur cette équipe !` :
+                           language === 'it' ? `. Questo accade spesso a causa dell'ottimismo sentimentale (ostinazione). L'IA di iRunBets ti consiglia di sospendere temporaneamente i pronostici su questa squadra!` :
+                           language === 'de' ? `. Dies geschieht oft aufgrund von sentimentalem Optimismus (Eigensinn). Die iRunBets-KI rät Ihnen, Wetten auf dieses Team vorübergehend einzustellen!` :
+                           `. This often happens due to sentimental optimism (stubbornness). The iRunBets AI advises you to temporarily suspend tips on this team!`}
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2 text-center py-4 text-zinc-500 hover:text-zinc-450 transition-colors">
+                        <span className="text-3xl block select-none mb-1">🌟</span>
+                        <span className="text-xs font-mono font-medium block">
+                          {language === 'pt' ? 'Nenhuma teimosia emocional detetada' :
+                           language === 'fr' ? 'Aucune obstination émotionnelle détectée' :
+                           language === 'it' ? 'Nessuna ostinazione emotiva rilevata' :
+                           language === 'de' ? 'Kein emotionaler Eigensinn erkannt' :
+                           'No emotional stubbornness detected'}
+                        </span>
+                        <p className="text-[10px] text-zinc-500 max-w-[200px] mx-auto font-light leading-normal">
+                          {language === 'pt' ? 'Segues livre de perseguições de perdas persistentes a equipas específicas.' :
+                           language === 'fr' ? 'Vous restez libre de toute chasse aux pertes persistantes sur des équipes spécifiques.' :
+                           language === 'it' ? 'Rimani libero dall\'inseguimento di perdite persistenti su squadre specifiche.' :
+                           language === 'de' ? 'Sie jagen keinen anhaltenden Verlusten bei bestimmten Teams hinterher.' :
+                           'You remain free from chasing persistent losses on specific teams.'}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-2 border-t border-zinc-850/40">
+                      <span className="text-[9.5px] uppercase tracking-wider text-zinc-400 font-bold block font-mono">
+                        {language === 'pt' ? 'Futebol é Biologia humana:' :
+                         language === 'fr' ? 'Le football est de la Biologie humaine :' :
+                         language === 'it' ? 'Il calcio è Biologia umana:' :
+                         language === 'de' ? 'Fußball ist menschliche Biologie:' :
+                         'Football is human Biology:'}
+                      </span>
+                      <p className="text-[10px] text-zinc-500 font-sans mt-0.5 font-light leading-snug">
+                        {language === 'pt' ? 'As equipas são feitas de homens de cabeça e pernas. Eles têm dias maus ou filhos doentes. Aceita os Reds como natural e protege a banca!' :
+                         language === 'fr' ? 'Les équipes sont composées d\'humains avec une tête et des jambes. Ils ont des mauvais jours ou des enfants malades. Acceptez les Reds comme naturels et protégez vos mises !' :
+                         language === 'it' ? 'Le squadre sono composte da esseri umani con menti e gambe. Hanno giorni no o figli malati. Accetta i Red come normali e proteggi la cassa!' :
+                         language === 'de' ? 'Teams bestehen aus Menschen mit Verstand und Beinen. Sie haben schlechte Tage oder kranke Kinder. Akzeptieren Sie Verluste als natürlich und schützen Sie Ihre Bankroll!' :
+                         'Teams are made of humans with minds and legs. They have bad days or sick children. Accept Reds as natural and protect your bankroll!'}
+                      </p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* AI Interactive Advisor Panel ("Falar com o Mentor") */}
+                <div className="bg-[#0E0E12] border border-zinc-850 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6">
+                  <div className="flex items-center gap-3 border-b border-zinc-850/40 pb-4">
+                    <span className="text-3xl leading-none">🧠</span>
+                    <div>
+                      <h4 className="text-sm font-black text-white uppercase font-display tracking-widest">
+                        {language === 'pt' ? 'Falar com o Mentor iRunBets Pro' :
+                         language === 'fr' ? 'Parler avec le Mentor iRunBets Pro' :
+                         language === 'it' ? 'Parla con il Mentore iRunBets Pro' :
+                         language === 'de' ? 'Sprechen Sie mit dem iRunBets Pro Mentor' :
+                         'Talk to the iRunBets Pro Mentor'}
+                      </h4>
+                      <p className="text-xs text-zinc-400 font-light mt-0.5 font-sans">
+                        {language === 'pt' ? 'A IA vai estudar os teus dados comportamentais reais, cruzar com o teu estado mental de hoje e dar-te diretrizes de proteção e prevenção.' :
+                         language === 'fr' ? 'L\'IA va étudier vos données comportementales réelles, les croiser avec votre état d\'esprit actuel et vous donner des directives de protection et de prévention.' :
+                         language === 'it' ? 'L\'IA studierà i tuoi dati comportamentali reali, li incrocerà con il tuo stato emotivo odierno e ti fornirà linee guida per la protezione e la prevenzione.' :
+                         language === 'de' ? 'Die KI wird Ihre echten Verhaltensdaten analysieren, sie mit Ihrer heutigen mentalen Verfassung abgleichen und Ihnen Richtlinien zum Schutz und zur Prävention geben.' :
+                         'The AI will study your real behavioral data, cross-reference it with your mental state today, and provide protection and prevention guidelines.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <label className="text-[10px] uppercase font-mono font-black text-zinc-400 block tracking-wider">
+                      {language === 'pt' ? 'Como te sentes hoje perante as apostas desportivas?' :
+                       language === 'fr' ? 'Comment vous sentez-vous aujourd\'hui par rapport aux paris sportifs ?' :
+                       language === 'it' ? 'Come ti senti oggi riguardo alle scommesse sportive?' :
+                       language === 'de' ? 'Wie fühlen Sie sich heute in Bezug auf Sportwetten?' :
+                       'How do you feel today regarding sports betting?'}
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                      {[
+                        { 
+                          val: 'focado', 
+                          label: language === 'pt' ? '🧊 Focado & Frio' : language === 'fr' ? '🧊 Concentré & Calme' : language === 'it' ? '🧊 Focalizzato & Freddo' : language === 'de' ? '🧊 Fokussiert & Kühl' : '🧊 Focused & Cold', 
+                          desc: language === 'pt' ? 'Sigo a matemática e controlo a stake' : language === 'fr' ? 'Je suis la mathématique et contrôle ma mise' : language === 'it' ? 'Seguo la matematica e controllo lo stake' : language === 'de' ? 'Ich folge der Mathematik und kontrolliere den Einsatz' : 'I follow math and control my stake' 
+                        },
+                        { 
+                          val: 'euforico', 
+                          label: language === 'pt' ? '🍀 Eufórico / Sorte' : language === 'fr' ? '🍀 Euphorique / Chanceux' : language === 'it' ? '🍀 Euforico / Fortunato' : language === 'de' ? '🍀 Euphorisch / Glücklich' : '🍀 Euphoric / Lucky', 
+                          desc: language === 'pt' ? 'Ganhei os últimos palpites, sinto-me imparável' : language === 'fr' ? "J'ai gagné mes derniers paris, je me sens imbattable" : language === 'it' ? 'Ho vinto gli ultimi pronostici, mi sento inarrestabile' : language === 'de' ? 'Ich habe die letzten Tipps gewonnen, ich fühle mich unaufhaltsam' : 'I won the last tips, I feel unstoppable' 
+                        },
+                        { 
+                          val: 'frustrado', 
+                          label: language === 'pt' ? '😡 Frustrado com Reds' : language === 'fr' ? '😡 Frustré par les Reds' : language === 'it' ? '😡 Frustrato per i Red' : language === 'de' ? '😡 Frustriert über Verluste' : '😡 Frustrated with Reds', 
+                          desc: language === 'pt' ? 'Azar persistente, quero recuperar perdas' : language === 'fr' ? 'Malchance persistante, je veux me refaire' : language === 'it' ? 'Sfortuna persistente, voglio recuperare le perdite' : language === 'de' ? 'Anhaltendes Pech, ich will meine Verluste ausgleichen' : 'Persistent bad luck, I want to chase losses' 
+                        },
+                        { 
+                          val: 'aborrecido', 
+                          label: language === 'pt' ? '🥱 Tédio / Adrenalina' : language === 'fr' ? '🥱 Ennui / Adrénaline' : language === 'it' ? '🥱 Noia / Adrenalina' : language === 'de' ? '🥱 Langeweile / Adrenalin' : '🥱 Boredom / Adrenaline', 
+                          desc: language === 'pt' ? 'Aposto para ter entretenimento e passar o tempo' : language === 'fr' ? 'Je parie pour me divertir et passer le temps' : language === 'it' ? 'Scommetto per intrattenimento e per passar l\'tempo' : language === 'de' ? 'Ich wette zur Unterhaltung und um Zeit totzuschlagen' : 'I bet for entertainment and to pass the time' 
+                        }
+                      ].map((mood) => (
+                        <button
+                          key={mood.val}
+                          type="button"
+                          onClick={() => setUserMood(mood.val as any)}
+                          className={`p-3.5 text-left rounded-xl border transition-all cursor-pointer ${
+                            userMood === mood.val
+                              ? 'bg-[#EF233C]/10 border-[#EF233C] text-white shadow-md shadow-[#EF233C]/5'
+                              : 'bg-zinc-950 border-zinc-900 text-zinc-450 hover:bg-zinc-900/40 hover:border-zinc-800'
+                          }`}
+                        >
+                          <div className="text-xs font-black tracking-tight">{mood.label}</div>
+                          <p className="text-[9px] text-zinc-550 mt-1.5 leading-normal font-sans font-light">
+                            {mood.desc}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleAnalyzeBehavior}
+                      disabled={loadingBehaviorAi}
+                      className="w-full py-4 bg-gradient-to-r from-red-500 to-[#EF233C] hover:from-red-405 hover:to-[#CF132C] text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-red-500/10 hover:shadow-red-500/20 hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {loadingBehaviorAi ? (
+                        <>
+                          <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>
+                            {language === 'pt' ? 'A IA ESTÁ A CRUZAR OS TEUS DADOS...' :
+                             language === 'fr' ? 'L\'IA EST EN TRAIN DE CROISER VOS DONNÉES...' :
+                             language === 'it' ? 'L\'IA STA INCROCIANDO I TUOI DATI...' :
+                             language === 'de' ? 'KI ABGLEICH DEINER DATEN LÄUFT...' :
+                             'AI IS CROSS-REFERENCING YOUR DATA...'}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span>
+                            {language === 'pt' ? '🧠 Gerar Auditoria de Sanidade Financeira IA' :
+                             language === 'fr' ? '🧠 Générer l\'audit de santé financière par l\'IA' :
+                             language === 'it' ? '🧠 Genera Audit di Sanità Finanziaria IA' :
+                             language === 'de' ? '🧠 KI-Finanz-Sanitätsaudit erstellen' :
+                             '🧠 Generate AI Financial Sanity Audit'}
+                          </span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Diagnostic output */}
+                  {iaBehaviorReport && (
+                    <div className="mt-6 border-t border-zinc-850/60 pt-5 space-y-4 animate-fade-in duration-500 font-sans">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-[#EF233C] animate-ping"></span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400 font-mono tracking-widest">
+                          {language === 'pt' ? 'Relatório iRunBets Mentor emitido com sucesso' :
+                           language === 'fr' ? 'Rapport iRunBets Mentor généré avec succès' :
+                           language === 'it' ? 'Report dell\'iRunBets Mentor generato con successo' :
+                           language === 'de' ? 'iRunBets Mentor-Bericht erfolgreich generiert' :
+                           'iRunBets Mentor report successfully generated'}
+                        </span>
+                      </div>
+                      <div className="bg-zinc-950/50 border border-zinc-850/60 rounded-xl p-4 sm:p-5 text-left text-xs leading-relaxed max-h-[500px] overflow-y-auto font-sans scrollbar-thin">
+                        {renderFormattedReport(iaBehaviorReport)}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+
+                {/* TIPSTER SCIENTIFIC AUDIT TOOL */}
+                <div id="tipster-audit-panel" className="bg-[#0E0E12] border border-zinc-850 rounded-2xl p-5 sm:p-6 shadow-2xl space-y-6">
+                  <div className="flex items-center gap-3 border-b border-zinc-850/40 pb-4">
+                    <span className="text-3xl leading-none">🕵️‍♂️</span>
+                    <div>
+                      <h4 className="text-sm font-black text-white uppercase font-display tracking-widest">
+                        {language === 'pt' ? 'Desmistificador de Tipsters & Fraudes de Historial' : 'Tipster Authenticity & Fraud Auditor'}
+                      </h4>
+                      <p className="text-xs text-zinc-400 font-light mt-0.5 font-sans">
+                        {language === 'pt' 
+                          ? 'Gasta dinheiro em grupos VIP? Introduza os dados de marketing do tipster e veja o veredicto matemático frio e real.' 
+                          : 'Do you pay for premium advisory groups? Plug in their marketing claims and let the dry mathematics unveil reality.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {/* Input 1: name */}
+                    <div className="space-y-1.5 col-span-1 md:col-span-2 lg:col-span-1">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Nome / Canal do Tipster' : 'Tipster / Channel Name'}
+                      </label>
+                      <input
+                        type="text"
+                        value={tipsterName}
+                        onChange={(e) => setTipsterName(e.target.value)}
+                        placeholder="Ex: Pedro VIP Tips, Green Master..."
+                        className="w-full text-xs bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#EF233C] transition-colors"
+                      />
+                    </div>
+
+                    {/* Input 2: Subscription price */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Mensalidade do Grupo (€)' : 'Monthly Subscription Fee (€)'}
+                      </label>
+                      <input
+                        type="number"
+                        value={tipsterFee}
+                        onChange={(e) => setTipsterFee(e.target.value)}
+                        placeholder="Ex: 40"
+                        className="w-full text-xs bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#EF233C] transition-colors"
+                      />
+                    </div>
+
+                    {/* Input 3: average claimed odds */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Odds Médias Sugeridas' : 'Average Suggested Odds'}
+                      </label>
+                      <input
+                        type="number"
+                        step="0.05"
+                        value={tipsterOdds}
+                        onChange={(e) => setTipsterOdds(e.target.value)}
+                        placeholder="Ex: 1.85"
+                        className="w-full text-xs bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#EF233C] transition-colors"
+                      />
+                    </div>
+
+                    {/* Input 4: Claimed winrate */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Taxa de Acerto Anunciada (%)' : 'Claimed Win Rate (%)'}
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={tipsterWinRate}
+                          onChange={(e) => setTipsterWinRate(e.target.value)}
+                          placeholder="Ex: 75"
+                          className="w-full text-xs bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 pr-8 text-white focus:outline-none focus:border-[#EF233C] transition-colors"
+                        />
+                        <span className="absolute right-3 top-3.5 text-[10px] font-bold text-zinc-500 font-mono">%</span>
+                      </div>
+                    </div>
+
+                    {/* Input 5: Sample Size */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Nº total de apostas auditadas' : 'Total sampled bets'}
+                      </label>
+                      <input
+                        type="number"
+                        value={tipsterTotalBets}
+                        onChange={(e) => setTipsterTotalBets(e.target.value)}
+                        placeholder="Ex: 30"
+                        className="w-full text-xs bg-zinc-950 border border-zinc-900 rounded-xl px-3.5 py-3 text-white focus:outline-none focus:border-[#EF233C] transition-colors"
+                      />
+                    </div>
+
+                    {/* Input 6: Omission level (scam level) */}
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 font-mono">
+                        {language === 'pt' ? 'Transparência Prática observada' : 'Observed Honesty & Transparency'}
+                      </label>
+                      <select
+                        value={tipsterDeletedBets}
+                        onChange={(e) => setTipsterDeletedBets(e.target.value as any)}
+                        className="w-full text-xs bg-zinc-950 border border-zinc-900 rounded-xl px-3 py-3 text-white focus:outline-none focus:border-[#EF233C] transition-colors cursor-pointer"
+                      >
+                        <option value="none">🟢 {language === 'pt' ? 'Totalmente Transparente (Sem posts apagados)' : 'Transparent (No posts deleted)'}</option>
+                        <option value="suspect">🟡 {language === 'pt' ? 'Suspeito (Apaga alguns posts ou bloqueia chat)' : 'Suspect (Deletes some posts or locks chat)'}</option>
+                        <option value="proven">🔴 {language === 'pt' ? 'Manipulador (Apaga Reds / Edita mensagens com "Greens")' : 'Confirmed Slasher (Deletes lost tips / Edits messages)'}</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* MATHEMATICAL LIVE VERDICT CARD */}
+                  {(() => {
+                    const parsedFee = parseFloat(tipsterFee) || 0;
+                    const parsedOdds = parseFloat(tipsterOdds) || 1.85;
+                    const declaredWr = parseFloat(tipsterWinRate) || 50;
+                    const sampleSize = parseInt(tipsterTotalBets) || 10;
+
+                    // Apply honesty discount
+                    let adjustedWinRate = declaredWr;
+                    if (tipsterDeletedBets === 'suspect') adjustedWinRate = Math.max(15, declaredWr - 12);
+                    if (tipsterDeletedBets === 'proven') adjustedWinRate = Math.max(5, declaredWr - 28);
+
+                    // Calculations
+                    const declaredYield = ((declaredWr / 100) * parsedOdds) - 1;
+                    const adjustedYield = ((adjustedWinRate / 100) * parsedOdds) - 1;
+
+                    const totalCount = bets.length;
+                    const totalStakedVolume = bets.reduce((acc, b) => acc + b.stake, 0);
+                    const avgStake = totalCount > 0 ? (totalStakedVolume / totalCount) : 15;
+
+                    const expectedProfitPerBet = avgStake * adjustedYield;
+                    const breakEvenBets = expectedProfitPerBet > 0 ? Math.ceil(parsedFee / expectedProfitPerBet) : 9999;
+
+                    // Statistical rating based on sample size
+                    let statCredName = '';
+                    let statCredDesc = '';
+                    let statCredColor = '';
+
+                    if (sampleSize < 20) {
+                      statCredName = language === 'pt' ? 'AMOSTRA IRRELEVANTE (Mero Ruído)' : 'IRRELEVANT SAMPLE (Pure Noise)';
+                      statCredDesc = language === 'pt' ? 'Sobrevivência temporária ao acaso. Impossível julgar capacidade técnica num historial tão pequeno.' : 'Temporarily surviving luck. Impossible to judge true skill with such a small history.';
+                      statCredColor = 'text-yellow-450';
+                    } else if (sampleSize <= 80) {
+                      statCredName = language === 'pt' ? 'AMOSTRA FRÁGIL (Curto Prazo)' : 'FRAGILE SAMPLE (Short Term)';
+                      statCredDesc = language === 'pt' ? 'Qualquer apostador pode ter uma fase quente. A variância desportiva comum explica estes números sem esforço.' : 'Any amateur can have a hot streak. Common sports variance easily explains these metrics.';
+                      statCredColor = 'text-amber-500';
+                    } else {
+                      statCredName = language === 'pt' ? 'AMOSTRA ROBUSTA (Significância Estatística)' : 'ROBUST SAMPLE (Statistical Significance)';
+                      statCredDesc = language === 'pt' ? 'Volume razoável de dados. Se o historial for 100% autêntico, começa a indicar consistência real.' : 'Good data volume. If the matches are 100% authentic, it starts to indicate actual consistency.';
+                      statCredColor = 'text-emerald-400';
+                    }
+
+                    return (
+                      <div className="bg-zinc-950/85 border border-zinc-855/60 p-4.5 sm:p-5 rounded-xl space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono text-[#00f2fe]">⚖️</span>
+                          <span className="text-[10px] uppercase font-black tracking-widest text-[#00f2fe] font-mono">
+                            {language === 'pt' ? 'CÁLCULO E DETEÇÃO DE VIÉS MATEMÁTICO' : 'MATHEMATICAL BIAS RUNTIME ESTIMATES'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1">
+                          
+                          {/* Block 1: Real Yield */}
+                          <div className="p-3 bg-zinc-900 border border-zinc-850/60 rounded-xl space-y-1">
+                            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-mono">
+                              {language === 'pt' ? 'Yield Ajustado p/ Desonestidade' : 'Dishonesty Adjusted Yield'}
+                            </span>
+                            <div className="flex items-baseline gap-1">
+                              <span className={`text-base font-black ${adjustedYield > 0.15 ? 'text-rose-400 font-bold' : adjustedYield > 0 ? 'text-emerald-450' : 'text-red-400'}`}>
+                                {Math.round(adjustedYield * 100)}%
+                              </span>
+                              {declaredWr !== adjustedWinRate && (
+                                <span className="text-[9px] text-zinc-450 line-through">
+                                  ({Math.round(declaredYield * 100)}%)
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[9px] text-zinc-400 font-sans block leading-none">
+                              {adjustedYield > 0.25 
+                                ? (language === 'pt' ? '⚠️ Alerta de fraude! Sustentar mais de 25% de yield é virtualmente impossível.' : '⚠️ Scam alert! Sustaining >25% yield continuously is virtually impossible.')
+                                : adjustedYield > 0 
+                                  ? (language === 'pt' ? 'Rendimento de yield realista.' : 'Realistic yield performance.') 
+                                  : (language === 'pt' ? 'Yield negativo. Grupo prejudicial!' : 'Negative yield. Toxic channel!')}
+                            </span>
+                          </div>
+
+                          {/* Block 2: Break even index */}
+                          <div className="p-3 bg-zinc-900 border border-zinc-850/60 rounded-xl space-y-1">
+                            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-mono">
+                              {language === 'pt' ? 'Apostas p/ Pagar Subscrição' : 'Break-even Monthly Bets'}
+                            </span>
+                            <div className="text-base font-black text-white">
+                              {breakEvenBets === 9999 
+                                ? 'NUNCA' 
+                                : `${breakEvenBets}`}
+                            </div>
+                            <span className="text-[9px] text-zinc-400 block leading-tight font-sans">
+                              {breakEvenBets === 9999 
+                                ? (language === 'pt' ? 'Com Yield <= 0 você só perde mais dinheiro.' : 'With negative Yield you always bleed capital.')
+                                : (language === 'pt' 
+                                    ? `Precisas de ${breakEvenBets} apostas vencedoras adicionais p/ mês com stake de ${avgStake.toFixed(2)}€ só para cobrir a subscrição!`
+                                    : `Requires ${breakEvenBets} successful bets per month with your ${avgStake.toFixed(2)}€ stake simply to break even!`)}
+                            </span>
+                          </div>
+
+                          {/* Block 3: statistical credibility */}
+                          <div className="p-3 bg-zinc-900 border border-zinc-850/60 rounded-xl space-y-1 md:col-span-2">
+                            <span className="text-[9px] uppercase tracking-wider text-zinc-500 block font-mono">
+                              {language === 'pt' ? 'Grau de Significância Estatística' : 'Statistical Evidence Grade'}
+                            </span>
+                            <div className={`text-xs font-black ${statCredColor} uppercase font-display`}>
+                              {statCredName}
+                            </div>
+                            <p className="text-[10px] text-zinc-400 font-light leading-snug">
+                              {statCredDesc}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Critical takeaway */}
+                        <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl flex items-start gap-2.5">
+                          <span className="text-xs">🔬</span>
+                          <p className="text-[11px] text-zinc-300 leading-relaxed font-light">
+                            <strong>{language === 'pt' ? 'O Paradoxo do Vendedor de Segredos' : 'The Secret Seed Paradox'}:</strong>{' '}
+                            {language === 'pt' 
+                              ? `Se um tipster domina o mercado com odds de ${parsedOdds} e acertos de ${declaredWr}%, apostando meros 500€ por palpite, ficaria multimilionário em 12 meses. O facto de despender tempo a mendigar pagamentos de ${parsedFee}€ no Telegram é a prova lógica definitiva de que o negócio real é vender falsas esperanças, e não as suas próprias apostas.`
+                              : `If a tipster achieves a steady win-rate of ${declaredWr}% on odds of ${parsedOdds}, placing a simple 500€ stake on their own tips would yield millions in a year. The fact they spend effort marketing a ${parsedFee}€ subscription group proves their real cash cow is selling dreams, not playing them.`
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Trigger audit report action */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleAnalyzeTipster}
+                      disabled={loadingTipsterAi || !tipsterFee || !tipsterOdds}
+                      className="w-full py-4 bg-gradient-to-r from-zinc-900 to-black hover:from-zinc-850 hover:to-zinc-950 text-white font-black text-xs uppercase tracking-widest rounded-xl border border-zinc-800 hover:border-zinc-700 transition-all shadow-xl hover:-translate-y-0.5 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {loadingTipsterAi ? (
+                        <>
+                          <div className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          <span>{language === 'pt' ? 'A IA ESTÁ A DEVER-SE AOS NÚMEROS...' : 'AI DETECTIVE RUNNING SCIENTIFIC AUDIT...'}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>🕵️‍♂️ {language === 'pt' ? 'Correr Relatório Anti-Fraude com IA' : 'Run Anti-Scam Audit with AI'}</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Diagnostic output */}
+                  {tipsterReport && (
+                    <div className="mt-6 border-t border-zinc-850/60 pt-5 space-y-4 animate-fade-in duration-500">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span className="text-[10px] uppercase font-bold text-red-400 font-mono tracking-widest">
+                          {language === 'pt' ? 'Ficha de Embuste & Relatório de Risco Emitido' : 'Anti-Scam Tipster Dossier Ready'}
+                        </span>
+                      </div>
+                      <div className="bg-zinc-950/50 border border-zinc-850/60 rounded-xl p-4 sm:p-5 text-left text-xs leading-relaxed max-h-[500px] overflow-y-auto font-sans scrollbar-thin">
+                        {renderFormattedReport(tipsterReport)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {activeTab === 'favoritos' && (
+        <VipFavorites currentUser={currentUser} language={language} />
+      )}
+
+      {activeTab === 'rede-tipsters' && (
+        <div className="space-y-8 animate-fade-in text-zinc-100">
+          {/* BLOCK NOTIFICATION */}
+          {isMundialActive ? (
+            <div className="p-8 sm:p-12 bg-[#0C0C10]/95 border border-orange-500/30 rounded-3xl relative overflow-hidden shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto my-6">
+              <div className="absolute top-0 right-0 h-48 w-48 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-purple-500 via-orange-500 to-amber-500"></div>
+              <div className="space-y-6 py-6 relative">
+                <span className="text-6xl select-none filter drop-shadow-[0_0_20px_rgba(245,158,11,0.35)] block animate-pulse">
+                  🌍🏆
+                </span>
+                <div className="space-y-3">
+                  <span className="inline-block text-[10px] font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-md font-mono border border-orange-500/20">
+                    CAMPANHA TEMPORÁRIA • MUNDIAL
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-display">
+                    {language === 'pt' ? 'Rede de Tipsters Suspensa Temporariamente' : 'Tipsters Network Temporarily Suspended'}
+                  </h3>
+                </div>
+                <p className="text-zinc-300 font-light text-sm max-w-xl mx-auto leading-relaxed">
+                  {language === 'pt' 
+                    ? 'Durante a Campanha Especial do Campeonato do Mundo, os nossos servidores focam-se na distribuição em tempo real de previsões gratuitas e inteligência artificial aberta. A Rede de Tipsters partilhada e o recrutamento de novos parceiros encontram-se travados para novos registos de forma a alocar recursos de processamento à IA e às ferramentas de Banca Livre.'
+                    : 'During the Special World Cup Campaign, our servers are fully dedicated to real-time math-model predictions and open AI features. The tipsters network is currently locked to prioritize system bandwidth and resources.'}
+                </p>
+                <div className="p-4 bg-zinc-950/80 border border-zinc-900 rounded-2xl max-w-md mx-auto text-left space-y-2">
+                  <span className="text-[10.5px] font-black text-amber-500 uppercase font-mono tracking-wider block">🌍 Nota Educacional de Campanha:</span>
+                  <p className="text-[11px] text-zinc-400 leading-normal font-light">
+                    {language === 'pt'
+                      ? 'Todas as outras ferramentas de alto nível (iRunBets Chat, OCR Inteligente e Livro de Banca Pro) estão 100% livres e isentas de mensalidades para que possa explorar o ecossistema. Aproveite para otimizar os seus métodos gratuitamente!'
+                      : 'All other premium features (iRunBets Chat, Smart OCR, and Pro Bankroll Ledger) are 100% free with no subscription needed. Feel free to explore and optimize your sports methods!'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 sm:p-12 bg-[#0C0C10]/95 border border-zinc-850/80 rounded-3xl relative overflow-hidden shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto my-6">
+              <div className="absolute top-0 right-0 h-48 w-48 bg-gradient-to-br from-fuchsia-500/10 to-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="space-y-6 py-6 relative">
+                <span className="text-6xl select-none filter drop-shadow-[0_0_20px_rgba(217,70,239,0.35)] block animate-bounce">
+                  🚧
+                </span>
+                <div className="space-y-3">
+                  <span className="inline-block text-[10px] font-black uppercase tracking-wider text-fuchsia-400 bg-fuchsia-500/10 px-3 py-1 rounded-md font-mono border border-fuchsia-500/20">
+                    REDE TIPSTERS EXPERT
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-display">
+                    {language === 'pt' ? 'Rede de Tipsters iRunBets' : 'iRunBets Tipsters Network'}
+                  </h3>
+                </div>
+                <p className="text-zinc-400 font-light text-sm max-w-md mx-auto leading-relaxed">
+                  {language === 'pt' 
+                    ? 'A funcionalidade de partilha de prognósticos, gestão de canais de tipsters dedicados, estatísticas avançadas e replicação automática de boletins está atualmente indisponível.'
+                    : 'Pro-tipster sharing rosters, live statistics, and auto-cloning functions are currently in development.'}
+                </p>
+                <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-4 max-w-xs mx-auto">
+                  <span className="text-sm font-black text-amber-500 uppercase tracking-widest font-mono block animate-pulse">
+                    🚧 Disponível em Agosto
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-mono mt-1 block">
+                    {language === 'pt' ? 'Temporada 2026/2027 • Ligas Europeias' : 'Season 2026/2027 • European Leagues'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="hidden">
+              {/* Neon Header Container */}
+              <div className="p-6 bg-zinc-950/40 border border-zinc-850 rounded-3xl relative overflow-hidden shadow-2xl">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-[#bf5af2]/10 rounded-full blur-[70px] pointer-events-none"></div>
+            <div className="absolute bottom-0 left-1/3 w-72 h-44 bg-[#00f2fe]/5 rounded-full blur-[80px] pointer-events-none"></div>
+            
+            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-[#bf5af2] bg-[#bf5af2]/10 px-2.5 py-1 rounded-md font-mono border border-[#bf5af2]/20 animate-pulse">
+                    👥 COMUNIDADE EXCLUSIVA
+                  </span>
+                  <span className="text-[10px] font-bold text-zinc-550 font-mono">
+                    v3.4 Rede Tipsters iRunBets
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-sans">
+                  {language === 'pt' ? 'REDE TIPSTERS EXPERT' : 'EXPERT TIPSTERS NETWORK'}
+                </h2>
+                <p className="text-xs text-zinc-400 font-light max-w-2xl leading-relaxed">
+                  {language === 'pt' 
+                    ? 'Siga os prognósticos mais certeiros do mercado com verificação matemática, ou crie a sua própria rede premium. Registe dicas, partilhe os seus códigos Betano/Betclic e ganhe subscritores de elite!'
+                    : 'Track verified top yielding tipster channels, share custom refer-a-friend bonuses and customize your premium tipster roster.'}
+                </p>
+              </div>
+
+              {/* Simulation Helper Panel */}
+              <div className="flex flex-col gap-2 p-3 bg-zinc-950/70 border border-zinc-900 rounded-2xl md:max-w-xs w-full">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] font-bold uppercase text-zinc-550 font-mono tracking-wider">
+                    🛠️ MODO DE ENGENHARIA CRÍTICA
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setSimulationOwnerMode(!simulationOwnerMode);
+                    // If simulating Owner of Morgado, set default inputs to his details
+                    const morg = tipstersList.find(t => t.id === 'morgado');
+                    if (morg) {
+                      setConfigName(morg.name);
+                      setConfigAvatar(morg.avatar);
+                      setConfigTelegram(morg.telegramUrl);
+                      setConfigBetclic(morg.betclicInvite);
+                      setConfigBetano(morg.betanoInvite);
+                    }
+                  }}
+                  className={`py-1.5 px-3 rounded-xl text-[9px] font-extrabold uppercase font-mono tracking-wider transition-all border ${
+                    simulationOwnerMode 
+                      ? 'bg-fuchsia-500 text-black border-fuchsia-400 font-black' 
+                      : 'bg-zinc-900 text-zinc-400 border-zinc-850 hover:text-white'
+                  }`}
+                >
+                  {simulationOwnerMode 
+                    ? '🟢 Simular Proprietário (Morgado)' 
+                    : '🔄 Simular Administrador / Proprietário'}
+                </button>
+                <p className="text-[8px] text-zinc-550 leading-relaxed">
+                  {language === 'pt'
+                    ? '*morgado.aam@gmail.com entra automaticamente no modo Proprietário e pode gerir dicas, links Betclic/Betano e logotipo.'
+                    : '*morgado.aam@gmail.com enters owner mode enabling full stats edits, logo upload and Invite modifications.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Checkout Simulator Modal Pop-Over */}
+          {checkoutTipsterId && (() => {
+            const currentTipster = tipstersList.find(t => t.id === checkoutTipsterId);
+            if (!currentTipster) return null;
+            const price = checkoutInterval === 'month' ? currentTipster.subscriptionPriceMonth : currentTipster.subscriptionPriceYear;
+            const intervalLabel = checkoutInterval === 'month' ? '/Mês' : '/Ano';
+            return (
+              <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
+                <div className="bg-[#0b0b0f] border-2 border-[#bf5af2] rounded-3xl p-6 max-w-md w-full relative shadow-[0_0_60px_rgba(191,90,242,0.3)] animate-fade-in text-left">
+                  <button 
+                    onClick={() => setCheckoutTipsterId(null)}
+                    className="absolute top-4 right-4 text-zinc-550 hover:text-white text-xs font-bold font-mono py-1 px-2.5 bg-zinc-900 rounded-lg"
+                  >
+                    ✕ Fechar
+                  </button>
+
+                  <div className="space-y-4">
+                    <div className="text-center pb-3 border-b border-zinc-900">
+                      <span className="text-[10px] font-mono font-black text-[#bf5af2] tracking-wider uppercase">
+                        💳 CHECKOUT DE ASSINATURA PREMIUM
+                      </span>
+                      <h3 className="text-base font-extrabold text-white mt-1">
+                        Socio Clã {currentTipster.name}
+                      </h3>
+                      <div className="text-2xl font-black text-white mt-2 font-mono drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]">
+                        {price}€ <span className="text-xs text-zinc-500 font-normal">{intervalLabel}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Número do Cartão de Crédito</label>
+                        <input 
+                          type="text" 
+                          placeholder="4000 1234 5678 9010" 
+                          disabled
+                          className="w-full mt-1 bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-450 font-mono focus:border-[#bf5af2] outline-none"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Validade</label>
+                          <input 
+                            type="text" 
+                            placeholder="12/28" 
+                            disabled
+                            className="w-full mt-1 bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-450 font-mono focus:border-[#bf5af2] outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">CVC</label>
+                          <input 
+                            type="text" 
+                            placeholder="123" 
+                            disabled
+                            className="w-full mt-1 bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-450 font-mono focus:border-[#bf5af2] outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl p-3 bg-purple-950/20 border border-purple-500/20 space-y-1.5 text-[10px] text-purple-200">
+                      <p className="font-bold flex items-center gap-1">
+                        🔒 Gateway Seguro Verificado por iRunBets Protocol
+                      </p>
+                      <p className="font-light text-zinc-400">
+                        Assinatura simulada para fins de demonstração vip. O pagamento é fictício e desbloqueará acesso vitalício imediato a este tipster!
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setIsSimulatingCheckoutPayment(true);
+                        setTimeout(() => {
+                          const updated = [...subscribedTipsters, checkoutTipsterId];
+                          saveSubscribedState(updated);
+                          setIsSimulatingCheckoutPayment(false);
+                          setCheckoutTipsterId(null);
+                        }, 1200);
+                      }}
+                      disabled={isSimulatingCheckoutPayment}
+                      className="w-full py-3 bg-[#bf5af2] text-black hover:bg-[#c97cf7] active:scale-[0.98] rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer"
+                    >
+                      {isSimulatingCheckoutPayment ? '⏳ AUTORIZANDO TRANSAÇÃO...' : 'Aprovar Pagamento Fictício 🚀'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* PAGE VIEW 1: MASTER LIST & PUBLIC ACCURACY RANKING WITH EXCEL EXPORT & FILTERS */}
+          {!activeTipsterId ? (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <span className="text-xs font-black uppercase tracking-widest font-mono text-zinc-400 flex items-center gap-1.5">
+                  🏆 RANKING GERAL DE LUCRATIVIDADE (Filtros Avançados)
+                </span>
+                <span className="text-xs text-[#00f2fe] font-mono font-bold bg-[#00f2fe]/10 px-3 py-1 rounded-md border border-[#00f2fe]/15">
+                  Ordenado por estatísticas selecionadas
+                </span>
+              </div>
+
+              {/* FILTROS & EXPORTAÇÃO EXCEL PANEL */}
+              {(() => {
+                // Inline helper states computation
+                const availableMarkets = ['Golos', 'Over 1.5', 'Over 2.5', 'Ambas Marcam', '1X2 / TR', 'Dupla Possibilidade'];
+                const availableClubs = ['Benfica', 'Sporting', 'Porto', 'Braga', 'Real Madrid', 'Bayern', 'Girona', 'Luton', 'Everton', 'Atalanta'];
+
+                // Filtering & Sorting function locally computed
+                const filteredTipsters = tipstersList.filter(t => {
+                  // Search query
+                  if (tipsterSearch.trim()) {
+                    const q = tipsterSearch.toLowerCase();
+                    if (!t.name.toLowerCase().includes(q) && !t.email.toLowerCase().includes(q)) {
+                      return false;
+                    }
+                  }
+
+                  // Market Type Filter
+                  if (tipsterFilterMarket !== 'all') {
+                    const bets = t.customBets || [];
+                    const matches = bets.some(b => b.market.toLowerCase().includes(tipsterFilterMarket.toLowerCase()));
+                    if (!matches) return false;
+                  }
+
+                  // Club Filter
+                  if (tipsterFilterClub !== 'all') {
+                    const bets = t.customBets || [];
+                    const matches = bets.some(b => b.game.toLowerCase().includes(tipsterFilterClub.toLowerCase()));
+                    if (!matches) return false;
+                  }
+
+                  return true;
+                }).sort((a, b) => {
+                  if (tipsterSortBy === 'netProfit') {
+                    return b.netProfit - a.netProfit;
+                  }
+                  if (tipsterSortBy === 'yieldPercent') {
+                    return b.yieldPercent - a.yieldPercent;
+                  }
+                  if (tipsterSortBy === 'successRate') {
+                    const totalA = a.wins + a.losses + a.refunds;
+                    const rateA = totalA > 0 ? (a.wins / totalA) * 100 : 0;
+                    const totalB = b.wins + b.losses + b.refunds;
+                    const rateB = totalB > 0 ? (b.wins / totalB) * 100 : 0;
+                    return rateB - rateA;
+                  }
+                  if (tipsterSortBy === 'wins') {
+                    return b.wins - a.wins;
+                  }
+                  if (tipsterSortBy === 'losses') {
+                    return b.losses - a.losses;
+                  }
+                  if (tipsterSortBy === 'refunds') {
+                    return b.refunds - a.refunds;
+                  }
+                  return 0;
+                });
+
+                const handleExportToExcel = () => {
+                  if (userPlan !== 'pro' && userPlan !== 'pro_max' && userPlan !== 'tipster') {
+                    triggerExcelLockAlert();
+                    return;
+                  }
+                  let csvContent = '\uFEFF'; // UTF-8 BOM so Excel opens it securely
+                  const headers = [
+                    'Rank',
+                    'Tipster',
+                    'Email',
+                    'Sucesso (Greens %)',
+                    'Insucesso (Reds %)',
+                    'Anuladas (Refunds %)',
+                    'Vitorias (Greens)',
+                    'Derrotas (Reds)',
+                    'Anuladas',
+                    'Total Dicas',
+                    'Lucro Liquido (€)',
+                    'Yield (%)',
+                    'Seguidores Estimados'
+                  ];
+                  csvContent += headers.join(';') + '\n';
+
+                  filteredTipsters.forEach((t, idx) => {
+                    const total = t.wins + t.losses + t.refunds;
+                    const success = total > 0 ? ((t.wins / total) * 100).toFixed(1) : '0';
+                    const failure = total > 0 ? ((t.losses / total) * 100).toFixed(1) : '0';
+                    const refund = total > 0 ? ((t.refunds / total) * 100).toFixed(1) : '0';
+                    const fakeFollowers = 120 + t.wins * 3;
+
+                    const row = [
+                      idx + 1,
+                      t.name.replace(/;/g, ' '),
+                      t.email.replace(/;/g, ' '),
+                      success + '%',
+                      failure + '%',
+                      refund + '%',
+                      t.wins,
+                      t.losses,
+                      t.refunds,
+                      total,
+                      t.netProfit.toFixed(2),
+                      t.yieldPercent.toFixed(1) + '%',
+                      fakeFollowers
+                    ];
+                    csvContent += row.join(';') + '\n';
+                  });
+
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.setAttribute('href', url);
+                  link.setAttribute('download', `irunbets_comunidade_tipsters_${new Date().toISOString().split('T')[0]}.csv`);
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                };
+
+                return (
+                  <div className="space-y-6">
+                    {/* FILTROS & EXPORTAÇÃO EXCEL PANEL */}
+                    <div className="p-5 bg-zinc-950/45 border border-zinc-900 rounded-3xl space-y-4 shadow-xl">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zinc-900 pb-3">
+                        <div className="space-y-1">
+                          <h3 className="text-sm sm:text-base font-black text-white uppercase font-mono tracking-wider flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full bg-fuchsia-500 animate-pulse shadow-[0_0_8px_rgba(217,70,239,0.5)]"></span>
+                            Pesquisa & Filtros de Comunidade
+                          </h3>
+                          <p className="text-xs text-zinc-400">Analise a eficácia exata de cada tipster verificando taxa de insucesso e mercados preferidos.</p>
+                        </div>
+                        
+                        {/* EXPORT BUTTON */}
+                        <button
+                          onClick={handleExportToExcel}
+                          className="shrink-0 flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-xs font-black text-white uppercase tracking-wider rounded-xl transition-all border border-emerald-500/35 font-mono shadow-lg hover:shadow-emerald-500/10 cursor-pointer"
+                        >
+                          <span>📊</span>
+                          <span>Exportar para Excel</span>
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {/* 1. Nome do tipster */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Pesquisar ID / Nome</label>
+                          <input 
+                            type="text"
+                            value={tipsterSearch}
+                            onChange={(e) => setTipsterSearch(e.target.value)}
+                            placeholder="Procurar tipster..."
+                            className="w-full bg-[#0a0a0d] border border-zinc-900 focus:border-fuchsia-500 rounded-xl py-2 px-3 text-sm text-zinc-350 outline-none placeholder:text-zinc-550"
+                          />
+                        </div>
+
+                        {/* 2. Critério de Ordenação */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Critério Estatístico</label>
+                          <select
+                            value={tipsterSortBy}
+                            onChange={(e) => setTipsterSortBy(e.target.value as any)}
+                            className="w-full bg-[#0a0a0d] border border-zinc-900 focus:border-[#bf5af2] rounded-xl py-2 px-2.5 text-sm text-white focus:ring-1 focus:ring-purple-500 outline-none cursor-pointer"
+                          >
+                            <option value="netProfit">💰 Maior Lucro Líquido</option>
+                            <option value="yieldPercent">⚡ Maior Yield Geral (%)</option>
+                            <option value="successRate">📈 Taxa de Sucesso (Greens %)</option>
+                            <option value="wins">🟢 Total de Apostas Ganhas (Greens)</option>
+                            <option value="losses">🔴 Total de Apostas Perdidas (Reds)</option>
+                            <option value="refunds">⚫ Total de Apostas Reembolsadas</option>
+                          </select>
+                        </div>
+
+                        {/* 3. Tipo de Aposta (Mercado) */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Tipo de Mercado / Aposta</label>
+                          <select
+                            value={tipsterFilterMarket}
+                            onChange={(e) => setTipsterFilterMarket(e.target.value)}
+                            className="w-full bg-[#0a0a0d] border border-zinc-900 focus:border-[#bf5af2] rounded-xl py-2 px-2.5 text-sm text-white focus:ring-1 focus:ring-purple-500 outline-none cursor-pointer"
+                          >
+                            <option value="all">🎯 Qualquer Tipo de Aposta</option>
+                            {availableMarkets.map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* 4. Clube / Equipa */}
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Por Clube / Equipa</label>
+                          <select
+                            value={tipsterFilterClub}
+                            onChange={(e) => setTipsterFilterClub(e.target.value)}
+                            className="w-full bg-[#0a0a0d] border border-zinc-900 focus:border-[#bf5af2] rounded-xl py-2 px-2.5 text-sm text-white focus:ring-1 focus:ring-purple-500 outline-none cursor-pointer"
+                          >
+                            <option value="all">⚽ Todos os Clubes</option>
+                            {availableClubs.map(club => (
+                              <option key={club} value={club}>{club}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* TABELA DE RESULTADOS DA COMUNIDADE */}
+                    <div className="bg-[#08080b]/50 border border-zinc-900 rounded-3xl overflow-hidden shadow-2xl">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-zinc-900 bg-[#060608]/90 font-mono text-[10px] font-bold uppercase text-zinc-450 tracking-wider">
+                              <th className="py-4 px-5">Rnk / Especialista</th>
+                              <th className="py-4 px-4 text-center">📈 Sucesso (Green)</th>
+                              <th className="py-4 px-4 text-center">🔴 Insucesso (Red)</th>
+                              <th className="py-4 px-4 text-center">⚫ Anulados</th>
+                              <th className="py-4 px-4 text-center">Registo (W/L/D)</th>
+                              <th className="py-4 px-4 text-right">💰 Lucro Líquido</th>
+                              <th className="py-4 px-4 text-right">✨ Yield</th>
+                              <th className="py-4 px-5 text-right">Perfil</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-zinc-900/45">
+                            {filteredTipsters.map((tipster, idx) => {
+                              const isMainOwner = currentUser?.email === tipster.email || (tipster.id === 'morgado' && simulationOwnerMode);
+                              const isFoll = followedTipsters.includes(tipster.id);
+                              
+                              // Stats computing
+                              const total = tipster.wins + tipster.losses + tipster.refunds;
+                              const sPct = total > 0 ? (tipster.wins / total) * 100 : 0;
+                              const fPct = total > 0 ? (tipster.losses / total) * 100 : 0;
+                              const rPct = total > 0 ? (tipster.refunds / total) * 100 : 0;
+
+                              const originalRankIdx = tipstersList.findIndex(t => t.id === tipster.id) + 1;
+
+                              return (
+                                <tr key={tipster.id} className="hover:bg-zinc-950/70 transition-colors group">
+                                  {/* Rank & User details */}
+                                  <td className="py-4 px-5">
+                                    <div className="flex items-center gap-3.5">
+                                      <span className={`w-8 h-8 flex items-center justify-center font-mono text-xs font-black rounded-lg border ${
+                                        originalRankIdx === 1
+                                          ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+                                          : originalRankIdx === 2
+                                          ? 'bg-zinc-400/10 text-zinc-300 border-zinc-500/20'
+                                          : 'bg-zinc-900/60 text-zinc-500 border-zinc-850'
+                                      }`}>
+                                        #{originalRankIdx}
+                                      </span>
+                                      
+                                      <div className="flex items-center gap-2.5">
+                                        <span className="w-9 h-9 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-lg select-none">
+                                          {tipster.avatar || '👤'}
+                                        </span>
+                                        <div className="space-y-0.5">
+                                          <div className="flex items-center gap-1.5">
+                                            <span className="font-extrabold text-white text-sm group-hover:text-[#bf5af2] transition-colors">{tipster.name}</span>
+                                            {isMainOwner && (
+                                              <span className="text-[8px] bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/20 font-mono font-bold uppercase rounded px-1.5 py-0.2 select-none">Meu Canal</span>
+                                            )}
+                                          </div>
+                                          <p className="text-xs text-zinc-500 font-mono">{tipster.email}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Success % */}
+                                  <td className="py-4 px-4 text-center font-mono font-black text-emerald-400 text-sm">
+                                    <div className="space-y-1">
+                                      <div>{sPct.toFixed(1)}%</div>
+                                      <div className="w-16 h-1 bg-zinc-900/90 rounded-full mx-auto overflow-hidden">
+                                        <div style={{ width: `${sPct}%` }} className="h-full bg-emerald-500"></div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Failure % */}
+                                  <td className="py-4 px-4 text-center font-mono font-bold text-red-400 text-sm">
+                                    <div className="space-y-1">
+                                      <div>{fPct.toFixed(1)}%</div>
+                                      <div className="w-16 h-1 bg-zinc-900/90 rounded-full mx-auto overflow-hidden">
+                                        <div style={{ width: `${fPct}%` }} className="h-full bg-red-500"></div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Refunds % */}
+                                  <td className="py-4 px-4 text-center font-mono text-xs text-zinc-400">
+                                    <div className="space-y-1">
+                                      <div>{rPct.toFixed(1)}%</div>
+                                      <div className="w-16 h-1 bg-zinc-900/90 rounded-full mx-auto overflow-hidden">
+                                        <div style={{ width: `${rPct}%` }} className="h-full bg-zinc-500"></div>
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  {/* Summary Record Counts */}
+                                  <td className="py-4 px-4 text-center font-mono text-zinc-350 select-none text-xs">
+                                    <div className="flex justify-center items-center gap-1">
+                                      <span className="text-emerald-500 font-extrabold">{tipster.wins}W</span>
+                                      <span className="text-zinc-650">/</span>
+                                      <span className="text-red-405 font-bold">{tipster.losses}L</span>
+                                      <span className="text-zinc-650">/</span>
+                                      <span className="text-zinc-500">{tipster.refunds}D</span>
+                                    </div>
+                                  </td>
+
+                                  {/* Net Gain Profit */}
+                                  <td className="py-4 px-4 text-right font-mono font-bold text-emerald-400 text-sm">
+                                    +{tipster.netProfit.toFixed(1)}€
+                                  </td>
+
+                                  {/* Yield Percent */}
+                                  <td className="py-4 px-4 text-right font-mono font-black text-[#bf5af2] text-sm">
+                                    +{tipster.yieldPercent.toFixed(1)}%
+                                  </td>
+
+                                  {/* Open details page */}
+                                  <td className="py-4 px-5 text-right">
+                                    <button
+                                      onClick={() => {
+                                        setActiveTipsterId(tipster.id);
+                                        setConfigName(tipster.name);
+                                        setConfigAvatar(tipster.avatar);
+                                        setConfigTelegram(tipster.telegramUrl);
+                                        setConfigBetclic(tipster.betclicInvite);
+                                        setConfigBetano(tipster.betanoInvite);
+                                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                                      }}
+                                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-zinc-900 border border-zinc-800 hover:bg-[#bf5af2] hover:text-black hover:border-[#bf5af2] text-xs font-bold uppercase rounded-xl transition-all cursor-pointer shadow-md shadow-black"
+                                    >
+                                      <span>📂 Abri Kanal</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {filteredTipsters.length === 0 && (
+                        <div className="py-12 text-center text-zinc-500 text-sm italic font-mono bg-zinc-950/10">
+                          Nenhum tipster corresponde aos filtros selecionados.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            /* PAGE VIEW 2: INDIVIDUAL DETAILED TITPSTER PAGE WITH PREMIUM LOCKS */
+            (() => {
+              const currentTipsterIdx = tipstersList.findIndex(t => t.id === activeTipsterId);
+              if (currentTipsterIdx === -1) return null;
+              const tipster = tipstersList[currentTipsterIdx];
+              
+              const isFoll = followedTipsters.includes(tipster.id);
+              const isSub = isPaidUser || subscribedTipsters.includes(tipster.id);
+              const isOwner = currentUser?.email === tipster.email || (tipster.id === 'morgado' && simulationOwnerMode);
+
+              return (
+                <div className="space-y-6">
+                  {/* Navegation Actions & Modes */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-zinc-900">
+                    <button
+                      onClick={() => {
+                        setActiveTipsterId(null);
+                        setIsEditingConfig(false);
+                      }}
+                      className="group inline-flex items-center gap-3 px-8 py-4.5 bg-zinc-950 hover:bg-[#bf5af2] border-3 border-[#bf5af2] rounded-2xl text-base font-black text-white hover:text-black hover:scale-[1.03] active:scale-[0.97] transition-all cursor-pointer shadow-[0_0_20px_rgba(191,90,242,0.30)] hover:shadow-[0_0_35px_rgba(191,90,242,0.60)]"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={4} stroke="currentColor" className="w-5 h-5 text-[#bf5af2] group-hover:text-black group-hover:-translate-x-1 transition-transform">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                      </svg>
+                      <span className="tracking-widest uppercase font-mono text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-pink-200 to-amber-200 group-hover:from-black group-hover:to-black">
+                        ⬅️ VOLTAR AO RANKING DE ELITE
+                      </span>
+                    </button>
+
+                    {isOwner && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[9px] bg-emerald-500/10 text-emerald-400 font-bold uppercase px-2 py-0.5 rounded font-mono">
+                          🟢 Autenticado como Proprietário
+                        </span>
+                        <button
+                          onClick={() => {
+                            setActiveTab('analise-ia');
+                            window.scrollTo({ top: 300, behavior: 'instant' });
+                          }}
+                          className="px-3 py-1.5 bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] border border-[#00f2fe]/30 font-black text-[9px] uppercase tracking-wider rounded-xl transition-all"
+                        >
+                          📊 Aceder à Análise de JOGOS ⚽
+                        </button>
+                        <button
+                          onClick={() => setIsEditingConfig(!isEditingConfig)}
+                          className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-850 text-white text-[9px] font-black uppercase tracking-wider rounded-xl border border-zinc-800 transition-all"
+                        >
+                          🛠️ Editar Configs Canal
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Profile Jumbo Card */}
+                  <div className="p-6 bg-zinc-950/35 border border-zinc-900 rounded-3xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-[#bf5af2]/10 rounded-full blur-[50px] pointer-events-none"></div>
+                    <div className="relative flex flex-col md:flex-row justify-between gap-6">
+                      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-zinc-900 border-2 border-[#bf5af2]/50 flex items-center justify-center text-4xl shadow-xl">
+                          {tipster.avatar || '👤'}
+                        </div>
+                        <div className="space-y-1.5 text-center sm:text-left">
+                          <h2 className="text-xl font-extrabold text-white flex items-center justify-center sm:justify-start gap-1.5">
+                            <span>{tipster.name}</span>
+                            <span className="text-[10px] bg-yellow-500/20 text-yellow-500 border border-yellow-500/30 px-2 py-0.5 rounded uppercase font-mono font-black animate-pulse">
+                              PRO VERIFIED
+                            </span>
+                          </h2>
+                          <p className="text-xs text-zinc-500 font-mono">{tipster.email}</p>
+                          
+                          {/* Social links block */}
+                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                            {tipster.telegramUrl && (
+                              <a 
+                                href={tipster.telegramUrl} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-[#229ED9]/15 hover:bg-[#229ED9]/25 text-[#229ED9] rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border border-[#229ED9]/20"
+                              >
+                                ✈️ Telegram
+                              </a>
+                            )}
+                            {tipster.socialLinks?.instagram && (
+                              <a 
+                                href={tipster.socialLinks.instagram} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-pink-500/15 hover:bg-pink-500/25 text-pink-400 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border border-pink-500/20"
+                              >
+                                📸 Instagram
+                              </a>
+                            )}
+                            {tipster.socialLinks?.youtube && (
+                              <a 
+                                href={tipster.socialLinks.youtube} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-red-650/15 hover:bg-red-650/25 text-red-100 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border border-red-500/20"
+                              >
+                                🎥 YouTube
+                              </a>
+                            )}
+                            {tipster.socialLinks?.twitter && (
+                              <a 
+                                href={tipster.socialLinks.twitter} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-blue-400/15 hover:bg-blue-400/25 text-blue-405 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border border-blue-400/20"
+                              >
+                                🐦 Twitter/X
+                              </a>
+                            )}
+                            {tipster.socialLinks?.tiktok && (
+                              <a 
+                                href={tipster.socialLinks.tiktok} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-teal-500/15 hover:bg-teal-500/25 text-teal-450 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border border-teal-500/20"
+                              >
+                                🎵 TikTok
+                              </a>
+                            )}
+                            {tipster.socialLinks?.facebook && (
+                              <a 
+                                href={tipster.socialLinks.facebook} 
+                                target="_blank" 
+                                rel="noreferrer"
+                                className="px-2.5 py-1 bg-blue-600/15 hover:bg-blue-600/25 text-blue-400 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border border-blue-600/20"
+                              >
+                                👥 Facebook
+                              </a>
+                            )}
+                            <button
+                              onClick={() => {
+                                const foll = [...followedTipsters];
+                                if (isFoll) {
+                                  saveFollowedState(foll.filter(id => id !== tipster.id));
+                                } else {
+                                  saveFollowedState([...foll, tipster.id]);
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider font-mono flex items-center gap-1 border ${
+                                isFoll 
+                                  ? 'bg-red-500/10 text-red-400 border-red-500/20' 
+                                  : 'bg-[#00f2fe]/10 text-[#00f2fe] border-[#00f2fe]/20'
+                              }`}
+                            >
+                              <span>⭐</span>
+                              <span>{isFoll ? 'Deixar de Seguir' : 'Seguindo Perfil'}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stat Metrics Panel */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[#08080c] border border-zinc-900/60 p-4 rounded-2xl text-center md:max-w-xl w-full">
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest font-mono block">Lucro Geral</span>
+                          <strong className="text-sm font-mono text-emerald-400">+{tipster.netProfit.toFixed(1)}€</strong>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest font-mono block">Yield Verificado</span>
+                          <strong className="text-sm font-mono text-purple-400">+{tipster.yieldPercent.toFixed(1)}%</strong>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest font-mono block">Acertos</span>
+                          <strong className="text-sm font-mono text-white">{(tipster.wins + tipster.losses > 0) ? Math.round((tipster.wins / (tipster.wins + tipster.losses)) * 100) : 0}%</strong>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[8px] font-bold text-zinc-550 uppercase tracking-widest font-mono block">Seguidores</span>
+                          <strong className="text-sm font-mono text-zinc-300">{122 + tipster.wins * 3 + (isFoll ? 1 : 0)}</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Betclic & Betano Referral Bonuses Banner */}
+                    <div className="mt-5 pt-4 border-t border-zinc-900 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+                      <div className="space-y-1 text-left">
+                        <span className="text-[8px] font-extrabold text-amber-500 uppercase tracking-widest font-mono block">🎁 BÓNUS DE PARTILHA & INDICAÇÕES</span>
+                        <p className="text-[10px] text-zinc-400">Adira às maiores casas reguladas de Portugal pelos convites verified deste tipster para ganhar freespins e bónus!</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {tipster.betclicInvite ? (
+                          <a 
+                            href={tipster.betclicInvite} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="bg-red-650 hover:bg-red-700 hover:scale-[1.02] text-white px-3.5 py-2 font-black text-[9px] uppercase tracking-wider rounded-xl transition-all shadow font-mono flex items-center gap-1.5"
+                          >
+                            <span>🔴</span>
+                            <span>Aderir Betclic (Bónus)</span>
+                          </a>
+                        ) : null}
+
+                        {tipster.betanoInvite ? (
+                          <a 
+                            href={tipster.betanoInvite} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="bg-[#EF233C] hover:bg-orange-650 hover:scale-[1.02] text-white px-3.5 py-2 font-black text-[9px] uppercase tracking-wider rounded-xl transition-all shadow font-mono flex items-center gap-1.5"
+                          >
+                            <span>🟠</span>
+                            <span>Aderir Betano (Bónus)</span>
+                          </a>
+                        ) : null}
+
+                        {tipster.supportedBookmakers?.map((bk) => (
+                          <a 
+                            key={bk.houseId}
+                            href={bk.inviteUrl} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:scale-[1.02] text-white px-3.5 py-2 font-black text-[9px] uppercase tracking-wider rounded-xl transition-all shadow font-mono flex items-center gap-1.5"
+                          >
+                            <span>🟢</span>
+                            <span>Aderir {bk.name} {bk.promoText ? `(${bk.promoText})` : '(Bónus)'}</span>
+                          </a>
+                        ))}
+
+                        {!tipster.betclicInvite && !tipster.betanoInvite && (!tipster.supportedBookmakers || tipster.supportedBookmakers.length === 0) && (
+                          <span className="text-[8px] text-zinc-500 italic uppercase">Sem links de convite registados de momento</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Owner Config Form */}
+                  {isOwner && isEditingConfig && (
+                    <div className="p-5 bg-[#0a0a0f] border border-[#00f2fe]/40 rounded-3xl space-y-4 text-left animate-fade-in">
+                      <h3 className="text-xs font-black uppercase text-[#00f2fe] tracking-wider font-mono flex items-center gap-1.5">
+                        <span>⚙️ CONFIGURAR PARÂMETROS GERAIS DO MEU CANAL</span>
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Nome do Tipster</label>
+                          <input 
+                            type="text" 
+                            value={configName} 
+                            onChange={(e) => setConfigName(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white font-medium outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Logo / Avatar (Emoji ou Texto Curto)</label>
+                          <input 
+                            type="text" 
+                            value={configAvatar} 
+                            onChange={(e) => setConfigAvatar(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white font-medium outline-none"
+                            placeholder="Emoji ex: 👑"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Link Canal Social / Telegram</label>
+                          <input 
+                            type="text" 
+                            value={configTelegram} 
+                            onChange={(e) => setConfigTelegram(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white font-mono outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Link Convite Amigo Betclic (Affiliate)</label>
+                          <input 
+                            type="text" 
+                            value={configBetclic} 
+                            onChange={(e) => setConfigBetclic(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white font-mono outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                          <label className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Link Convite Amigo Betano (Affiliate)</label>
+                          <input 
+                            type="text" 
+                            value={configBetano} 
+                            onChange={(e) => setConfigBetano(e.target.value)}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const listPlus = [...tipstersList];
+                          listPlus[currentTipsterIdx] = {
+                            ...tipster,
+                            name: configName,
+                            avatar: configAvatar,
+                            telegramUrl: configTelegram,
+                            betclicInvite: configBetclic,
+                            betanoInvite: configBetano
+                          };
+                          saveTipstersState(listPlus);
+                          setIsEditingConfig(false);
+                        }}
+                        className="py-2.5 px-4 bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 text-[#00f2fe] hover:text-white border border-[#00f2fe]/30 hover:border-cyan-500 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+                      >
+                        Guardar Alterações do Canal 🚀
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Owner Direct Tip Insertion Engine */}
+                  {isOwner && (
+                    <div className="p-5 bg-zinc-950/40 border border-[#bf5af2]/20 rounded-3xl space-y-4 text-left animate-fade-in relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#bf5af2]/5 rounded-full blur-[50px] pointer-events-none"></div>
+                      <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
+                        <h3 className="text-xs font-black uppercase text-[#bf5af2] tracking-wider font-mono flex items-center gap-1.5">
+                          <span>📦 REGISTO DE NOVA DICA/PROGNÓSTICO</span>
+                        </h3>
+                        <button
+                          onClick={() => handleExportExcel(tipster)}
+                          className="px-2.5 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[9px] font-bold uppercase rounded-lg transition-all flex items-center gap-1 font-mono cursor-pointer"
+                        >
+                          📥 Exportar Livro Excel
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div className="space-y-1 ml-0.5">
+                          <label className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Jogo / Equipas</label>
+                          <input 
+                            type="text" 
+                            value={newTipGame}
+                            onChange={(e) => setNewTipGame(e.target.value)}
+                            placeholder="ex: Benfica vs Porto"
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white focus:border-purple-500 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Mercado Escolhido</label>
+                          <input 
+                            type="text" 
+                            value={newTipMarket}
+                            onChange={(e) => setNewTipMarket(e.target.value)}
+                            placeholder="ex: Mais de 1.5 Golos"
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white focus:border-purple-500 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Odd Mínima</label>
+                          <input 
+                            type="number" 
+                            value={newTipOdd}
+                            step="0.01"
+                            onChange={(e) => setNewTipOdd(e.target.value)}
+                            placeholder="ex: 1.45"
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white focus:border-purple-500 outline-none"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[8px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Tipo de Acesso</label>
+                          <select
+                            value={newTipType}
+                            onChange={(e) => setNewTipType(e.target.value as 'FREE' | 'PREMIUM')}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-white focus:border-purple-500 outline-none"
+                          >
+                            <option value="FREE">🔓 Grátis para Todos</option>
+                            <option value="PREMIUM">🔒 Apenas Premium (Pago)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-1 font-mono">
+                        <button
+                          onClick={() => {
+                            if (!newTipGame || !newTipMarket || !newTipOdd) return;
+                            const oddVal = parseFloat(newTipOdd);
+                            const tps = [...tipstersList];
+                            const newB = {
+                              id: 'mb_c_' + Date.now(),
+                              game: newTipGame,
+                              market: newTipMarket,
+                              odd: isNaN(oddVal) ? 1.5 : oddVal,
+                              status: 'Pendente' as const,
+                              type: newTipType,
+                              date: 'Hoje, ' + new Date().toLocaleTimeString('pt-PT', {hour: '2-digit', minute:'2-digit'})
+                            };
+                            tps[currentTipsterIdx].customBets = [newB, ...tipster.customBets];
+                            saveTipstersState(tps);
+
+                            setNewTipGame('');
+                            setNewTipMarket('');
+                            setNewTipOdd('');
+                          }}
+                          className="py-2.5 px-5 bg-gradient-to-r from-[#bf5af2] to-pink-500 text-black font-black text-xs uppercase tracking-wider rounded-xl hover:scale-102 active:scale-98 transition-all shadow-md"
+                        >
+                          ➕ Registar Nova Dica no Perfil 🚀
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB LAYOUTS: CURRENT ACTIVE TIPS & SUBSCRIPTION PROMPTS */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    
+                    {/* LEFT PANEL: 🔓 FREE PUBLIC TIPS LIST */}
+                    <div className="p-5 bg-zinc-950/25 border border-zinc-900 rounded-3xl space-y-4">
+                      <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
+                        <span className="text-[10px] font-black uppercase text-zinc-450 tracking-wider font-mono">
+                          🔓 DICAS E ENTRADAS GRÁTIS DESBLOQUEADAS
+                        </span>
+                        <span className="text-[8px] bg-emerald-500/10 text-emerald-450 px-1.5 py-0.5 rounded font-mono font-bold uppercase">
+                          LIVRE
+                        </span>
+                      </div>
+
+                      <div className="space-y-3">
+                        {tipster.customBets.filter(b => b.type === 'FREE').length === 0 ? (
+                          <div className="p-4 text-center text-[10px] text-zinc-550 italic uppercase">
+                            Nenhuma dica grátis registada de momento.
+                          </div>
+                        ) : (
+                          tipster.customBets.filter(b => b.type === 'FREE').map((b) => {
+                            return (
+                              <div key={b.id} className="p-3.5 bg-[#09090d] border border-zinc-900 rounded-2xl flex flex-col justify-between gap-3 text-left">
+                                <div className="flex justify-between items-start gap-1.5">
+                                  <div>
+                                    <span className="text-[8px] font-mono font-bold text-zinc-550 uppercase block mb-0.5">{b.date}</span>
+                                    <h4 className="text-xs font-black text-white">{b.game}</h4>
+                                    <p className="text-[10px] text-zinc-400 font-medium mt-0.5">Mercado: <strong>{b.market}</strong></p>
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1 font-mono">
+                                    <span className="text-[9px] bg-pink-500/15 text-pink-500 px-1.5 py-0.2 rounded font-black">Odd: {b.odd}</span>
+                                    {b.status === 'Pendente' ? (
+                                      <span className="text-[7.5px] bg-zinc-900 border border-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded-full font-bold uppercase animate-pulse">
+                                        ⏳ Pendente
+                                      </span>
+                                    ) : b.status === 'Green' ? (
+                                      <span className="text-[7.5px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full font-black uppercase">
+                                        🟢 GREEN ✅
+                                      </span>
+                                    ) : b.status === 'Red' ? (
+                                      <span className="text-[7.5px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded-full font-black uppercase">
+                                        🔴 RED ✕
+                                      </span>
+                                    ) : (
+                                      <span className="text-[7.5px] bg-zinc-800 text-white px-1.5 py-0.5 rounded-full font-black uppercase">
+                                        🔄 DEVOLVIDA
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {isOwner && (
+                                  <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-950 font-mono">
+                                    <button
+                                      onClick={() => {
+                                        const copy = [...tipstersList];
+                                        const betsCopy = copy[currentTipsterIdx].customBets.map(bet => 
+                                          bet.id === b.id ? { ...bet, status: 'Green' as const } : bet
+                                        );
+                                        // Update analytics and yields
+                                        const w = betsCopy.filter(z => z.status === 'Green').length;
+                                        const l = betsCopy.filter(z => z.status === 'Red').length;
+                                        copy[currentTipsterIdx].customBets = betsCopy;
+                                        copy[currentTipsterIdx].wins = w + 140; // Maintain base
+                                        copy[currentTipsterIdx].losses = l + 25;
+                                        saveTipstersState(copy);
+                                      }}
+                                      className="py-1 px-2.5 bg-emerald-500 text-black text-[8px] font-black uppercase rounded-lg hover:bg-emerald-400"
+                                    >
+                                      GREEN
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const copy = [...tipstersList];
+                                        const betsCopy = copy[currentTipsterIdx].customBets.map(bet => 
+                                          bet.id === b.id ? { ...bet, status: 'Red' as const } : bet
+                                        );
+                                        const w = betsCopy.filter(z => z.status === 'Green').length;
+                                        const l = betsCopy.filter(z => z.status === 'Red').length;
+                                        copy[currentTipsterIdx].customBets = betsCopy;
+                                        copy[currentTipsterIdx].wins = w + 140;
+                                        copy[currentTipsterIdx].losses = l + 25;
+                                        saveTipstersState(copy);
+                                      }}
+                                      className="py-1 px-2.5 bg-red-500 text-black text-[8px] font-black uppercase rounded-lg hover:bg-red-400"
+                                    >
+                                      RED
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const copy = [...tipstersList];
+                                        const betsCopy = copy[currentTipsterIdx].customBets.map(bet => 
+                                          bet.id === b.id ? { ...bet, status: 'Devolvida' as const } : bet
+                                        );
+                                        copy[currentTipsterIdx].customBets = betsCopy;
+                                        saveTipstersState(copy);
+                                      }}
+                                      className="py-1 px-2.5 bg-zinc-800 text-white text-[8px] font-black uppercase rounded-lg hover:bg-zinc-700"
+                                    >
+                                      DEVOLVIDA
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        const copy = [...tipstersList];
+                                        const filtered = copy[currentTipsterIdx].customBets.filter(bet => bet.id !== b.id);
+                                        copy[currentTipsterIdx].customBets = filtered;
+                                        saveTipstersState(copy);
+                                      }}
+                                      className="py-1 px-2 bg-red-750 text-white text-[8px] font-bold uppercase rounded-lg hover:bg-red-800 ml-auto"
+                                    >
+                                      Remover/Apagar
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* RIGHT PANEL: 🔒 PREMIUM LOCKED AREA */}
+                    <div className="p-5 bg-zinc-950/25 border border-zinc-900 rounded-3xl space-y-4">
+                      <div className="flex justify-between items-center pb-2 border-b border-zinc-900">
+                        <span className="text-[10px] font-black uppercase text-fuchsia-400 tracking-wider font-mono">
+                          🔥 CANAL DE SUCESSO PREMIUM SEGURO
+                        </span>
+                        <span className="text-[8px] bg-fuchsia-500/10 text-fuchsia-400 px-1.5 py-0.5 rounded font-mono font-bold uppercase">
+                          {isOwner ? '🟢 MEU PERFIL' : isPaidUser ? '🔓 ACESSO VIP COMPLETO' : 'DESBLOQUEADO'}
+                        </span>
+                      </div>
+
+                      {!(isSub || isOwner) ? (
+                        /* PREMIUM SUBSCRIPTION PROMPT COMPONENT */
+                        <div className="p-5 bg-gradient-to-b from-zinc-950 to-zinc-950/90 border border-purple-500/20 rounded-2xl text-center space-y-4 relative overflow-hidden">
+                          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none"></div>
+                          
+                          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center mx-auto text-xl shadow-inner animate-pulse">
+                            🔒
+                          </div>
+                          
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-black text-white uppercase tracking-wider font-mono">CONTEÚDO PREMIUM TRANCADO</h4>
+                            <p className="text-[10.5px] text-zinc-400 font-light max-w-sm mx-auto leading-relaxed">
+                              Aceda a todos os prognósticos de alto ROI da elite deste canal desportivo regulado. Escolha um plano de adesão simulado:
+                            </p>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+                            {/* Option 1: Monthly */}
+                            <div className="p-3 bg-zinc-950 border border-zinc-900 rounded-xl space-y-2 flex flex-col justify-between">
+                              <div>
+                                <h5 className="text-[9.5px] font-extrabold text-[#bf5af2] uppercase tracking-wider font-mono">Mensal Regular</h5>
+                                <div className="text-base font-black text-white font-mono mt-0.5">{tipster.subscriptionPriceMonth}€<span className="text-[8px] text-zinc-500 font-normal">/mês</span></div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setCheckoutTipsterId(tipster.id);
+                                  setCheckoutInterval('month');
+                                }}
+                                className="w-full py-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:scale-102 hover:brightness-110 text-black font-extrabold text-[9px] uppercase tracking-wider rounded-lg transition-all"
+                              >
+                                Subscrever Mês
+                              </button>
+                            </div>
+
+                            {/* Option 2: Yearly */}
+                            <div className="p-3 bg-zinc-950 border border-yellow-500/25 rounded-xl space-y-2 flex flex-col justify-between relative">
+                              <span className="absolute -top-1.5 right-2 text-[7px] font-black bg-yellow-500 text-black px-1.5 py-0.2 rounded uppercase font-mono tracking-widest">
+                                POUPANÇA 30%
+                              </span>
+                              <div>
+                                <h5 className="text-[9.5px] font-extrabold text-yellow-500 uppercase tracking-wider font-mono">Anual Premium</h5>
+                                <div className="text-base font-black text-white font-mono mt-0.5">{tipster.subscriptionPriceYear}€<span className="text-[8px] text-zinc-500 font-normal">/ano</span></div>
+                              </div>
+                              <button
+                                onClick={() => {
+                                  setCheckoutTipsterId(tipster.id);
+                                  setCheckoutInterval('year');
+                                }}
+                                className="w-full py-2 bg-gradient-to-r from-yellow-500 to-amber-500 hover:scale-102 hover:brightness-110 text-black font-extrabold text-[9px] uppercase tracking-wider rounded-lg transition-all"
+                              >
+                                Subscrever Ano
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        /* PREMIUM TIPS REVEALED LIST */
+                        <div className="space-y-3">
+                          {tipster.customBets.filter(b => b.type === 'PREMIUM').length === 0 ? (
+                            <div className="p-4 text-center text-[10px] text-zinc-550 italic uppercase">
+                              Nenhuma dica de valor premium registada de momento.
+                            </div>
+                          ) : (
+                            tipster.customBets.filter(b => b.type === 'PREMIUM').map((b) => {
+                              return (
+                                <div key={b.id} className="p-3.5 bg-gradient-to-tr from-purple-950/10 to-[#0c0c14] border border-purple-500/20 rounded-2xl flex flex-col justify-between gap-3 text-left animate-fade-in relative overflow-hidden">
+                                  {/* Top neon glow line */}
+                                  <div className="absolute top-0 inset-x-0 h-0.5 bg-gradient-to-r from-[#bf5af2] to-transparent"></div>
+                                  
+                                  <div className="flex justify-between items-start gap-1.5">
+                                    <div>
+                                      <span className="text-[8px] font-mono font-bold text-purple-400 uppercase tracking-widest block mb-0.5">⭐ CONFIRMED PREMIUM • {b.date}</span>
+                                      <h4 className="text-xs font-black text-white">{b.game}</h4>
+                                      <p className="text-[10px] text-zinc-350 font-medium mt-0.5">Mercado: <strong>{b.market}</strong></p>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1 font-mono">
+                                      <span className="text-[9px] bg-purple-500/20 text-[#bf5af2] px-1.5 py-0.2 rounded font-black border border-[#bf5af2]/20">Odd: {b.odd}</span>
+                                      {b.status === 'Pendente' ? (
+                                        <span className="text-[7.5px] bg-zinc-900 border border-zinc-850 text-zinc-450 px-1.5 py-0.5 rounded-full font-bold uppercase animate-pulse">
+                                          ⏳ Pendente
+                                        </span>
+                                      ) : b.status === 'Green' ? (
+                                        <span className="text-[7.5px] bg-emerald-500/15 text-emerald-450 px-1.5 py-0.5 rounded-full font-black uppercase">
+                                          🟢 GREEN ✅
+                                        </span>
+                                      ) : b.status === 'Red' ? (
+                                        <span className="text-[7.5px] bg-red-500/15 text-red-400 px-1.5 py-0.5 rounded-full font-black uppercase">
+                                          🔴 RED ✕
+                                        </span>
+                                      ) : (
+                                        <span className="text-[7.5px] bg-zinc-800 text-white px-1.5 py-0.5 rounded-full font-black uppercase">
+                                          🔄 DEVOLVIDA
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {isOwner && (
+                                    <div className="flex flex-wrap gap-1.5 pt-2 border-t border-zinc-950 font-mono">
+                                      <button
+                                        onClick={() => {
+                                          const copy = [...tipstersList];
+                                          const betsCopy = copy[currentTipsterIdx].customBets.map(bet => 
+                                            bet.id === b.id ? { ...bet, status: 'Green' as const } : bet
+                                          );
+                                          const w = betsCopy.filter(z => z.status === 'Green').length;
+                                          const l = betsCopy.filter(z => z.status === 'Red').length;
+                                          copy[currentTipsterIdx].customBets = betsCopy;
+                                          copy[currentTipsterIdx].wins = w + 140;
+                                          copy[currentTipsterIdx].losses = l + 25;
+                                          saveTipstersState(copy);
+                                        }}
+                                        className="py-1 px-2.5 bg-emerald-500 text-black text-[8px] font-black uppercase rounded-lg hover:bg-emerald-400"
+                                      >
+                                        GREEN
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          const copy = [...tipstersList];
+                                          const betsCopy = copy[currentTipsterIdx].customBets.map(bet => 
+                                            bet.id === b.id ? { ...bet, status: 'Red' as const } : bet
+                                          );
+                                          const w = betsCopy.filter(z => z.status === 'Green').length;
+                                          const l = betsCopy.filter(z => z.status === 'Red').length;
+                                          copy[currentTipsterIdx].customBets = betsCopy;
+                                          copy[currentTipsterIdx].wins = w + 140;
+                                          copy[currentTipsterIdx].losses = l + 25;
+                                          saveTipstersState(copy);
+                                        }}
+                                        className="py-1 px-2.5 bg-red-500 text-black text-[8px] font-black uppercase rounded-lg hover:bg-red-400"
+                                      >
+                                        RED
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          const copy = [...tipstersList];
+                                          const betsCopy = copy[currentTipsterIdx].customBets.map(bet => 
+                                            bet.id === b.id ? { ...bet, status: 'Devolvida' as const } : bet
+                                          );
+                                          copy[currentTipsterIdx].customBets = betsCopy;
+                                          saveTipstersState(copy);
+                                        }}
+                                        className="py-1 px-2.5 bg-zinc-800 text-white text-[8px] font-black uppercase rounded-lg hover:bg-zinc-700"
+                                      >
+                                        DEVOLVIDA
+                                      </button>
+                                      <button
+                                        onClick={() => {
+                                          const copy = [...tipstersList];
+                                          const filtered = copy[currentTipsterIdx].customBets.filter(bet => bet.id !== b.id);
+                                          copy[currentTipsterIdx].customBets = filtered;
+                                          saveTipstersState(copy);
+                                        }}
+                                        className="py-1 px-2 bg-red-750 text-white text-[8px] font-bold uppercase rounded-lg hover:bg-red-800 ml-auto"
+                                      >
+                                        Remover/Apagar
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Warning Note as requested by user in small fonts */}
+                  <p className="text-[8px] text-zinc-550 italic leading-relaxed text-center max-w-xl mx-auto pt-4">
+                    {language === 'pt'
+                      ? '*Aviso Legal iRunBets: Os prognósticos e odds colocados pelos tipsters nesta rede constituem unicamente a opinião pessoal e modelo matemático dos mesmos, carecendo sempre de contingências externas inesperadas não geríveis ou previsionáveis pela Inteligência Artificial. Não garantimos rentabilidade absoluta.'
+                      : '*Disclaimer: Tips and statistics published across this user community are for demo simulation and analysis backup solely. Real outcomes are subject to highly unpredictable field matches. Bet responsibly.'}
+                  </p>
+                </div>
+              );
+            })()
+          )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'dashboard-tipster' && (
+        <div className="space-y-8 animate-fade-in text-zinc-100">
+          {/* BLOCK NOTIFICATION */}
+          {isMundialActive ? (
+            <div className="p-8 sm:p-12 bg-[#0C0C10]/95 border border-orange-500/30 rounded-3xl relative overflow-hidden shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto my-6">
+              <div className="absolute top-0 right-0 h-48 w-48 bg-gradient-to-br from-orange-500/10 to-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-purple-500 via-orange-500 to-amber-500"></div>
+              <div className="space-y-6 py-6 relative">
+                <span className="text-6xl select-none filter drop-shadow-[0_0_20px_rgba(245,158,11,0.35)] block animate-pulse">
+                  🌍⚙️
+                </span>
+                <div className="space-y-3">
+                  <span className="inline-block text-[10px] font-black uppercase tracking-wider text-orange-400 bg-orange-500/10 px-3 py-1 rounded-md font-mono border border-orange-500/20">
+                    CAMPANHA TEMPORÁRIA • MUNDIAL
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-display">
+                    {language === 'pt' ? 'Dashboard de Tipster Gated para a Campanha' : 'Tipster Dashboard Gated for Campaign'}
+                  </h3>
+                </div>
+                <p className="text-zinc-300 font-light text-sm max-w-xl mx-auto leading-relaxed">
+                  {language === 'pt' 
+                    ? 'Durante a Campanha do Campeonato do Mundo, as funcionalidades de recrutamento de tipsters parceiros e links individuais de afiliação de apostas estão restritas para novos acessos. A nossa infraestrutura foca-se na estabilidade de tráfego para os utilizadores finais usufruírem gratuitamente dos palpites de alto ROI do iR-Engine Pro v3.5.'
+                    : 'To support massive sports traffic and fast server calculation times during the World Cup, affiliate controls and tipster dashboard accounts are closed to new sign-ups.'}
+                </p>
+                <div className="p-4 bg-zinc-950/80 border border-zinc-900 rounded-2xl max-w-md mx-auto text-left space-y-2">
+                  <span className="text-[10.5px] font-black text-amber-500 uppercase font-mono tracking-wider block">🌍 Nota Educacional de Campanha:</span>
+                  <p className="text-[11px] text-zinc-400 leading-normal font-light">
+                    {language === 'pt'
+                      ? 'Norteamos a nossa rede para maximizar o livre acesso ao chat de IA iRunBets, OCR Inteligente de boletins e as funcionalidades completas de gestão de banca PRO de forma totalmente livre. Aproveite-as enquanto as mensalidades estão suspensas!'
+                      : 'We encourage you to explore the unlocked chat of iRunBets AI Mentor, Smart OCR readers, and the full, premium features of the Bankroll Ledger completely free for the entire cup season.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-8 sm:p-12 bg-[#0C0C10]/95 border border-zinc-850/80 rounded-3xl relative overflow-hidden shadow-2xl backdrop-blur-md text-center max-w-3xl mx-auto my-6">
+              <div className="absolute top-0 right-0 h-48 w-48 bg-gradient-to-br from-sky-500/10 to-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="space-y-6 py-6 relative">
+                <span className="text-6xl select-none filter drop-shadow-[0_0_20px_rgba(14,165,233,0.35)] block">
+                  🔒💎
+                </span>
+                <div className="space-y-3">
+                  <span className="inline-block text-[10px] font-black uppercase tracking-wider text-sky-400 bg-sky-500/10 px-3 py-1 rounded-md font-mono border border-sky-500/20">
+                    PAINEL GESTOR & AFILIADOS
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-display">
+                    {language === 'pt' ? 'Dashboard Tipster & Links Afiliados' : 'Tipster Dashboard & Affiliates'}
+                  </h3>
+                </div>
+                <p className="text-zinc-400 font-light text-sm max-w-md mx-auto leading-relaxed">
+                  {language === 'pt' 
+                    ? 'A administração de links de afiliados do SRIJ, gestão de subscritores de banca, e comissões integradas estão temporariamente desativadas nesta versão.'
+                    : 'SRIJ bookmaker referral links and commission statistics are disabled in this build.'}
+                </p>
+                <div className="bg-zinc-950/60 border border-zinc-900 rounded-2xl p-4 max-w-xs mx-auto">
+                  <span className="text-sm font-black text-amber-500 uppercase tracking-widest font-mono block">
+                    🚧 Disponível em Agosto
+                  </span>
+                  <span className="text-[10px] text-zinc-550 font-mono mt-1 block">
+                    {language === 'pt' ? 'Temporada 2026/2027 • Ligas Europeias' : 'Season 2026/2027 • European Leagues'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="hidden">
+              {/* Header Dashboard Banner */}
+              <div className="relative p-6 sm:p-8 rounded-3xl overflow-hidden border border-[#00f2fe]/30 bg-gradient-to-br from-[#0c0c16] via-[#08080f] to-[#04040a] shadow-xl">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-[#00f2fe]/5 rounded-full blur-[100px] pointer-events-none"></div>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="space-y-2">
+                <span className="text-[11px] font-extrabold tracking-widest text-[#00f2fe] uppercase font-mono block">
+                  ⚙️ ÁREA DE PARCEIROS OFICIAIS & MODELO DE AFILIADOS
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-display flex items-center gap-2">
+                  <span>💎 Painel Gestor de Tipster</span>
+                  <span className="text-xs bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2.5 py-1 rounded font-mono font-black uppercase">
+                    SELF-SERVICE
+                  </span>
+                </h2>
+                <p className="text-sm text-zinc-400 max-w-2xl font-light leading-relaxed">
+                  Gerencie as suas redes de partilha de prognósticos, selecione as casas de apostas com licença legal do SRIJ em Portugal e adicione os seus links de convite/afiliado para maximizar ganhos residuais de subscritores.
+                </p>
+              </div>
+              <div className="text-right flex flex-col items-end gap-1">
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">ESTADO DA CONTA:</span>
+                {tipstersList.some(t => t.email === (currentUser?.email || 'vis-morgado@irunbets.pt')) ? (
+                  <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-xl font-mono font-black uppercase">
+                    🟢 Canal Sincronizado
+                  </span>
+                ) : (
+                  <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-xl font-mono font-black uppercase shadow-inner animate-pulse">
+                    ⚫ Sem Canal Registado
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* CHECK IF USER IS ALREADY REGISTERED */}
+          {(() => {
+            const userEmail = currentUser?.email || 'vis-morgado@irunbets.pt';
+            const currentTipsterIdx = tipstersList.findIndex(t => t.email === userEmail);
+            const registeredTipster = currentTipsterIdx !== -1 ? tipstersList[currentTipsterIdx] : null;
+
+            if (!registeredTipster) {
+              {/* NOT REGISTERED FLOW */}
+              return (
+                <div className="max-w-3xl mx-auto p-6 sm:p-8 bg-zinc-950/40 border border-[#00f2fe]/20 rounded-3xl space-y-6 text-left animate-fade-in relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-48 h-48 bg-[#00f2fe]/5 rounded-full blur-[60px] pointer-events-none"></div>
+                  <div className="space-y-2 pb-4 border-b border-zinc-900">
+                    <h3 className="text-base font-black uppercase text-[#00f2fe] tracking-widest font-mono flex items-center gap-2">
+                      <span>🚀 ATIVE O SEU PERFIL DE TIPSTER VIP</span>
+                    </h3>
+                    <p className="text-sm text-zinc-300">
+                      Crie o seu canal oficial no ecossistema e comece a partilhar prognósticos e angariar referidos! O registo é de auto-ativação imediata para parceiros e utilizadores.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 font-medium">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Nome do Tipster / Nome do Canal</label>
+                      <input 
+                        type="text" 
+                        value={regName || (currentUser?.displayName || '')} 
+                        onChange={(e) => setRegName(e.target.value)}
+                        placeholder="Ex: Pedro Green, Sara Under"
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white focus:border-cyan-500 outline-none font-medium"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 font-medium">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Avatar do Canal (Emoji ou Icon)</label>
+                      <select 
+                        value={regAvatar} 
+                        onChange={(e) => setRegAvatar(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white focus:border-cyan-500 outline-none font-sans cursor-pointer text-black"
+                      >
+                        <option value="👑">👑 Coroa Imperial (Recomendado)</option>
+                        <option value="⚡">⚡ Velocidade Extra (Sports)</option>
+                        <option value="⚽">⚽ Futebol Especialista</option>
+                        <option value="🎾">🎾 Ténis Profissional</option>
+                        <option value="📈">📈 Investimento / Yield</option>
+                        <option value="💎">💎 Diamante do VIP</option>
+                        <option value="🦁">🦁 Leão de Elite</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5 font-medium">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Mensalidade Recomendada (€ / Mês)</label>
+                      <input 
+                        type="number" 
+                        value={regSubMonth} 
+                        onChange={(e) => setRegSubMonth(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5 font-medium">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Anualidade Recomendada (€ / Ano)</label>
+                      <input 
+                        type="number" 
+                        value={regSubYear} 
+                        onChange={(e) => setRegSubYear(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white outline-none font-mono"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2 space-y-1.5 font-medium">
+                      <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Link de Acesso para Canal Telegram Directo (Opcional)</label>
+                      <input 
+                        type="text" 
+                        placeholder="https://t.me/seucanalvip"
+                        value={regTelegram} 
+                        onChange={(e) => setRegTelegram(e.target.value)}
+                        className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      if (!regName.trim()) {
+                        alert('Por favor, defina um nome profissional para o seu canal.');
+                        return;
+                      }
+                      const newId = 'tip_' + Math.floor(Math.random() * 100000);
+                      const userEmailRegisterVal = currentUser?.email || 'vis-morgado@irunbets.pt';
+                      const newTipster: TipsterItem = {
+                        id: newId,
+                        name: regName,
+                        avatar: regAvatar,
+                        email: userEmailRegisterVal,
+                        wins: 140,
+                        losses: 25,
+                        refunds: 5,
+                        yieldPercent: 12.8,
+                        netProfit: 860.0,
+                        telegramUrl: regTelegram,
+                        betclicInvite: '',
+                        betanoInvite: '',
+                        subscriptionPriceMonth: parseFloat(regSubMonth) || 29.99,
+                        subscriptionPriceYear: parseFloat(regSubYear) || 249.00,
+                        customBets: [],
+                        socialLinks: {
+                          telegram: regTelegram,
+                          instagram: '',
+                          youtube: '',
+                          twitter: '',
+                          tiktok: '',
+                          facebook: ''
+                        },
+                        supportedBookmakers: []
+                      };
+                      saveTipstersState([newTipster, ...tipstersList]);
+                      setPaneMonthPrice(regSubMonth);
+                      setPaneYearPrice(regSubYear);
+                      setPaneTelegram(regTelegram);
+                    }}
+                    className="w-full py-3 bg-gradient-to-r from-[#00f2fe] to-indigo-500 hover:from-cyan-400 hover:to-indigo-600 text-black font-black uppercase font-mono tracking-wider text-sm rounded-xl shadow-lg shadow-[#00f2fe]/10 transition-all cursor-pointer hover:scale-[1.01] flex items-center justify-center gap-2"
+                  >
+                    <span>🚀 Ativar Canal & Entrar no Painel</span>
+                  </button>
+                </div>
+              );
+            }
+
+            {/* REGISTERED FLOW */}
+            const tipster = registeredTipster;
+            const PORTUGUESE_LEGAL_BOOKMAKERS = [
+              { id: 'betclic', name: 'Betclic' },
+              { id: 'betano', name: 'Betano' },
+              { id: 'solverde', name: 'Solverde.pt' },
+              { id: 'esc_online', name: 'ESC Online' },
+              { id: 'placard', name: 'Placard.pt' },
+              { id: 'bwin', name: 'Bwin.pt' },
+              { id: 'casino_portugal', name: 'Casino Portugal' },
+              { id: 'golden_park', name: 'GoldenPark' },
+              { id: 'lebull', name: 'Lebull.pt' }
+            ];
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
+                {/* COLUMN 1: CONFIGS & SOCIAIS */}
+                <div className="lg:col-span-1 space-y-6">
+                  {/* Card A: Marca & Contacto */}
+                  <div className="p-5 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4">
+                    <h3 className="text-sm font-black uppercase text-[#00f2fe] tracking-wider font-mono flex items-center gap-2 pb-2 border-b border-zinc-900">
+                      <span>⚙️ Marca & Monetização</span>
+                    </h3>
+
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-3xl p-1 bg-zinc-900 border border-zinc-850 rounded-xl">{tipster.avatar}</span>
+                        <div>
+                          <strong className="text-sm text-white block font-sans">{tipster.name}</strong>
+                          <span className="text-xs text-zinc-400 font-mono">{tipster.email}</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono block">Alterar Nome</label>
+                          <input 
+                            type="text"
+                            value={tipster.name}
+                            onChange={(e) => {
+                              const list = [...tipstersList];
+                              list[currentTipsterIdx].name = e.target.value;
+                              saveTipstersState(list);
+                            }}
+                            className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white outline-none font-medium"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono block">Preço Mês (€)</label>
+                            <input 
+                              type="number"
+                              value={paneMonthPrice}
+                              onChange={(e) => {
+                                setPaneMonthPrice(e.target.value);
+                                const list = [...tipstersList];
+                                list[currentTipsterIdx].subscriptionPriceMonth = parseFloat(e.target.value) || 0;
+                                saveTipstersState(list);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white outline-none font-mono"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono block">Preço Ano (€)</label>
+                            <input 
+                              type="number"
+                              value={paneYearPrice}
+                              onChange={(e) => {
+                                setPaneYearPrice(e.target.value);
+                                const list = [...tipstersList];
+                                list[currentTipsterIdx].subscriptionPriceYear = parseFloat(e.target.value) || 0;
+                                saveTipstersState(list);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white outline-none font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card B: Redes Sociais Integradas */}
+                  <div className="p-5 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4">
+                    <h3 className="text-sm font-black uppercase text-pink-400 tracking-wider font-mono flex items-center gap-2 pb-2 border-b border-zinc-900">
+                      <span>📢 Canais de Redes Sociais</span>
+                    </h3>
+
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block font-mono">✈️ Telegram Directo / VIP</span>
+                        <input 
+                          type="text" 
+                          placeholder="https://t.me/seucanal"
+                          value={paneTelegram || tipster.telegramUrl || ''}
+                          onChange={(e) => {
+                            setPaneTelegram(e.target.value);
+                            const list = [...tipstersList];
+                            list[currentTipsterIdx].telegramUrl = e.target.value;
+                            if (!list[currentTipsterIdx].socialLinks) list[currentTipsterIdx].socialLinks = {};
+                            list[currentTipsterIdx].socialLinks!.telegram = e.target.value;
+                            saveTipstersState(list);
+                          }}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-200 outline-none font-mono font-medium"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-pink-400 uppercase tracking-widest block font-mono">📸 Instagram URL</span>
+                        <input 
+                          type="text" 
+                          placeholder="https://instagram.com/seu_perfil"
+                          value={paneInstagram || tipster.socialLinks?.instagram || ''}
+                          onChange={(e) => {
+                            setPaneInstagram(e.target.value);
+                            const list = [...tipstersList];
+                            if (!list[currentTipsterIdx].socialLinks) list[currentTipsterIdx].socialLinks = {};
+                            list[currentTipsterIdx].socialLinks!.instagram = e.target.value;
+                            saveTipstersState(list);
+                          }}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-200 outline-none font-mono font-medium"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-red-400 uppercase tracking-widest block font-mono">🎥 YouTube Channel</span>
+                        <input 
+                          type="text" 
+                          placeholder="https://youtube.com/c/seu_canal"
+                          value={paneYoutube || tipster.socialLinks?.youtube || ''}
+                          onChange={(e) => {
+                            setPaneYoutube(e.target.value);
+                            const list = [...tipstersList];
+                            if (!list[currentTipsterIdx].socialLinks) list[currentTipsterIdx].socialLinks = {};
+                            list[currentTipsterIdx].socialLinks!.youtube = e.target.value;
+                            saveTipstersState(list);
+                          }}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-200 outline-none font-mono font-medium"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block font-mono">🐦 Twitter / X Profile</span>
+                        <input 
+                          type="text" 
+                          placeholder="https://x.com/seu_perfil"
+                          value={paneTwitter || tipster.socialLinks?.twitter || ''}
+                          onChange={(e) => {
+                            setPaneTwitter(e.target.value);
+                            const list = [...tipstersList];
+                            if (!list[currentTipsterIdx].socialLinks) list[currentTipsterIdx].socialLinks = {};
+                            list[currentTipsterIdx].socialLinks!.twitter = e.target.value;
+                            saveTipstersState(list);
+                          }}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-200 outline-none font-mono font-medium"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block font-mono">🎵 TikTok handle (Link)</span>
+                        <input 
+                          type="text" 
+                          placeholder="https://tiktok.com/@perfil"
+                          value={paneTiktok || tipster.socialLinks?.tiktok || ''}
+                          onChange={(e) => {
+                            setPaneTiktok(e.target.value);
+                            const list = [...tipstersList];
+                            if (!list[currentTipsterIdx].socialLinks) list[currentTipsterIdx].socialLinks = {};
+                            list[currentTipsterIdx].socialLinks!.tiktok = e.target.value;
+                            saveTipstersState(list);
+                          }}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-xs text-zinc-200 outline-none font-mono font-medium"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* COLUMN 2: REGISTADOS BOOKMAKERS LEGAL EM PORTUGAL */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Combobox and selected list for Houses of bets */}
+                  <div className="p-5 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4">
+                    <h3 className="text-xs font-black uppercase text-amber-500 tracking-wider font-mono flex items-center gap-2 pb-2 border-b border-zinc-900">
+                      <span>⚖️ Casas de Apostas Reguladas em Portugal (SRIJ)</span>
+                    </h3>
+
+                    <p className="text-[10.5px] text-zinc-400 leading-relaxed">
+                      Selecione de entre as casas de apostas com licença de exploração ativa em Portugal reguladas pelo SRIJ. Carregue no botão para associar o seu link de incentivo de amigo para rentabilizar novos membros!
+                    </p>
+
+                    <div className="bg-black/40 border border-zinc-900 p-4 rounded-2xl grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                      <div className="space-y-1.5">
+                        <label className="text-[8px] font-extrabold uppercase tracking-widest font-mono text-zinc-500 block">Selecionar Combobox</label>
+                        <select 
+                          value={paneSelectedBookmakerHouseId} 
+                          onChange={(e) => setPaneSelectedBookmakerHouseId(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl p-2 text-xs text-zinc-300 outline-none font-mono cursor-pointer text-black"
+                        >
+                          {PORTUGUESE_LEGAL_BOOKMAKERS.map(b => (
+                            <option key={b.id} value={b.id}>🇵🇹 {b.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[8px] font-extrabold uppercase tracking-widest font-mono text-zinc-500 block">Link de Afiliado / Referidos</label>
+                        <input 
+                          type="text"
+                          placeholder="ex: https://betclic.pt/invite/morgado"
+                          value={paneBookmakerInviteUrl}
+                          onChange={(e) => setPaneBookmakerInviteUrl(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl p-2 text-xs text-white outline-none font-mono"
+                        />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[8px] font-extrabold uppercase tracking-widest font-mono text-zinc-500 block">Texto Promoção / Bónus</label>
+                        <input 
+                          type="text"
+                          placeholder="Ex: Obtenha 20€ Freebets"
+                          value={paneBookmakerPromoText}
+                          onChange={(e) => setPaneBookmakerPromoText(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl p-2 text-xs text-white outline-none font-mono"
+                        />
+                      </div>
+
+                      <div className="md:col-span-3 pt-2">
+                        <button
+                          onClick={() => {
+                            if (!paneBookmakerInviteUrl.trim()) {
+                              alert('Insira um link de afiliado ou convite válido.');
+                              return;
+                            }
+                            const houseObj = PORTUGUESE_LEGAL_BOOKMAKERS.find(x => x.id === paneSelectedBookmakerHouseId);
+                            if (!houseObj) return;
+
+                            const list = [...tipstersList];
+                            const activeBk = list[currentTipsterIdx].supportedBookmakers || [];
+                            
+                            const idx = activeBk.findIndex(x => x.houseId === paneSelectedBookmakerHouseId);
+                            if (idx !== -1) {
+                              activeBk[idx] = {
+                                houseId: paneSelectedBookmakerHouseId,
+                                name: houseObj.name,
+                                inviteUrl: paneBookmakerInviteUrl,
+                                promoText: paneBookmakerPromoText
+                              };
+                            } else {
+                              activeBk.push({
+                                houseId: paneSelectedBookmakerHouseId,
+                                name: houseObj.name,
+                                inviteUrl: paneBookmakerInviteUrl,
+                                promoText: paneBookmakerPromoText
+                              });
+                            }
+
+                            if (paneSelectedBookmakerHouseId === 'betclic') {
+                              list[currentTipsterIdx].betclicInvite = paneBookmakerInviteUrl;
+                            } else if (paneSelectedBookmakerHouseId === 'betano') {
+                              list[currentTipsterIdx].betanoInvite = paneBookmakerInviteUrl;
+                            }
+
+                            list[currentTipsterIdx].supportedBookmakers = activeBk;
+                            saveTipstersState(list);
+
+                            setPaneBookmakerInviteUrl('');
+                            setPaneBookmakerPromoText('');
+                          }}
+                          className="w-full py-2 bg-[#00f2fe]/10 hover:bg-[#00f2fe]/25 text-[#00f2fe] hover:text-white border border-[#00f2fe]/20 text-[10.5px] font-black uppercase tracking-wider rounded-xl transition-all"
+                        >
+                          ⚡ Registar Casa de Apostas Ativa & Link
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Active bookmakers inventory */}
+                    <div className="space-y-2 pt-2">
+                      <h4 className="text-[9px] font-bold text-zinc-650 uppercase tracking-widest font-mono">Livro de Casas Registadas</h4>
+                      {(!tipster.supportedBookmakers || tipster.supportedBookmakers.length === 0) && (!tipster.betclicInvite && !tipster.betanoInvite) ? (
+                        <div className="p-4 bg-zinc-950/20 text-center text-zinc-500 italic text-[10.5px] rounded-2xl border border-zinc-900 border-dashed">
+                          Nenhuma casa de apostas selecionada no combobox ainda.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          {tipster.betclicInvite && (
+                            <div className="p-3 bg-red-650/5 border border-red-500/25 rounded-2xl flex flex-col justify-between items-start gap-1">
+                              <div>
+                                <strong className="text-red-400 text-xs font-mono font-black uppercase">🇪🇺 Betclic Portugal</strong>
+                                <p className="text-[8.5px] text-zinc-500 font-mono truncate max-w-[200px]" title={tipster.betclicInvite}>
+                                  {tipster.betclicInvite}
+                                </p>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  const list = [...tipstersList];
+                                  list[currentTipsterIdx].betclicInvite = '';
+                                  const rest = (list[currentTipsterIdx].supportedBookmakers || []).filter(x => x.houseId !== 'betclic');
+                                  list[currentTipsterIdx].supportedBookmakers = rest;
+                                  saveTipstersState(list);
+                                }}
+                                className="text-[8px] text-red-400 font-extrabold hover:text-white uppercase font-mono mt-1"
+                              >
+                                ✕ Remover Casa
+                              </button>
+                            </div>
+                          )}
+
+                          {tipster.betanoInvite && (
+                            <div className="p-3 bg-[#EF233C]/5 border border-[#EF233C]/25 rounded-2xl flex flex-col justify-between items-start gap-1">
+                              <div>
+                                <strong className="text-orange-400 text-xs font-mono font-black uppercase">🇪🇺 Betano Portugal</strong>
+                                <p className="text-[8.5px] text-zinc-500 font-mono truncate max-w-[200px]" title={tipster.betanoInvite}>
+                                  {tipster.betanoInvite}
+                                </p>
+                              </div>
+                              <button 
+                                onClick={() => {
+                                  const list = [...tipstersList];
+                                  list[currentTipsterIdx].betanoInvite = '';
+                                  const rest = (list[currentTipsterIdx].supportedBookmakers || []).filter(x => x.houseId !== 'betano');
+                                  list[currentTipsterIdx].supportedBookmakers = rest;
+                                  saveTipstersState(list);
+                                }}
+                                className="text-[8px] text-[#EF233C] font-extrabold hover:text-white uppercase font-mono mt-1"
+                              >
+                                ✕ Remover Casa
+                              </button>
+                            </div>
+                          )}
+
+                          {tipster.supportedBookmakers?.map(b => {
+                            if (b.houseId === 'betclic' || b.houseId === 'betano') return null; // rendered legacy above
+                            return (
+                              <div key={b.houseId} className="p-3 bg-zinc-900/40 border border-zinc-850 rounded-2xl flex flex-col justify-between items-start gap-1">
+                                <div>
+                                  <strong className="text-emerald-400 text-xs font-mono font-black uppercase">🇵🇹 {b.name}</strong>
+                                  {b.promoText && (
+                                    <span className="text-[8px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1 rounded block mt-0.5 w-max">
+                                      {b.promoText}
+                                    </span>
+                                  )}
+                                  <p className="text-[8.5px] text-zinc-550 font-mono truncate max-w-[200px]" title={b.inviteUrl}>
+                                    {b.inviteUrl}
+                                  </p>
+                                </div>
+                                <button 
+                                  onClick={() => {
+                                    const list = [...tipstersList];
+                                    const rest = (list[currentTipsterIdx].supportedBookmakers || []).filter(x => x.houseId !== b.houseId);
+                                    list[currentTipsterIdx].supportedBookmakers = rest;
+                                    saveTipstersState(list);
+                                  }}
+                                  className="text-[8px] text-red-500 font-bold hover:text-white uppercase font-mono mt-1"
+                                >
+                                  ✕ Remover Casa
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* CUSTOM PREDICTED TIPS INSERTION AND MANAGEMENT FOR LOGGED IN TIPSTER */}
+                  <div className="p-5 bg-zinc-950/40 border border-zinc-900 rounded-3xl space-y-4">
+                    <h3 className="text-sm font-black uppercase text-[#bf5af2] tracking-wider font-mono flex items-center gap-1.5 pb-2 border-b border-zinc-900">
+                      <span>⚡ Publicar Novo Prognóstico Oficial / Dica</span>
+                    </h3>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Jogo / Equipas</label>
+                        <input 
+                          type="text" 
+                          value={newTipGame}
+                          onChange={(e) => setNewTipGame(e.target.value)}
+                          placeholder="Ex: Benfica v Porto"
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white focus:border-purple-500 outline-none font-medium"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Mercado</label>
+                        <input 
+                          type="text" 
+                          value={newTipMarket}
+                          onChange={(e) => setNewTipMarket(e.target.value)}
+                          placeholder="Ex: Mais de 2.5 Golos"
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white focus:border-purple-500 outline-none font-medium"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Odd Mínima</label>
+                        <input 
+                          type="number" 
+                          step="0.01"
+                          value={newTipOdd}
+                          onChange={(e) => setNewTipOdd(e.target.value)}
+                          placeholder="Ex: 1.85"
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-3 text-sm text-white focus:border-purple-500 outline-none font-mono"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest font-mono">Estado Acesso</label>
+                        <select
+                          value={newTipType}
+                          onChange={(e) => setNewTipType(e.target.value as 'FREE' | 'PREMIUM')}
+                          className="w-full bg-zinc-950 border border-zinc-900 rounded-xl py-2 px-2.5 text-sm text-white focus:border-purple-500 outline-none cursor-pointer text-black"
+                        >
+                          <option value="FREE">Grátis (Todos)</option>
+                          <option value="PREMIUM">Premium (Exclusivo)</option>
+                        </select>
+                      </div>
+
+                      <div className="sm:col-span-4 pt-2">
+                        <button
+                          onClick={() => {
+                            if (!newTipGame.trim() || !newTipMarket.trim() || !newTipOdd.trim()) {
+                              alert('Por favor, preencha todos os campos do prognóstico.');
+                              return;
+                            }
+                            const updatedList = [...tipstersList];
+                            const currentBets = updatedList[currentTipsterIdx].customBets || [];
+
+                            currentBets.unshift({
+                              id: 'bet_' + Date.now(),
+                              game: newTipGame,
+                              market: newTipMarket,
+                              odd: parseFloat(newTipOdd) || 1.5,
+                              status: 'Pendente',
+                              type: newTipType,
+                              date: new Date().toLocaleDateString('pt-PT') + ' ' + new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+                            });
+
+                            updatedList[currentTipsterIdx].customBets = currentBets;
+                            saveTipstersState(updatedList);
+
+                            // Reset
+                            setNewTipGame('');
+                            setNewTipMarket('');
+                            setNewTipOdd('');
+                            
+                            alert('Prognóstico VIP enviado com sucesso para todos os seguidores!');
+                          }}
+                          className="w-full py-2.5 bg-purple-500/10 hover:bg-purple-500/25 text-[#bf5af2] hover:text-white border border-purple-500/20 text-sm font-black uppercase tracking-wider rounded-xl transition-all"
+                        >
+                          🎯 Lançar prognóstico oficial de tipster
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Published tips list for management */}
+                    <div className="space-y-2 pt-2">
+                      <h4 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest font-mono">Meus Prognósticos e Tips Lançadas</h4>
+                      {(!tipster.customBets || tipster.customBets.length === 0) ? (
+                        <div className="p-4 bg-zinc-950/20 text-center text-zinc-500 italic text-sm rounded-2xl border border-zinc-900 border-dashed">
+                          Não possui prognósticos ainda. Lance a sua primeira dica acima!
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                          {tipster.customBets.map(b => (
+                            <div key={b.id} className="p-3.5 bg-zinc-950/80 border border-zinc-900 rounded-2xl flex flex-wrap justify-between items-center gap-3 text-left">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[10px] px-1.5 py-0.5 font-extrabold uppercase rounded ${b.type === 'FREE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-[#bf5af2]/10 text-[#bf5af2]'}`}>
+                                    {b.type}
+                                  </span>
+                                  <strong className="text-sm text-zinc-200 font-sans">{b.game}</strong>
+                                </div>
+                                <div className="text-xs text-zinc-300 font-mono font-bold">
+                                  {b.market} @ <span className="text-yellow-400 font-black">{b.odd.toFixed(2)}</span>
+                                </div>
+                                <span className="text-[10px] text-zinc-500 font-mono block">{b.date}</span>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded uppercase ${
+                                  b.status === 'Green' ? 'bg-emerald-500 text-black' : b.status === 'Red' ? 'bg-red-505 text-white' : b.status === 'Devolvida' ? 'bg-zinc-800 text-zinc-300' : 'bg-yellow-500/10 text-yellow-500'
+                                }`}>
+                                  {b.status}
+                                </span>
+
+                                <select
+                                  value={b.status}
+                                  onChange={(e) => {
+                                    const nextStatus = e.target.value as any;
+                                    const list = [...tipstersList];
+                                    const bets = list[currentTipsterIdx].customBets.map(bet => {
+                                      if (bet.id === b.id) {
+                                        return { ...bet, status: nextStatus };
+                                      }
+                                      return bet;
+                                    });
+                                    list[currentTipsterIdx].customBets = bets;
+                                    
+                                    const winsNum = bets.filter(x => x.status === 'Green').length;
+                                    const lossesNum = bets.filter(x => x.status === 'Red').length;
+                                    const refundsNum = bets.filter(x => x.status === 'Devolvida').length;
+                                    
+                                    list[currentTipsterIdx].wins = winsNum + 140;
+                                    list[currentTipsterIdx].losses = lossesNum + 25;
+                                    list[currentTipsterIdx].refunds = refundsNum + 5;
+                                    
+                                    saveTipstersState(list);
+                                  }}
+                                  className="bg-zinc-900 border border-zinc-850 px-2 py-1 text-xs text-zinc-305 rounded cursor-pointer outline-none text-black font-medium"
+                                >
+                                  <option value="Pendente">🟡 Pendente</option>
+                                  <option value="Green">🟢 Green</option>
+                                  <option value="Red">🔴 Red</option>
+                                  <option value="Devolvida">⚫ Devolvida</option>
+                                </select>
+
+                                <button
+                                  onClick={() => {
+                                    const list = [...tipstersList];
+                                    const filtered = list[currentTipsterIdx].customBets.filter(bet => bet.id !== b.id);
+                                    list[currentTipsterIdx].customBets = filtered;
+                                    saveTipstersState(list);
+                                  }}
+                                  className="p-1 px-2.5 bg-red-800 text-white text-xs hover:bg-red-900 rounded-lg font-mono transition-colors"
+                                  title="Apagar prognóstico publicado"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+          </div>
+        </div>
+      )}
+
+      {showStatsModal && (
+        <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[9999] flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-fade-in">
+          <div className="bg-[#08080B] border-2 border-cyan-500/60 rounded-3xl max-w-[1380px] w-full text-zinc-100 flex flex-col overflow-hidden shadow-[0_0_100px_rgba(6,182,212,0.35)] relative max-h-[92vh]">
+            
+            {/* Cyberpunk grid background decor lines */}
+            <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#00f2fe]/70 to-transparent top-0"></div>
+            <div className="absolute inset-y-0 w-px bg-gradient-to-b from-transparent via-purple-500/25 to-transparent left-0"></div>
+            <div className="absolute inset-y-0 w-px bg-gradient-to-b from-transparent via-cyan-500/25 to-transparent right-0"></div>
+
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 md:px-8 py-5 bg-[#0D0D12] border-b border-zinc-850 relative">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded-full bg-[#00f2fe] animate-pulse shadow-[0_0_15px_#00f2fe]"></div>
+                <div>
+                  <h3 className="text-sm md:text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                    <span>{labels.t_badge}</span>
+                    <span className="text-[10px] bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded font-black uppercase font-mono tracking-wider">SECURE LINK</span>
+                  </h3>
+                  <span className="text-[11px] text-zinc-400 font-mono tracking-wide uppercase block mt-0.5">
+                    {labels.t_sub} <span className="text-cyan-400 font-bold">{selectedSport === 'todos' ? (language === 'en' ? 'ALL SPORTS' : language === 'fr' ? 'TOUS LES SPORTS' : language === 'it' ? 'TUTTI GLI SPORT' : language === 'de' ? 'ALLE SPORTARTEN' : 'TODOS OS DESPORTOS') : selectedSport.toUpperCase()}</span>
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowStatsModal(false)}
+                className="text-zinc-300 hover:text-red-400 font-mono text-[10px] bg-zinc-950 px-4 py-2 border border-zinc-850 rounded-xl hover:border-red-500/50 transition-all uppercase font-black flex items-center gap-2 active:scale-95 cursor-pointer shadow-md shadow-black"
+              >
+                <span>{labels.t_fechar}</span>
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <div className="p-6 md:p-8 overflow-y-auto space-y-6 max-h-[calc(92vh-140px)] scrollbar-thin">
+              
+              {/* Telemetry Dashboard Deck (Top level metric cards) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Net Income Card */}
+                <div className="bg-zinc-950/60 p-4 rounded-2xl border border-zinc-850/70 shadow-inner relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 h-16 w-16 bg-emerald-500/5 rounded-full blur-lg pointer-events-none"></div>
+                  <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono tracking-wider block">
+                    {language === 'en' ? 'Net Gains / Losses' : language === 'fr' ? 'Gains / Pertes Nets' : language === 'it' ? 'Guadagni / Perdite Nette' : language === 'de' ? 'Netto-Gewinne / Verluste' : 'Ganhos / Perdas Líquidas'}
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className={`text-xl lg:text-2xl font-black font-mono tracking-tight ${stats.netGainLoss >= 0 ? 'text-[#00FF87]' : 'text-[#FF0055]'}`}>
+                      {stats.netGainLoss >= 0 ? '+' : ''}{stats.netGainLoss.toFixed(2)}€
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {language === 'en' ? 'Net' : language === 'fr' ? 'Net' : language === 'it' ? 'Netto' : language === 'de' ? 'Netto' : 'Líquido'}
+                    </span>
+                  </div>
+                  <div className="w-full bg-zinc-900 h-1 rounded-full overflow-hidden mt-3 max-w-[200px]">
+                    <div style={{ width: `${Math.min(100, Math.max(0, (stats.ganhasCount / (stats.completedCount || 1)) * 100))}%` }} className="h-full bg-emerald-500 rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* Total Invested */}
+                <div className="bg-zinc-950/60 p-4 rounded-2xl border border-zinc-850/70 shadow-inner relative overflow-hidden">
+                  <div className="absolute top-0 right-0 h-16 w-16 bg-cyan-500/5 rounded-full blur-lg pointer-events-none"></div>
+                  <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono tracking-wider block">{labels.t_vol}</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className="text-xl lg:text-2xl font-black font-mono tracking-tight text-zinc-100">
+                      {stats.totalInvested.toFixed(2)}€
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {language === 'en' ? 'Invested' : language === 'fr' ? 'Investi' : language === 'it' ? 'Investito' : language === 'de' ? 'Investiert' : 'Investido'}
+                    </span>
+                  </div>
+                  <div className="text-[9px] text-zinc-400 font-mono mt-3">
+                    {labels.t_med} <span className="font-bold text-cyan-400">{(stats.totalInvested / (stats.totalBets || 1)).toFixed(1)}€</span>
+                  </div>
+                </div>
+
+                {/* Win Rate */}
+                <div className="bg-zinc-950/60 p-4 rounded-2xl border border-zinc-850/70 shadow-inner relative overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono tracking-wider block">{labels.taxaAcerto}</span>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-xl lg:text-2xl font-black font-mono tracking-tight text-[#00f2fe]">
+                        {stats.winRate.toFixed(1)}%
+                      </span>
+                      <span className="text-[10px] text-zinc-500 font-mono">WinRate</span>
+                    </div>
+                    <CircularMiniGauge percentage={stats.winRate} color="#00f2fe" size={34} strokeWidth={4} />
+                  </div>
+                  <div className="text-[9px] text-zinc-400 font-mono mt-2">
+                    {language === 'en' ? 'Wins:' : language === 'fr' ? 'Gagnées:' : language === 'it' ? 'Vinte:' : language === 'de' ? 'Treffer:' : 'Acertos:'} <span className="font-bold text-[#00FF87]">{stats.ganhasCount}</span> | {language === 'en' ? 'Lost:' : language === 'fr' ? 'Perdues:' : language === 'it' ? 'Perse:' : language === 'de' ? 'Niederlag:' : 'Perdidas:'} <span className="font-bold text-[#FF0055]">{stats.perdidasCount}</span>
+                  </div>
+                </div>
+
+                {/* ROI */}
+                <div className="bg-zinc-950/60 p-4 rounded-2xl border border-zinc-850/70 shadow-inner relative overflow-hidden">
+                  <div className="absolute top-0 right-0 h-16 w-16 bg-purple-500/5 rounded-full blur-lg pointer-events-none"></div>
+                  <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono tracking-wider block">{language === 'en' ? 'Return on Investment (ROI)' : language === 'fr' ? 'Retour sur Investissement (ROI)' : language === 'it' ? 'Ritorno sull\'Investimento (ROI)' : language === 'de' ? 'Kapitalrendite (ROI)' : 'Retorno de Investimento (ROI)'}</span>
+                  <div className="flex items-baseline gap-2 mt-2">
+                    <span className={`text-xl lg:text-2xl font-black font-mono tracking-tight ${stats.roi >= 0 ? 'text-[#00FF87]' : 'text-[#FF0055]'}`}>
+                      {stats.roi >= 0 ? '+' : ''}{stats.roi.toFixed(1)}%
+                    </span>
+                    <span className="text-[10px] text-zinc-500 font-mono">
+                      {language === 'en' ? 'Rentability' : language === 'fr' ? 'Rentabilité' : language === 'it' ? 'Redditività' : language === 'de' ? 'Rentabilität' : 'Rentabilidade'}
+                    </span>
+                  </div>
+                  <div className="text-[9px] text-zinc-400 font-mono mt-3">
+                    {language === 'en' ? 'Bankroll stability: ' : language === 'fr' ? 'Stabilité de banque: ' : language === 'it' ? 'Stabilità dei fondi: ' : language === 'de' ? 'Bankroll-Stabilität: ' : 'Estabilidade bancária: '}<span className="font-bold text-purple-400">{language === 'en' ? 'Highly Efficient' : language === 'fr' ? 'Hautement Efficace' : language === 'it' ? 'Altamente Efficiente' : language === 'de' ? 'Hocheffizient' : 'Altamente Eficiente'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Informative Diagnostics Alert Panel */}
+              <div className="bg-[#050508] border border-cyan-500/15 p-4 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 font-mono relative overflow-hidden">
+                <div className="absolute top-0 right-0 h-32 w-32 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none"></div>
+                <div className="space-y-1 z-10">
+                  <span className="text-[10px] uppercase font-black text-[#00f2fe] tracking-wider block flex items-center gap-1.5">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#00f2fe]"></span>
+                    </span>
+                    {labels.t_diagnostico}
+                  </span>
+                  <p className="text-xs text-zinc-400 font-light pr-4 leading-relaxed max-w-3xl">
+                    {language === 'en' ? `The telemetry data displayed is derived from all bets based on the selected sport (${selectedSport === 'todos' ? 'All Disciplines' : selectedSport}). The simulator computed all runtime parameters to populate this cockpit.` :
+                     language === 'fr' ? `Les données télémétriques affichées sont calculées à partir de tous les paris basés sur le sport sélectionné (${selectedSport === 'todos' ? 'Toutes les disciplines' : selectedSport}). Le simulateur a recalculé tous les paramètres en temps réel.` :
+                     language === 'it' ? `I dati telemetrici mostrati derivano da tutte le scommesse basate sullo sport selezionato (${selectedSport === 'todos' ? 'Tutte le discipline' : selectedSport}). Il simulatore ha ricalcolato tutti i parametri in tempo reale.` :
+                     language === 'de' ? `Die angezeigten Telemetriedaten stammen aus allen Wetten, die auf der ausgewählten Sportart basieren (${selectedSport === 'todos' ? 'Alle Disziplinen' : selectedSport}). Der Simulator hat alle Parameter zur Laufzeit berechnet.` :
+                     `Os dados estatísticos apresentados resultam de todas as apostas efetuadas baseando-se no desporto selecionado (Todas as Modalidades). O simulador recalculou todas as métricas em tempo de execução para alimentar este dashboard.`}
+                  </p>
+                </div>
+                <div className="shrink-0 text-left md:text-right z-10 bg-zinc-900/45 border border-zinc-800 p-3 rounded-xl min-w-[200px]">
+                  <span className="text-[10px] text-zinc-500 block uppercase font-bold">{labels.t_resumo}</span>
+                  <span className="text-lg font-black text-zinc-100 block mt-0.5">{stats.completedCount} {labels.resolvidas} / {stats.totalBets} {language === 'en' ? 'total' : language === 'fr' ? 'totaux' : language === 'it' ? 'totali' : language === 'de' ? 'gesamt' : 'totais'}</span>
+                </div>
+              </div>
+
+              {/* Two Column Grid layout optimized for 14" screen space */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* LIGAS & COMPETIÇÕES PANEL (Expanded height) */}
+                <div className="lg:col-span-7 p-6 bg-[#0B0B0E] border border-zinc-850/80 rounded-2xl flex flex-col justify-between space-y-4 shadow-lg min-h-[440px]">
+                  <div>
+                    <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider font-mono border-l-3 border-[#00f2fe] pl-3">
+                      {labels.t_leaguesTitle}
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 font-mono mt-1">
+                      {labels.t_leaguesSub}
+                    </p>
+                  </div>
+
+                  {leagueStats.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center py-16 text-center text-xs text-zinc-500 italic font-mono">
+                      {language === 'en' ? 'Please register bets associated with leagues to view the distribution.' :
+                       language === 'fr' ? 'Veuillez enregistrer des paris associés à des ligues pour visualiser la distribution.' :
+                       language === 'it' ? 'Registra scommesse associate a campionati per visualizzare la distribuzione.' :
+                       language === 'de' ? 'Bitte registrieren Sie Wetten zu Ligen, um die Verteilung anzuzeigen.' :
+                       'Por favor registe apostas associadas a ligas para visualizar a distribuição.'}
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5 max-h-[350px] lg:max-h-[520px] overflow-y-auto pr-1 scrollbar-thin">
+                      {leagueStats.map((item) => {
+                        const hasProfit = item.profit >= 0;
+                        const leagueIcon = item.name.includes('Champions') 
+                          ? '🏆' 
+                          : item.name.includes('Primeira') || item.name.includes('Portugal') 
+                          ? '🇵🇹' 
+                          : item.name.includes('Premier') 
+                          ? '🏴' 
+                          : item.name.includes('La Liga') 
+                          ? '🇪🇸' 
+                          : item.name.includes('Serie A')
+                          ? '🇮🇹'
+                          : item.name.includes('Bundesliga')
+                          ? '🇩🇪'
+                          : item.name.includes('Ligue 1')
+                          ? '🇫🇷'
+                          : item.name.includes('Allsvenskan') || item.name.includes('Superettan')
+                          ? '🇸🇪'
+                          : item.name.includes('Eliteserien')
+                          ? '🇳🇴'
+                          : item.name.includes('Veikkausliiga')
+                          ? '🇫🇮'
+                          : item.name.includes('Ireland') || item.name.includes('Irlanda')
+                          ? '🇮🇪'
+                          : item.name.includes('Mundo') || item.name.includes('Mundial') || item.name.includes('World Cup')
+                          ? '🏆'
+                          : item.name.includes('Brasileirão')
+                          ? '🇧🇷'
+                          : item.name.includes('MLS')
+                          ? '🇺🇸'
+                          : item.name.includes('Eredivisie')
+                          ? '🇳🇱'
+                          : item.name.includes('Süper Lig') || item.name.includes('Super Lig')
+                          ? '🇹🇷'
+                          : '⚽';
+
+                        return (
+                          <div key={item.name} className="flex items-center justify-between p-3.5 bg-zinc-950/60 border border-zinc-900 hover:border-cyan-500/20 rounded-2xl transition-all hover:scale-[1.005] duration-350">
+                            <div className="flex items-center gap-3">
+                              <span className="text-lg p-2 bg-zinc-900 rounded-xl">{leagueIcon}</span>
+                              <div>
+                                <span className="text-xs md:text-sm font-black text-zinc-100 block">{item.name}</span>
+                                <span className="text-[10px] font-mono text-zinc-500">
+                                  {item.total} {item.total === 1 ? (language === 'en' ? 'entry' : language === 'fr' ? 'entrée' : language === 'it' ? 'entrata' : language === 'de' ? 'Eintrag' : 'entrada') : (language === 'en' ? 'entries' : language === 'fr' ? 'entrées' : language === 'it' ? 'entrate' : language === 'de' ? 'Einträge' : 'entradas')} ({item.completed} {labels.resolvidas})
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                              <div className="text-right">
+                                <span className={`text-xs md:text-sm font-mono font-black block ${hasProfit ? 'text-[#00FF87]' : 'text-[#FF0055]'}`}>
+                                  {hasProfit ? '+' : ''}{item.profit.toFixed(2)}€
+                                </span>
+                                <span className="text-[10px] font-mono text-zinc-500 block">
+                                  ROI: {item.roi.toFixed(1)}%
+                                </span>
+                              </div>
+
+                              <CircularMiniGauge 
+                                percentage={item.winRate} 
+                                color={item.winRate >= 50 ? '#00FF87' : item.winRate > 0 ? '#FF9F00' : '#FF0055'} 
+                                size={38}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* MATRIZ DE EFICIÊNCIA DE MERCADOS PANEL (Expanded height) */}
+                <div className="lg:col-span-5 p-6 bg-[#0B0B0E] border border-zinc-850/80 rounded-2xl flex flex-col justify-between space-y-4 shadow-lg min-h-[440px]">
+                  <div>
+                    <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider font-mono border-l-3 border-[#a855f7] pl-3">
+                      {labels.t_marketsTitle}
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 font-mono mt-1">
+                      {labels.t_marketsSub}
+                    </p>
+                  </div>
+
+                  {categoryStats.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center py-16 text-center text-xs text-zinc-500 italic font-mono">
+                      {language === 'en' ? 'Please add market bet entries to visualize the matrix.' :
+                       language === 'fr' ? 'Veuillez ajouter des paris de marchés pour visualiser la matrice.' :
+                       language === 'it' ? 'Aggiungi registrazioni di mercati per visualizzare la matrice.' :
+                       language === 'de' ? 'Bitte fügen Sie Markt-Wetten hinzu, um die Matrix anzuzeigen.' :
+                       'Por favor adicione registos de apostas de mercados para visualizar a matriz.'}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 max-h-[350px] lg:max-h-[520px] overflow-y-auto pr-1 scrollbar-thin">
+                      {categoryStats.map((item) => {
+                        const isProfit = item.profit >= 0;
+                        
+                        let marketIcon = '🎯';
+                        let neonColor = '#00f2fe';
+                        let glowBg = 'rgba(0, 242, 254, 0.04)';
+                        
+                        if (item.name === 'TR') {
+                          marketIcon = '💥';
+                          neonColor = '#00f2fe';
+                          glowBg = 'rgba(0, 242, 254, 0.04)';
+                        } else if (item.name === 'Golos') {
+                          marketIcon = '⚽';
+                          neonColor = '#00FF87';
+                          glowBg = 'rgba(0, 255, 135, 0.04)';
+                        } else if (item.name === 'Handicaps') {
+                          marketIcon = '📈';
+                          neonColor = '#FF0055';
+                          glowBg = 'rgba(255, 0, 85, 0.04)';
+                        } else if (item.name === 'Cantos') {
+                          marketIcon = '🚩';
+                          neonColor = '#a855f7';
+                          glowBg = 'rgba(168, 85, 247, 0.04)';
+                        } else {
+                          marketIcon = '🎲';
+                          neonColor = '#FF9F00';
+                          glowBg = 'rgba(255, 159, 0, 0.04)';
+                        }
+
+                        return (
+                          <div 
+                            key={item.name} 
+                            style={{ backgroundColor: glowBg, borderColor: `${neonColor}25` }}
+                            className="p-4 border rounded-2xl flex flex-col justify-between font-mono space-y-3 group hover:brightness-110 duration-200"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs md:text-sm font-black text-zinc-100 inline-flex items-center gap-1.5">
+                                <span className="p-1 bg-zinc-900 rounded-lg">{marketIcon}</span> {item.name}
+                              </span>
+                              <span className={`text-xs font-bold ${isProfit ? 'text-[#00FF87]' : 'text-[#FF0055]'}`}>
+                                {isProfit ? '+' : ''}{item.roi.toFixed(1)}% ROI
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between">
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] text-zinc-500 block uppercase">
+                                  {language === 'en' ? 'Committed:' : language === 'fr' ? 'Engagé:' : language === 'it' ? 'Impegnato:' : language === 'de' ? 'Eingesetzt:' : 'Cometido:'}
+                                </span>
+                                <span className="text-xs font-black text-zinc-100">{item.stakeTotal.toFixed(0)}€</span>
+                              </div>
+                              
+                              <div className="space-y-0.5 text-right flex items-center gap-2">
+                                <div className="text-right">
+                                  <span className="text-[10px] text-zinc-500 block uppercase">
+                                    {language === 'en' ? 'Accuracy:' : language === 'fr' ? 'Précision:' : language === 'it' ? 'Precisione:' : language === 'de' ? 'Erfolg:' : 'Acerto:'}
+                                  </span>
+                                  <span className="text-xs font-black text-zinc-100">{item.winRate.toFixed(0)}%</span>
+                                </div>
+                                <CircularMiniGauge percentage={item.winRate} color={neonColor} size={28} strokeWidth={3.5} />
+                              </div>
+                            </div>
+
+                            {/* Visual fill indicator bar with dynamic share of total segment */}
+                            <div className="w-full bg-zinc-950/80 h-1 rounded-full overflow-hidden">
+                              <div 
+                                style={{ 
+                                  width: `${Math.max(4, (item.total / (filteredBets.length || 1)) * 100)}%`,
+                                  backgroundColor: neonColor
+                                }} 
+                                className="h-1 rounded-full" 
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* --- NEW SECTION: DETAILED PROGNOSTIC DYNAMICS & FORENSIC TEAM METRIC LOGS --- */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-2">
+                
+                {/* DYNAMIC PROGNOSTICS RADAR PANEL (Circular & Compact List of actual predictions) */}
+                <div className="lg:col-span-6 p-6 bg-[#0B0B0E] border border-zinc-850/80 rounded-2xl flex flex-col justify-between space-y-4 shadow-lg min-h-[440px]">
+                  <div>
+                    <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider font-mono border-l-3 border-[#00f2fe] pl-3 flex items-center gap-2">
+                      <span>📉 REGISTO DINÂMICO DE PROGNÓSTICOS DIVERSOS</span>
+                      <span className="text-[9px] bg-cyan-500/10 text-[#00f2fe] border border-cyan-500/20 px-1.5 py-0.5 rounded font-bold font-mono uppercase tracking-widest leading-none">AUTO-ORGANIZADO</span>
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 font-mono mt-1">
+                      {language === 'pt' ? 'Mapeamento real de cada prognóstico e mercado digitado por si, agrupando repetições e calculando acertos vs falhas.' : 'Detailed distribution of each typed market forecast, tracking hits vs misses dynamically.'}
+                    </p>
+                  </div>
+
+                  {prognosticoStats.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center py-16 text-center text-xs text-zinc-500 italic font-mono">
+                      {language === 'pt' ? 'Nenhum prognóstico registado para analisar.' : 'No custom market forecasts found. Enter stats to initiate analysis.'}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-[380px] lg:max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
+                      {prognosticoStats.map((item) => {
+                        const isProfit = item.profit >= 0;
+                        const wins = item.win;
+                        const losses = item.total - item.win;
+
+                        return (
+                          <div key={item.name} className="p-3.5 bg-zinc-950/70 border border-zinc-900 hover:border-cyan-500/25 rounded-2xl transition-all duration-200">
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="text-xs font-black text-white font-mono truncate max-w-[240px] uppercase">
+                                🎯 {item.name}
+                              </span>
+                              <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded leading-none ${isProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-[#FF0055]'}`}>
+                                {isProfit ? '+' : ''}{item.profit.toFixed(1)}€
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400">
+                              <div>
+                                <span className="text-zinc-200 font-bold">{item.total} {item.total === 1 ? 'entrada' : 'entradas'}</span>
+                                <span className="text-zinc-500 mx-2">|</span>
+                                <span className="text-emerald-400 font-medium">{wins} {language === 'pt' ? 'acertos' : 'wins'}</span>
+                                <span className="text-zinc-500 mx-1.5">/</span>
+                                <span className="text-rose-450">{losses} {language === 'pt' ? 'falhas' : 'losses'}</span>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span>{language === 'pt' ? 'Taxa:' : 'Rate:'} <strong>{item.winRate.toFixed(0)}%</strong></span>
+                                <CircularMiniGauge percentage={item.winRate} color={item.winRate >= 50 ? '#00FF87' : '#FF0055'} size={24} strokeWidth={3} />
+                              </div>
+                            </div>
+
+                            {/* Popularity slider helper bar */}
+                            <div className="w-full bg-zinc-900/60 h-1.5 rounded-full overflow-hidden mt-2.5">
+                              <div
+                                style={{
+                                  width: `${Math.min(100, Math.max(4, (item.total / (filteredBets.length || 1)) * 100))}%`
+                                }}
+                                className="h-full bg-gradient-to-r from-cyan-650 to-[#00f2fe] rounded-full"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* FORENSIC CLUB ANALYSIS / SECURITY SYSTEM (Gains vs Losses por Equipa) */}
+                <div className="lg:col-span-6 p-6 bg-[#0B0B0E] border border-zinc-850/80 rounded-2xl flex flex-col justify-between space-y-4 shadow-lg min-h-[440px]">
+                  <div>
+                    <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-wider font-mono border-l-3 border-[#f59e0b] pl-3 flex items-center gap-2">
+                      <span>⚽ CONSOLE FORENSE: IMPACTO FINANCEIRO POR CLUBES</span>
+                      <span className="text-[9px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-1.5 py-0.5 rounded font-extrabold font-mono uppercase tracking-widest leading-none">ANALISADOR DE ESTRATÉGIA</span>
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 font-mono mt-1">
+                      {language === 'pt' ? 'Descubra quais são os clubes que mais lucros lhe dão vs os clubes onde as suas previsões mais falham.' : 'Audit which soccer/sport clubs generated the highest yield vs major losses in your history.'}
+                    </p>
+                  </div>
+
+                  {teamStats.length === 0 ? (
+                    <div className="flex-1 flex items-center justify-center py-16 text-center text-xs text-zinc-500 italic font-mono">
+                      {language === 'pt' ? 'Introduza eventos com nomes de equipas (ex: Porto vs Sporting) para mapear o impacto financeiro.' : 'Enter matches to trace team forensic impact.'}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[380px] lg:max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
+                      
+                      {/* LEADERBOARD DE RENDIMENTOS */}
+                      <div className="space-y-3.5">
+                        <span className="text-[10px] text-emerald-400 font-black tracking-widest font-mono uppercase block border-b border-zinc-850 pb-1.5">
+                          🔥 TOP LUCROS (CONFIDENCIAL)
+                        </span>
+                        
+                        {teamStats.filter(t => t.profit > 0).length === 0 ? (
+                          <div className="text-[10px] text-zinc-600 font-mono italic p-3 py-6 text-center">Nenhum clube com lucro líquido positivo neste filtro.</div>
+                        ) : (
+                          teamStats.filter(t => t.profit > 0).sort((a,b) => b.profit - a.profit).map((team) => (
+                            <div key={team.name} className="p-3 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 rounded-xl transition-all font-mono">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-black text-white truncate max-w-[120px] uppercase">
+                                  🛡️ {team.name}
+                                </span>
+                                <span className="text-xs font-bold text-emerald-400">
+                                  +{team.profit.toFixed(1)}€
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-[9px] text-zinc-400">
+                                <span>{team.total} {team.total === 1 ? 'Aposta' : 'Apostas'} ({team.winRate.toFixed(0)}% acerto)</span>
+                                <span className="text-emerald-500 font-black">GANHO</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* LEADERBOARD DE PREJUÍZOS */}
+                      <div className="space-y-3.5">
+                        <span className="text-[10px] text-rose-500 font-black tracking-widest font-mono uppercase block border-b border-zinc-850 pb-1.5">
+                          ⚠️ TOP CRÍTICOS (ALERTA PERDAS)
+                        </span>
+                        
+                        {teamStats.filter(t => t.profit < 0).length === 0 ? (
+                          <div className="text-[10px] text-zinc-600 font-mono italic p-3 py-6 text-center">Excelente! Nenhum clube em zona de prejuízo.</div>
+                        ) : (
+                          teamStats.filter(t => t.profit < 0).sort((a,b) => a.profit - b.profit).map((team) => (
+                            <div key={team.name} className="p-3 bg-rose-500/5 hover:bg-rose-500/10 border border-rose-500/20 rounded-xl transition-all font-mono">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-black text-white truncate max-w-[120px] uppercase">
+                                  🚨 {team.name}
+                                </span>
+                                <span className="text-xs font-bold text-rose-500">
+                                  {team.profit.toFixed(1)}€
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-[9px] text-zinc-500">
+                                <span>{team.total} {team.total === 1 ? 'Aposta' : 'Apostas'} ({team.winRate.toFixed(0)}% acerto)</span>
+                                <span className="text-rose-500 font-black uppercase">PREJUÍZO</span>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* Bottom Panel Actions */}
+            <div className="bg-[#0D0D12] border-t border-zinc-850 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3">
+              <span className="text-[10px] font-mono text-zinc-500 tracking-wider uppercase">
+                ⚙️ HOLOGRAPH REGISTER CONSOLE CORE • IRUNBETS SECURE CRYPTO SECURED SYSTEM ID #{stats.totalBets}
+              </span>
+              <button 
+                onClick={() => setShowStatsModal(false)}
+                className="px-6 py-2.5 bg-gradient-to-r from-red-650/40 to-red-700/50 hover:from-red-650/50 hover:to-red-700/65 border border-red-500/40 hover:border-red-400 text-red-200 hover:text-white font-mono text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer"
+              >
+                {labels.t_closeBtn}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* --- HIGH-TECH INDEPENDENT BANKROLL MOVEMENTS MODAL (MONTEPIO-STYLE) --- */}
+      {showMovementsModal && (
+        <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[9999] flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-fade-in">
+          <div className="bg-[#08080B] border-2 border-cyan-500/60 rounded-3xl max-w-[1240px] w-full text-zinc-100 flex flex-col overflow-hidden shadow-[0_0_100px_rgba(6,182,212,0.25)] relative max-h-[92vh]">
+            
+            {/* Cyberpunk grid background decor lines */}
+            <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#00f2fe]/70 to-transparent top-0"></div>
+            <div className="absolute inset-y-0 w-px bg-gradient-to-b from-transparent via-cyan-500/25 to-transparent left-0"></div>
+            <div className="absolute inset-y-0 w-px bg-gradient-to-b from-transparent via-cyan-500/25 to-transparent right-0"></div>
+
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 md:px-8 py-5 bg-[#0D0D12] border-b border-zinc-850 relative">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded-full bg-[#00f2fe] animate-pulse shadow-[0_0_15px_#00f2fe]"></div>
+                <div>
+                  <h3 className="text-sm md:text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                    <span>
+                      {language === 'en' ? 'EXTRAT DE SONDAGEM & BANCA' :
+                       language === 'fr' ? 'EXTRAIT DE FLUX ET BANQUE' :
+                       language === 'it' ? 'ESTRATTO FLUSSO & BANCA' :
+                       language === 'de' ? 'KONTOSTAND & LIQUIDITÄT' :
+                       'EXTRATO DE MOVIMENTOS & BANCA CORRENTE'}
+                    </span>
+                    <span className="text-[10px] bg-cyan-500/10 text-[#00f2fe] border border-cyan-500/30 px-2 py-0.5 rounded font-black uppercase font-mono tracking-wider">REDE DE SINCRO</span>
+                  </h3>
+                  <span className="text-[11px] text-zinc-400 font-mono tracking-wide uppercase block mt-0.5">
+                    {language === 'en' ? 'Bankroll reinforcement / withdrawal auditing statement' : 'Demonstração de extrato de tesouraria de apoio à banca (Tipo Montepio)'}
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowMovementsModal(false)}
+                className="text-zinc-350 hover:text-red-400 font-mono text-[10px] bg-zinc-950 px-4 py-2 border border-zinc-850 rounded-xl hover:border-red-500/50 transition-all uppercase font-black flex items-center gap-2 active:scale-95 cursor-pointer shadow-md shadow-black"
+              >
+                <span>✕ {labels.t_closeBtn || 'FECHAR'}</span>
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#08080B]">
+              
+              {/* LIQUIDITY SUMMARY KPI BLOCK */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="p-4 bg-[#0D0D12]/75 border border-zinc-850 rounded-xl relative overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-zinc-500 font-mono tracking-wider">BANCA INICIAL</span>
+                  <div className="text-lg font-black font-mono text-zinc-100 mt-1.5">
+                    {startingBankroll.toFixed(2)}€
+                  </div>
+                  <span className="text-[8px] text-zinc-500 block leading-none mt-1">Capital inicial de arranque</span>
+                </div>
+
+                <div className="p-4 bg-[#0D0D12]/75 border border-red-500/10 rounded-xl relative overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-red-400 font-mono tracking-wider">🔴 REFORÇOS ATIVOS</span>
+                  <div className="text-lg font-black font-mono text-xs text-red-500 mt-1.5">
+                    +{bankrollMovements.filter(m => m.type === 'reforco').reduce((sum, current) => sum + current.value, 0).toFixed(2)}€
+                  </div>
+                  <span className="text-[8px] text-zinc-500 block leading-none mt-1">Depósitos adicionais vermelhos</span>
+                </div>
+
+                <div className="p-4 bg-[#0D0D12]/75 border border-orange-500/10 rounded-xl relative overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-orange-400 font-mono tracking-wider">⚪ LEVANTAMENTOS</span>
+                  <div className="text-lg font-black font-mono text-zinc-350 mt-1.5">
+                    -{bankrollMovements.filter(m => m.type === 'levantamento').reduce((sum, current) => sum + current.value, 0).toFixed(2)}€
+                  </div>
+                  <span className="text-[8px] text-zinc-500 block leading-none mt-1">Retiradas e despesas de caixa</span>
+                </div>
+
+                <div className="p-4 bg-[#0D0D12]/75 border border-green-500/10 rounded-xl relative overflow-hidden">
+                  <span className="text-[9px] uppercase font-bold text-emerald-400 font-mono tracking-wider">🟢 OUTROS GANHOS</span>
+                  <div className="text-lg font-black font-mono text-emerald-400 mt-1.5">
+                    +{bankrollMovements.filter(m => m.type === 'lucro').reduce((sum, current) => sum + current.value, 0).toFixed(2)}€
+                  </div>
+                  <span className="text-[8px] text-zinc-500 block leading-none mt-1">Lançamentos verdes extras</span>
+                </div>
+              </div>
+
+              {/* QUICK INSERTION DYNAMIC TRANSACTION FORM */}
+              <div className="p-5 bg-[#0D0D12]/80 border border-zinc-850 rounded-2xl">
+                <h4 className="text-[11px] font-black text-[#00f2fe] uppercase tracking-widest font-mono mb-3.5 flex items-center gap-1.5">
+                  <span>⚡ REGISTAR NOVO LANÇAMENTO DE CAIXA</span>
+                  <span className="text-[8px] px-1.5 py-0.5 bg-cyan-950 border border-cyan-850 rounded text-cyan-400 leading-none">REAL-TIME</span>
+                </h4>
+                <form onSubmit={handleAddBankrollMovement} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-zinc-400 tracking-wide font-mono block">Descrição do Lançamento</label>
+                    <input
+                      type="text"
+                      value={newMvDescription}
+                      onChange={(e) => setNewMvDescription(e.target.value)}
+                      placeholder="Ex: Reforço Multibanco de Emergência"
+                      className="w-full bg-[#121217] border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-cyan-500 transition-all font-sans"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-zinc-400 tracking-wide font-mono block">Quantia (€)</label>
+                    <input
+                      type="text"
+                      value={newMvValue}
+                      onChange={(e) => setNewMvValue(e.target.value)}
+                      placeholder="Ex: 30"
+                      className="w-full bg-[#121217] border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-cyan-500 transition-all font-mono"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] font-black uppercase text-zinc-400 tracking-wide font-mono block">Categoria / Fluxo</label>
+                    <select
+                      value={newMvType}
+                      onChange={(e) => setNewMvType(e.target.value as any)}
+                      className="w-full bg-[#121217] border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-zinc-300 outline-none focus:border-cyan-500 transition-all font-mono"
+                    >
+                      <option value="reforco">🔴 REFORÇO / INJEÇÃO (A Vermelho)</option>
+                      <option value="levantamento">⚪ LEVANTAMENTO / SAÍDA</option>
+                      <option value="lucro">🟢 LUCRO MANUAL EXTRA (A Verde)</option>
+                      <option value="inicial">🔵 AJUSTE BANCA INICIAL</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="submit"
+                      className="w-full bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 border border-[#00f2fe]/35 hover:border-[#00f2fe] text-[#00f2fe] hover:text-white font-mono text-xs font-black uppercase tracking-wider py-2.5 rounded-xl transition-all cursor-pointer shadow-lg active:scale-95 text-center block"
+                    >
+                      + REGISTAR LANÇAMENTO
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* MOVEMENTS TRANSACTIONS LEDGER (MONTEPIO BANK RECORD VIEW) */}
+              <div className="p-6 bg-[#0D0D12]/60 border border-zinc-850 rounded-2xl shadow-xl space-y-4">
+                <div className="flex justify-between items-center pb-2.5 border-b border-zinc-850">
+                  <h3 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                    🧾 EXTRATO DE MOVIMENTOS DETALHADOS ({bankrollMovements.length})
+                  </h3>
+                  <span className="text-[9px] text-[#00f2fe] uppercase tracking-wider font-mono select-none animate-pulse">
+                    🟢 CORE SYNCED INDEPENDENTE
+                  </span>
+                </div>
+
+                {bankrollMovements.length === 0 ? (
+                  <div className="py-16 text-center text-xs text-zinc-500 italic font-mono bg-zinc-950/40 border border-dashed border-zinc-850/60 rounded-xl">
+                    Nenhum movimento de banca registado.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[650px]">
+                      <thead>
+                        <tr className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 border-b border-zinc-850 pb-2.5">
+                          <th className="pb-3 pl-2">DATA LANÇAMENTO</th>
+                          <th className="pb-3">FLUXO / TIPO</th>
+                          <th className="pb-3">DESCRIÇÃO DO LANÇAMENTO</th>
+                          <th className="pb-3 text-center">QUANTIA</th>
+                          <th className="pb-3 text-center">FALÊNCIA / REFORÇO</th>
+                          <th className="pb-3 pr-2 text-right">ACÇÃO / AJUSTAR</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-850/40">
+                        {bankrollMovements.map((m) => {
+                          const displayMvLabel = 
+                            m.type === 'reforco' ? '🔴 REFORÇO DE SALDO' :
+                            m.type === 'levantamento' ? '⚪ LEVANTAMENTO / SAÍDA' :
+                            m.type === 'lucro' ? '🟢 LUCRO INDEPENDENTE' :
+                            '🔵 BANCA INICIAL DE BASE';
+
+                          const displayColor = 
+                            m.type === 'reforco' ? 'text-rose-500 font-bold' :
+                            m.type === 'levantamento' ? 'text-zinc-400 font-medium' :
+                            m.type === 'lucro' ? 'text-emerald-400 font-bold' :
+                            'text-cyan-400 font-bold';
+
+                          return (
+                            <tr key={m.id} className="hover:bg-zinc-950/40 transition-colors">
+                              <td className="py-3.5 pl-2 text-zinc-500 font-mono text-[10px]">
+                                {new Date(m.date).toLocaleDateString('pt-PT')}{' '}
+                                <span className="opacity-60">{new Date(m.date).toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })}</span>
+                              </td>
+                              
+                              <td className="py-3.5 font-mono text-[10px] font-extrabold uppercase">
+                                <span className={`px-2 py-0.5 rounded leading-none border inline-block ${
+                                  m.type === 'reforco' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                                  m.type === 'levantamento' ? 'bg-zinc-800 border-zinc-700 text-zinc-400' :
+                                  m.type === 'lucro' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                  'bg-cyan-500/10 border-cyan-500/20 text-[#00f2fe]'
+                                }`}>
+                                  {displayMvLabel}
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 pr-4 text-zinc-200">
+                                {editingMvId === m.id ? (
+                                  <input
+                                    type="text"
+                                    value={editMvDescription}
+                                    onChange={(e) => setEditMvDescription(e.target.value)}
+                                    className="bg-[#121217] border border-zinc-800 rounded px-2 py-1 text-xs text-white max-w-[260px] w-full outline-none font-bold"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <span className="font-medium text-white">{m.description}</span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 text-center font-mono font-bold">
+                                {editingMvId === m.id ? (
+                                  <input
+                                    type="number"
+                                    value={editMvValue}
+                                    onChange={(e) => setEditMvValue(e.target.value)}
+                                    className="bg-[#121217] border border-zinc-800 rounded px-2 py-1 text-xs text-white w-16 text-center outline-none font-mono"
+                                  />
+                                ) : (
+                                  <span className={displayColor}>
+                                    {m.type === 'levantamento' ? '-' : '+'}{Number(m.value).toFixed(2)}€
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 text-center font-mono">
+                                {m.type === 'reforco' ? (
+                                  <span className="text-[10px] bg-red-950/60 border border-red-900/50 text-red-400 px-2 py-0.5 rounded-sm uppercase tracking-wide font-black">
+                                    INJEÇÃO ANTI-FALÊNCIA
+                                  </span>
+                                ) : m.type === 'inicial' ? (
+                                  <span className="text-[10px] bg-cyan-950/40 border border-cyan-900/50 text-cyan-400 px-2 py-0.5 rounded-sm uppercase tracking-wide font-medium">
+                                    BASE INICIAL DE SEGURANÇA
+                                  </span>
+                                ) : m.type === 'lucro' ? (
+                                  <span className="text-[10px] bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 px-2 py-0.5 rounded-sm uppercase tracking-wide font-medium">
+                                    CRESCIMENTO
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-600 font-mono">--</span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 pr-2 text-right">
+                                {editingMvId === m.id ? (
+                                  <div className="flex gap-2 justify-end">
+                                    <button
+                                      onClick={() => handleEditBankrollMovement(m.id)}
+                                      className="px-2.5 py-1 bg-cyan-500/10 hover:bg-cyan-500 hover:text-black border border-cyan-500/30 text-[#00f2fe] rounded font-mono font-black text-[9px] uppercase cursor-pointer"
+                                    >
+                                      ✓ GUARDAR
+                                    </button>
+                                    <button
+                                      onClick={() => setEditingMvId(null)}
+                                      className="px-2.5 py-1 bg-zinc-800 text-zinc-400 hover:text-white rounded font-mono font-black text-[9px] uppercase cursor-pointer"
+                                    >
+                                      CANCELAR
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-2 justify-end">
+                                    <button
+                                      onClick={() => {
+                                        setEditingMvId(m.id);
+                                        setEditMvDescription(m.description);
+                                        setEditMvValue(String(m.value));
+                                        setEditMvType(m.type);
+                                      }}
+                                      className="px-2 py-1 bg-zinc-900 border border-zinc-800 hover:border-cyan-500/40 text-zinc-400 hover:text-[#00f2fe] rounded text-[10px] font-mono tracking-wider transition-all uppercase cursor-pointer active:scale-95"
+                                    >
+                                      📝 EDITAR
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteBankrollMovement(m.id, m.type, m.value)}
+                                      className="p-1.5 hover:bg-rose-500/15 rounded-lg border border-transparent hover:border-rose-500/20 text-zinc-500 hover:text-red-400 transition-all cursor-pointer"
+                                      title={language === 'pt' ? 'Eliminar ou anular lançamento' : 'Delete transaction'}
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-[#0D0D12] border-t border-zinc-850 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3">
+              <span className="text-[10px] font-mono text-zinc-500 tracking-wider uppercase flex items-center gap-1.5">
+                <span>⚙️ CONSOLE CONTABILÍSTICO IRUNBETS VER. 3.0</span>
+                <span>•</span>
+                <span className="text-cyan-500 font-bold">MONTEPIO DIGITAL STYLE INTEGRATED STATEMENT</span>
+              </span>
+              <button 
+                onClick={() => setShowMovementsModal(false)}
+                className="px-6 py-2.5 bg-gradient-to-r from-cyan-650/40 to-cyan-700/50 hover:from-cyan-650/50 hover:to-cyan-700/65 border border-cyan-500/40 hover:border-cyan-400 text-cyan-200 hover:text-white font-mono text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer"
+              >
+                {labels.t_closeBtn || 'FECHAR EXTRATO'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* --- HIGH-TECH INDEPENDENT BETS HISTORY MODAL --- */}
+      {showHistoryModal && (
+        <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[9999] flex items-center justify-center p-4 md:p-6 overflow-y-auto animate-fade-in">
+          <div className="bg-[#08080B] border-2 border-amber-500/60 rounded-3xl max-w-[1380px] w-full text-zinc-100 flex flex-col overflow-hidden shadow-[0_0_100px_rgba(245,158,11,0.25)] relative max-h-[92vh]">
+            
+            {/* Cyberpunk grid background decor lines */}
+            <div className="absolute inset-x-0 h-px bg-gradient-to-r from-transparent via-[#f59e0b]/70 to-transparent top-0"></div>
+            <div className="absolute inset-y-0 w-px bg-gradient-to-b from-transparent via-orange-500/25 to-transparent left-0"></div>
+            <div className="absolute inset-y-0 w-px bg-gradient-to-b from-transparent via-amber-500/25 to-transparent right-0"></div>
+
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 md:px-8 py-5 bg-[#0D0D12] border-b border-zinc-850 relative">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-4 rounded-full bg-[#f59e0b] animate-pulse shadow-[0_0_15px_#f59e0b]"></div>
+                <div>
+                  <h3 className="text-sm md:text-base font-black text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                    <span>{labels.historicoTitle ? labels.historicoTitle.replace(' ({0} no filtro)', '') : 'Histórico de Apostas Desportivas'}</span>
+                    <span className="text-[10px] bg-amber-500/10 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded font-black uppercase font-mono tracking-wider">REGISTO ANALÍTICO</span>
+                  </h3>
+                  <span className="text-[11px] text-zinc-400 font-mono tracking-wide uppercase block mt-0.5">
+                    {language === 'en' ? 'Detailed auditing for sport:' :
+                     language === 'fr' ? 'Audit détaillé pour le sport:' :
+                     language === 'it' ? 'Bilancio dettagliato per lo sport:' :
+                     language === 'de' ? 'Detaillierter Audit für Sportart:' :
+                     'Historial detalhado para desporto:'} <span className="text-amber-500 font-bold">{selectedSport === 'todos' ? (language === 'en' ? 'ALL SPORTS' : language === 'fr' ? 'TOUS LES SPORTS' : language === 'it' ? 'TUTTI GLI SPORT' : language === 'de' ? 'ALLE SPORTARTEN' : 'TODOS OS DESPORTOS') : selectedSport.toUpperCase()}</span>
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowHistoryModal(false)}
+                className="text-zinc-300 hover:text-red-400 font-mono text-[10px] bg-zinc-950 px-4 py-2 border border-zinc-850 rounded-xl hover:border-red-500/50 transition-all uppercase font-black flex items-center gap-2 active:scale-95 cursor-pointer shadow-md shadow-black"
+              >
+                <span>✕ {labels.t_closeBtn || 'FECHAR'}</span>
+              </button>
+            </div>
+
+            {/* Modal Body: Active Betting List Content */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#08080B]">
+              <div className="p-6 bg-[#0D0D12]/60 border border-zinc-850/80 rounded-2xl shadow-xl space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-zinc-850/70 w-full animate-fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <span className="text-zinc-400 text-xs font-mono font-bold tracking-wide">
+                      {labels.historicoTitle ? labels.historicoTitle.replace('{0}', String(filteredBets.length)) : `Histórico de Apostas Desportivas (${filteredBets.length} no filtro)`}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {filteredBets.length > 0 && (
+                        <button
+                          onClick={handleExportToExcel}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/35 border border-emerald-500/40 hover:border-emerald-400 text-emerald-300 hover:text-white font-mono text-[10px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 cursor-pointer shadow-md shadow-emerald-950/20"
+                        >
+                          <span>📊</span> {language === 'en' ? 'EXPORT EXCEL' : language === 'fr' ? 'EXPORTER EXCEL' : language === 'it' ? 'ESPORTA EXCEL' : language === 'de' ? 'EXCEL EXPORT' : 'EXPORTAR EXCEL'}
+                        </button>
+                      )}
+
+                      <input 
+                        type="file" 
+                        id="excel-import-file-input" 
+                        accept=".xls" 
+                        onChange={handleImportFromExcel} 
+                        className="hidden" 
+                      />
+
+                      <button
+                        onClick={() => {
+                          if (userPlan !== 'pro' && userPlan !== 'pro_max' && userPlan !== 'tipster') {
+                            triggerExcelLockAlert();
+                            return;
+                          }
+                          document.getElementById('excel-import-file-input')?.click();
+                        }}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-600/20 hover:bg-cyan-600/35 border border-cyan-500/40 hover:border-cyan-400 text-cyan-300 hover:text-white font-mono text-[10px] font-black uppercase tracking-wider rounded-lg transition-all active:scale-95 cursor-pointer shadow-md shadow-cyan-950/20"
+                      >
+                        <span>📥</span> {language === 'en' ? 'IMPORT EXCEL' : language === 'fr' ? 'IMPORTER EXCEL' : language === 'it' ? 'IMPORTA EXCEL' : language === 'de' ? 'EXCEL IMPORTIEREN' : 'IMPORTAR EXCEL'}
+                      </button>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-amber-500 font-mono font-medium tracking-wide uppercase">
+                    ⚡ {labels.historicoTip || 'DICA: CLIQUE NO ESTADO PARA MUDAR O RESULTADO'}
+                  </span>
+                </div>
+
+                {filteredBets.length === 0 ? (
+                  <div className="py-20 text-center text-xs text-zinc-500 italic font-mono bg-zinc-950/40 rounded-xl border border-dashed border-zinc-850/60 p-4">
+                    {labels.historicoNoBets || 'Nenhuma aposta registada com os filtros atuais.'}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[700px]">
+                      <thead>
+                        <tr className="text-[10px] uppercase font-extrabold tracking-widest text-zinc-500 border-b border-zinc-850 pb-2">
+                          <th className="pb-3.5 pl-2">{labels.tabelaJogo || 'CONFRONTO'}</th>
+                          <th className="pb-3.5">{labels.tabelaMercado || 'PROGNÓSTICO'}</th>
+                          <th className="pb-3.5 text-center">{labels.tabelaOdd || 'ODD'}</th>
+                          <th className="pb-3.5 text-center">{labels.tabelaStake || 'INVESTIMENTO'}</th>
+                          <th className="pb-3.5 text-center">{labels.tabelaLucro || 'RETORNO/LUCRO'}</th>
+                          <th className="pb-3.5 text-center">{labels.tabelaData || 'DATA'}</th>
+                          <th className="pb-3.5 text-center">{labels.tabelaEstado || 'ESTADO'}</th>
+                          <th className="pb-3.5 pr-2 text-right">{labels.tabelaAçao || 'ACÇÃO'}</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-850/40">
+                        {filteredBets.map((bet) => {
+                          let netVal = 0;
+                          let netColor = 'text-zinc-450';
+                          if (bet.status === 'Ganha') {
+                            netVal = (bet.stake * bet.odd) - bet.stake;
+                            netColor = 'text-emerald-400 font-bold';
+                          } else if (bet.status === 'Perdida') {
+                            netVal = -bet.stake;
+                            netColor = 'text-rose-450';
+                          }
+
+                          const displayStatusLabel = 
+                            bet.status === 'Ganha' ? labels.ganhas.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim() :
+                            bet.status === 'Perdida' ? labels.perdidas.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim() :
+                            bet.status === 'Reembolsada' ? labels.devolvidas.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim() :
+                            labels.pendentes.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim();
+
+                          return (
+                            <tr key={bet.id} className="hover:bg-zinc-950/40 transition-colors">
+                              <td className="py-3.5 pl-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-white block truncate max-w-[200px]">{bet.game}</span>
+                                  {bet.isImageSlip && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPreviewImageTitle(bet.game);
+                                        setPreviewImageSummary(bet.extractedSummary || "Análise inteligente pelo motor iRunBets OCR.");
+                                        setPreviewImageForModal(bet.imageUrl || '');
+                                      }}
+                                      className="px-1.5 py-0.5 text-[8px] bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded font-mono font-bold flex items-center gap-1 hover:bg-amber-500/25 cursor-pointer leading-none"
+                                      title="Ver Talão Digitalizado"
+                                    >
+                                      📸 VER TALÃO
+                                    </button>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                  <span className="text-[9px] text-zinc-500 font-mono italic">
+                                    {bet.sport === 'Futebol' ? labels.football.replace(/[^a-zA-ZáàâãéèêïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim() :
+                                     bet.sport === 'Ténis' ? labels.tennis.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim() :
+                                     bet.sport === 'Basquetebol' ? labels.basketball.replace(/[^a-zA-ZáàâãéèêïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim() :
+                                     labels.others.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÁÀÂÃÉÈÊÍÏÓÔÕÖÚÇ ]/g, '').trim()}
+                                  </span>
+                                  {bet.league && (
+                                    <span className="text-[8px] bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono px-1 rounded-sm leading-none py-0.5">
+                                      {bet.league}
+                                    </span>
+                                  )}
+                                  <span className={`text-[8px] px-1.5 py-0.5 rounded-sm border font-mono uppercase font-black leading-none ${
+                                    bet.platform === 'ios'
+                                      ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+                                      : 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400'
+                                  }`}>
+                                    {bet.platform === 'ios' ? '📱 iOS' : '🖥️ Web'}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="py-3.5 font-medium text-zinc-350">
+                                <span>{bet.marketType}</span>
+                                {bet.marketCategory && (
+                                  <span className="ml-1.5 text-[8px] bg-zinc-900/60 border border-zinc-850 text-[#00f2fe]/90 px-1.5 py-0.5 rounded-sm font-mono font-bold uppercase leading-none">
+                                    {bet.marketCategory}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 text-center font-mono text-zinc-200">{bet.odd.toFixed(2)}</td>
+                              <td className="py-3.5 text-center font-mono text-zinc-200">{bet.stake.toFixed(0)}€</td>
+                              <td className={`py-3.5 text-center font-mono ${netColor}`}>
+                                {bet.status === 'Pendente' ? (
+                                  <span className="text-amber-500 animate-pulse font-mono font-medium">--</span>
+                                ) : bet.status === 'Reembolsada' ? (
+                                  <span className="text-zinc-500 font-medium">
+                                    {labels.devolvidas.slice(0, 5)}.
+                                  </span>
+                                ) : (
+                                  `${netVal > 0 ? '+' : ''}${netVal.toFixed(1)}€`
+                                )}
+                              </td>
+                              <td className="py-3.5 text-center text-zinc-500 text-[10px] font-mono">{bet.date}</td>
+                              <td className="py-3.5 text-center">
+                                {bet.marketCategory === 'Simples' || bet.marketCategory === 'Múltipla' ? (
+                                  <span
+                                    className={`px-2 py-1 text-[9px] font-black uppercase rounded-md border text-center transition-all ${
+                                      bet.status === 'Ganha'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-405'
+                                        : bet.status === 'Perdida'
+                                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-450'
+                                        : bet.status === 'Reembolsada'
+                                        ? 'bg-[#1b1b24] border-zinc-800 text-zinc-400'
+                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                    }`}
+                                  >
+                                    {displayStatusLabel}
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleToggleStatus(bet.id, bet.status)}
+                                    className={`px-2 py-1 text-[9px] font-black uppercase rounded-md border text-center cursor-pointer transition-all ${
+                                      bet.status === 'Ganha'
+                                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-405'
+                                        : bet.status === 'Perdida'
+                                        ? 'bg-rose-500/10 border-rose-500/20 text-rose-450'
+                                        : bet.status === 'Reembolsada'
+                                        ? 'bg-[#1b1b24] border-zinc-800 text-zinc-400'
+                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-500'
+                                    }`}
+                                  >
+                                    {displayStatusLabel}
+                                  </button>
+                                )}
+                              </td>
+                              <td className="py-3.5 pr-2 text-right">
+                                {bet.marketCategory === 'Simples' || bet.marketCategory === 'Múltipla' ? (
+                                  <span className="text-[9px] text-zinc-650 font-mono font-bold tracking-wide leading-none uppercase bg-zinc-900 border border-zinc-850 px-1.5 py-0.5 rounded">
+                                    {bet.platform === 'ios' ? 'iOS' : 'Web_Sync'}
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => handleDeleteBet(bet.id)}
+                                    className="p-1.5 hover:bg-rose-500/15 rounded-lg border border-transparent hover:border-rose-500/20 text-zinc-500 hover:text-rose-400 transition-all cursor-pointer"
+                                    title="✕"
+                                  >
+                                    ✕
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="bg-[#0D0D12] border-t border-zinc-850 px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-3">
+              <span className="text-[10px] font-mono text-zinc-500 tracking-wider uppercase">
+                ⚙️ CONSOLE HISTÓRICO INTEGRADO • IRUNBETS REAL-TIME TRACKING CORE
+              </span>
+              <button 
+                onClick={() => setShowHistoryModal(false)}
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-650/40 to-amber-700/50 hover:from-amber-650/50 hover:to-amber-700/65 border border-amber-500/40 hover:border-amber-400 text-amber-200 hover:text-white font-mono text-xs font-black uppercase tracking-widest rounded-xl transition-all shadow-lg active:scale-95 cursor-pointer"
+              >
+                {labels.t_closeBtn || 'FECHAR REGISTOS'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* --- NEON ORANGE LONG-TERM OUTRIGHT BET CREATOR MODAL --- */}
+      {showLongTermModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/85 backdrop-blur-xl cursor-pointer"
+            onClick={() => setShowLongTermModal(false)}
+          />
+
+          {/* Modal Card */}
+          <div className="relative w-full max-w-xl bg-[#0e0e13]/98 border border-orange-500/40 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(249,115,22,0.22),0_0_15px_rgba(0,0,0,0.8)] flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-5 border-b border-zinc-850/60 bg-black/30 backdrop-blur-md">
+              <div>
+                <h4 className="text-xs font-black uppercase text-orange-400 font-mono tracking-widest flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse shadow-[0_0_8px_#f97316]"></span>
+                  {language === 'pt' ? '🏆 Registar Entrada Real - Longo Prazo' : '🏆 Register Long-Term Outright Bet'}
+                </h4>
+                <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                  {language === 'pt' ? 'Apostas de época inteira, campeões e previsões de pódio.' : 'Full season projections, title winners, and future bets.'}
+                </p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setShowLongTermModal(false)}
+                className="text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer text-xl font-mono"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form */}
+            <form onSubmit={handleAddLongTermBet} className="p-6 overflow-y-auto space-y-4">
+              
+              {/* Competition Selector (Combobox) */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] uppercase font-bold text-orange-400 font-mono block">
+                  {language === 'pt' ? 'Competição / Torneio:' : 'Competition / Tournament:'}
+                </label>
+                <select
+                  value={longTermCompetition}
+                  onChange={(e) => setLongTermCompetition(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition-colors font-mono cursor-pointer"
+                >
+                  <optgroup label={language === 'pt' ? 'Portugal & Europa' : 'European & National Leagues'}>
+                    <option value="1ª Liga Portugal">⚽ 1ª Liga Portugal</option>
+                    <option value="Premier League (Inglaterra)">⚽ Premier League (Inglaterra)</option>
+                    <option value="La Liga (Espanha)">⚽ La Liga (Espanha)</option>
+                    <option value="Serie A (Itália)">⚽ Serie A (Itália)</option>
+                    <option value="Bundesliga (Alemanha)">⚽ Bundesliga (Alemanha)</option>
+                    <option value="Ligue 1 (França)">⚽ Ligue 1 (França)</option>
+                    <option value="Eredivisie (Países Baixos)">⚽ Eredivisie (Países Baixos)</option>
+                    <option value="Süper Lig (Turquia)">⚽ Süper Lig (Turquia)</option>
+                    <option value="Allsvenskan (Suécia)">⚽ Allsvenskan (Suécia)</option>
+                    <option value="Eliteserien (Noruega)">⚽ Eliteserien (Noruega)</option>
+                    <option value="Premiership (Escócia)">⚽ Premiership (Escócia)</option>
+                    <option value="Super League (Grécia)">⚽ Super League (Grécia)</option>
+                  </optgroup>
+                  <optgroup label={language === 'pt' ? 'Competições Continentais' : 'Continental Tournaments'}>
+                    <option value="Champions League (Liga dos Campeões)">🏆 Champions League (Liga dos Campeões)</option>
+                    <option value="Europa League (Liga Europa)">🏆 Europa League (Liga Europa)</option>
+                    <option value="Conference League (Liga Conferência)">🏆 Conference League (Liga Conferência)</option>
+                    <option value="Campeonato do Mundo (Seleções - FIFA)">🌍 Campeonato do Mundo (Seleções - FIFA)</option>
+                    <option value="Campeonato da Europa (Seleções - UEFA)">🌍 Campeonato da Europa (Seleções - UEFA)</option>
+                  </optgroup>
+                  <optgroup label={language === 'pt' ? 'América do Sul' : 'South American Leagues'}>
+                    <option value="Campeonato Brasileiro (Série A)">🇧🇷 Campeonato Brasileiro (Série A)</option>
+                    <option value="Superliga Argentina">🇦🇷 Superliga Argentina</option>
+                    <option value="Primera División Uruguaya">🇺🇾 Primera División Uruguaya</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              {/* Bet Type Selector (Combobox) */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] uppercase font-bold text-orange-400 font-mono block">
+                  {language === 'pt' ? 'Tipo de Entrada (Mercado a Longo Prazo):' : 'Entry Type (Long-Term Market):'}
+                </label>
+                <select
+                  value={longTermBetType}
+                  onChange={(e) => setLongTermBetType(e.target.value)}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition-colors font-mono cursor-pointer"
+                >
+                  <option value="Vencedor Final / Campeão">🏆 Vencedor Final / Campeão</option>
+                  <option value="Champions League">⭐ Champions League</option>
+                  <option value="Europa League">⭐ Europa League</option>
+                  <option value="Conference League">⭐ Conference League</option>
+                  <option value="European Super CUP">🏆 European Super CUP</option>
+                  <option value="Qualificação / Promoção">📈 Qualificação / Promoção</option>
+                  <option value="Finalista">🥈 Finalista Garantido</option>
+                  <option value="Top 3 / Top 4 Final">✨ Top 3 / Top 4 Final</option>
+                  <option value="Melhor Marcador / Bota de Ouro">👟 Melhor Marcador / Bota de Ouro</option>
+                  <option value="Despromoção / Descer de Divisão">📉 Despromoção / Descer de Divisão</option>
+                  <option value="Outros Especiais">🎯 Outros Especiais</option>
+                </select>
+              </div>
+
+              {/* Chosen Selection (Free Text Selection Input) */}
+              <div className="space-y-1.5">
+                <label className="text-[9px] uppercase font-bold text-orange-400 font-mono block">
+                  {language === 'pt' ? 'Escolha Livre de Equipa / Seleção / Atleta:' : 'Free Team / Selection / Player Choice:'}
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={longTermSelection}
+                  onChange={(e) => setLongTermSelection(e.target.value)}
+                  placeholder={language === 'pt' ? 'Ex: Benfica, Real Madrid, Portugal, Erling Haaland...' : 'Ex: Benfica, Real Madrid, Portugal, Haaland...'}
+                  className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition-colors font-mono"
+                />
+              </div>
+
+              {/* Odds, Stake & Potential Gains Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono block">Odd:</label>
+                  <input
+                    type="text"
+                    required
+                    value={longTermOdd}
+                    onChange={(e) => setLongTermOdd(e.target.value)}
+                    placeholder="Ex: 5.10"
+                    className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition-colors font-mono"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono block">{language === 'pt' ? 'Valor Apostado (€):' : 'Stake (€):'}</label>
+                  <input
+                    type="text"
+                    required
+                    value={longTermStake}
+                    onChange={(e) => setLongTermStake(e.target.value)}
+                    placeholder="Ex: 20.00"
+                    className="w-full bg-zinc-950 border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition-colors font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Real-time potential calculations Display card */}
+              {(() => {
+                const oVal = parseFloat(String(longTermOdd).replace(',', '.'));
+                const sVal = parseFloat(String(longTermStake).replace(',', '.'));
+                const valid = !isNaN(oVal) && !isNaN(sVal) && oVal > 1 && sVal > 0;
+                
+                const potentialGross = valid ? (oVal * sVal) : 0;
+                const potentialNet = valid ? ((oVal - 1) * sVal) : 0;
+
+                return (
+                  <div className="p-4 rounded-xl bg-orange-950/10 border border-orange-500/20 space-y-2 mt-2">
+                    <span className="text-[9px] uppercase font-black text-orange-400 font-mono tracking-widest block">
+                      🔮 {language === 'pt' ? 'PROJEÇÃO DE COBERTURA & GANHOS:' : 'POTENTIAL PAYOUT PROJECTION:'}
+                    </span>
+                    <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-500 block">{language === 'pt' ? 'Retorno Bruto Potencial:' : 'Potential Gross Return:'}</span>
+                        <span className="text-sm font-black text-white">{potentialGross.toFixed(2)}€</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-zinc-500 block">{language === 'pt' ? 'Lucro Líquido Potencial:' : 'Potential Net Profit:'}</span>
+                        <span className="text-sm font-black text-emerald-400 font-bold">+{potentialNet.toFixed(2)}€</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Submit Buttons */}
+              <div className="pt-4 flex items-center justify-end gap-3 border-t border-zinc-850/40 font-sans">
+                <button
+                  type="button"
+                  onClick={() => setShowLongTermModal(false)}
+                  className="px-4 py-2 border border-zinc-800 hover:bg-zinc-900 rounded-xl text-zinc-400 text-xs font-mono transition-colors cursor-pointer"
+                >
+                  {language === 'pt' ? 'CANCELAR' : 'CANCEL'}
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 border border-orange-500/40 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-[0_0_15px_rgba(249,115,22,0.4)] transition-all active:scale-95 cursor-pointer font-mono"
+                >
+                  {language === 'pt' ? '💾 GRAVAR ENTRADA LONGO PRAZO' : '💾 SAVE LONG-TERM ENTRY'}
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- FLOATING DRAFT DECISION MODAL FOR MULTIPLES & DRAFTS --- */}
+      {showDraftDecisionModal && pendingDecisionBet && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/85 backdrop-blur-xl cursor-pointer"
+            onClick={() => {
+              setShowDraftDecisionModal(false);
+              setPendingDecisionBet(null);
+            }}
+          />
+
+          {/* Modal Card */}
+          <div className="relative w-full max-w-md bg-[#0e0e13]/98 border border-[#00f2fe]/35 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,242,254,0.18),0_0_15px_rgba(0,0,0,0.8)] flex flex-col z-10 animate-in fade-in zoom-in-95 duration-150">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-zinc-850/60 bg-black/30 backdrop-blur-md">
+              <h4 className="text-xs font-black uppercase text-white font-mono tracking-widest flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                {language === 'pt' ? '📥 Gerir Rascunho do Boletim' : '📥 Manage Betting Slip Draft'}
+              </h4>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              <p className="text-xs text-zinc-300 font-sans leading-relaxed">
+                {language === 'pt' 
+                  ? 'Já tens seleções ativas no teu Boletim de Apostas provisório. O que gostarias de fazer com esta nova análise?' 
+                  : 'You already have active selections in your temporary Betting Slip. What would you like to do with this new analysis?'}
+              </p>
+
+              {/* Match Mini-card for Visual context */}
+              <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl space-y-1.5 font-mono">
+                <div className="flex justify-between text-[10px] text-zinc-500">
+                  <span>{pendingDecisionBet.league}</span>
+                  <span className="text-cyan-400 font-bold">{pendingDecisionBet.sport}</span>
+                </div>
+                <div className="text-xs font-bold text-white">
+                  {pendingDecisionBet.homeTeam} vs {pendingDecisionBet.awayTeam}
+                </div>
+                <div className="flex justify-between items-center pt-1 border-t border-zinc-900 text-xs">
+                  <span className="text-zinc-400">{pendingDecisionBet.betType}</span>
+                  <span className="text-emerald-400 font-black">@{pendingDecisionBet.odd}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer / Buttons */}
+            <div className="px-6 pb-6 pt-2 flex flex-col gap-2.5">
+              {/* Option 1: Append */}
+              <button
+                type="button"
+                onClick={() => {
+                  // Append to existing draft list
+                  // Remove any empty defaults if present
+                  const filteredExisting = webSlipBets.filter(b => b.homeTeam !== '');
+                  const updatedBets = [...filteredExisting, pendingDecisionBet];
+                  
+                  setWebSlipKind('multiple');
+                  updateWebSlipBetsAndRecalculate(updatedBets, 'multiple');
+                  setShowDraftDecisionModal(false);
+                  setPendingDecisionBet(null);
+                  setShowWebSlipModal(true);
+
+                  alert(
+                    language === 'pt'
+                      ? `Adicionado! A seleção foi junta às anteriores criando um boletim Múltiplo (${updatedBets.length} jogos).\nNão te esqueças de gravar!`
+                      : `Appended! Selection added to previous ones creating an Accumulator/Combo (${updatedBets.length} matches).\nDon't forget to save!`
+                  );
+                }}
+                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-emerald-500/5 active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>🚀 {language === 'pt' ? 'Adicionar ao Boletim (Criar Múltipla)' : 'Add to Slip (Build Multi-Bet)'}</span>
+              </button>
+
+              {/* Option 2: Replace */}
+              <button
+                type="button"
+                onClick={() => {
+                  // Restart a brand new slip with just this bet
+                  setWebSlipKind('simple');
+                  updateWebSlipBetsAndRecalculate([pendingDecisionBet], 'simple');
+                  setShowDraftDecisionModal(false);
+                  setPendingDecisionBet(null);
+                  setShowWebSlipModal(true);
+
+                  alert(
+                    language === 'pt'
+                      ? `Boletim limpo! Iniciaste um novo prognóstico simples de 1 jogo.\nNão te esqueças de gravar!`
+                      : `Slip cleared! Started a fresh single bet with 1 selection.\nDon't forget to save!`
+                  );
+                }}
+                className="w-full py-2.5 bg-zinc-900 border border-zinc-850 hover:bg-zinc-800 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <span>♻️ {language === 'pt' ? 'Limpar e Começar Novo (Simples)' : 'Clear & Start Fresh (Single)'}</span>
+              </button>
+
+              {/* Cancel */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDraftDecisionModal(false);
+                  setPendingDecisionBet(null);
+                }}
+                className="w-full py-2 text-zinc-500 hover:text-zinc-400 text-xs font-mono transition-all text-center cursor-pointer"
+              >
+                {language === 'pt' ? 'Cancelar / Voltar' : 'Cancel / Go Back'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- TEAM & COACH QUALITATIVE & AI BEST BET DECISION MODAL --- */}
+      <TeamCoachAnalysisModal
+        isOpen={showTeamCoachModal}
+        onClose={() => setShowTeamCoachModal(false)}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        simLeague={simLeague}
+        homeGoals={homeGoals}
+        awayGoals={awayGoals}
+        homePosition={homePosition}
+        awayPosition={awayPosition}
+        homeForm={homeForm}
+        awayForm={awayForm}
+        realStatsExplanation={realStatsExplanation}
+        loadingFetchRealStats={loadingFetchRealStats}
+        onFetchRealStats={handleAutofillRealStats}
+        coachSupport={coachSupport}
+        setCoachSupport={setCoachSupport}
+        surpriseRisk={surpriseRisk}
+        setSurpriseRisk={setSurpriseRisk}
+        tacticalRigor={tacticalRigor}
+        lawnState={lawnState}
+        weather={weather}
+        keyInjuries={keyInjuries}
+        homeMotivation={homeMotivation}
+        awayMotivation={awayMotivation}
+        homeCoachChicotada={homeCoachChicotada}
+        setHomeCoachChicotada={setHomeCoachChicotada}
+        homePlayersWithCoach={homePlayersWithCoach}
+        setHomePlayersWithCoach={setHomePlayersWithCoach}
+        homeBondedTeam={homeBondedTeam}
+        setHomeBondedTeam={setHomeBondedTeam}
+        awayCoachChicotada={awayCoachChicotada}
+        setAwayCoachChicotada={setAwayCoachChicotada}
+        awayPlayersWithCoach={awayPlayersWithCoach}
+        setAwayPlayersWithCoach={setAwayPlayersWithCoach}
+        awayBondedTeam={awayBondedTeam}
+        setAwayBondedTeam={setAwayBondedTeam}
+        predictionResult={predictionResult || runPredictiveEngine()}
+        bestPossibleBet={getBestPossibleBet()}
+        smartSelection={getSmartSelection()}
+        aiReport={aiReport}
+        loadingAi={loadingAi}
+        onGenerateAiReport={handlePredictGame}
+        onApplyFactorsAndRecalculate={() => {
+          const mathResults = runPredictiveEngine();
+          setPredictionResult(mathResults);
+        }}
+        onSendToBetSlip={handleSendToBetSlip}
+        onSendToHomepage={handleSendToHomepage}
+        language={language}
+      />
+
+      {/* --- HYBRID AI & BEST BET ANALYSIS MODAL (BLUE BUTTON) --- */}
+      <HybridAnalysisModal
+        isOpen={showHybridAnalysisModal}
+        onClose={() => setShowTeamCoachModal(false)}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+        simLeague={simLeague}
+        homeGoals={homeGoals}
+        awayGoals={awayGoals}
+        homePosition={homePosition}
+        awayPosition={awayPosition}
+        homeForm={homeForm}
+        awayForm={awayForm}
+        predictionResult={predictionResult || runPredictiveEngine()}
+        bestPossibleBet={getBestPossibleBet()}
+        smartSelection={getSmartSelection()}
+        aiReport={aiReport}
+        loadingAi={loadingAi}
+        onGenerateAiReport={handlePredictGame}
+        onSendToBetSlip={handleSendToBetSlip}
+        onSendToHomepage={handleSendToHomepage}
+        tacticalRigor={tacticalRigor}
+        surpriseRisk={surpriseRisk}
+        coachSupport={coachSupport}
+        lawnState={lawnState}
+        weather={weather}
+        keyInjuries={keyInjuries}
+        language={language}
+      />
+
+      {/* --- WEB BET SLIP CREATOR MODAL --- */}
+      {showWebSlipModal && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/85 backdrop-blur-xl cursor-pointer"
+            onClick={() => !submittingWebSlip && setShowWebSlipModal(false)}
+          />
+
+          {/* Modal Card */}
+          <div className="relative w-full max-w-4xl lg:max-w-5xl xl:max-w-6xl bg-[#0e0e13]/98 border border-[#00f2fe]/35 rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,242,254,0.18),0_0_15px_rgba(0,0,0,0.8)] flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-5 border-b border-zinc-850/60 bg-black/30 backdrop-blur-md">
+              <div>
+                <h4 className="text-xs font-black uppercase text-white font-mono tracking-widest flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                  {editingWebSlipId ? 'Editar Boletim de Apostas (Web)' : 'Registar Novo Boletim de Apostas (Web)'}
+                </h4>
+                <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                  {editingWebSlipId ? 'Modifique os detalhes do boletim e grave alterações por cima.' : 'Estes dados serão salvos de forma independente na coleção webBetSlips.'}
+                </p>
+              </div>
+              <button 
+                type="button"
+                disabled={submittingWebSlip}
+                onClick={() => setShowWebSlipModal(false)}
+                className="text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer text-xl font-mono"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Form Scrollable Body */}
+            <form onSubmit={handleSaveWebSlip} className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+              {/* Parent Slip Details */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
+                <div className="md:col-span-6 space-y-1.55">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Nome do Boletim / Template</label>
+                  <input
+                    type="text"
+                    required
+                    value={webSlipTemplate}
+                    onChange={(e) => setWebSlipTemplate(e.target.value)}
+                    placeholder="Ex: Múltipla Premier League"
+                    className="w-full bg-[#070709] border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#00f2fe]/60 transition-all font-mono"
+                  />
+                </div>
+
+                <div className="md:col-span-3 space-y-1.55">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono font-semibold">Tipo Boletim</label>
+                  <select
+                    value={webSlipKind}
+                    onChange={(e) => {
+                      const newKind = e.target.value as 'simple' | 'multiple';
+                      setWebSlipKind(newKind);
+                      updateWebSlipBetsAndRecalculate(webSlipBets, newKind);
+                    }}
+                    className="w-full bg-[#070709] border border-zinc-850 rounded-xl px-2.5 py-2 text-xs text-white outline-none focus:border-[#00f2fe]/60 transition-all font-mono cursor-pointer"
+                  >
+                    <option value="multiple">Boletim Múltiplo</option>
+                    <option value="simple">Boletim Simples</option>
+                  </select>
+                </div>
+
+                <div className="md:col-span-3 space-y-1.55">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono font-semibold">Estado Geral</label>
+                  <select
+                    value={webSlipStatus}
+                    onChange={(e) => setWebSlipStatus(e.target.value as any)}
+                    className="w-full bg-[#070709] border border-zinc-850 rounded-xl px-2.5 py-2 text-xs text-white outline-none focus:border-[#00f2fe]/60 transition-all font-mono cursor-pointer"
+                  >
+                    <option value="pending">🟡 Pendente</option>
+                    <option value="won">🟢 Ganho</option>
+                    <option value="lost">🔴 Perdido</option>
+                    <option value="voided">⚫ Reembolsado/Anulado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div className="space-y-1.55">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Investimento / Stake (€)</label>
+                  <input
+                    type="text"
+                    required
+                    value={webSlipStake}
+                    onChange={(e) => setWebSlipStake(e.target.value)}
+                    placeholder="Ex: 10"
+                    className="w-full bg-[#070709] border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#00f2fe]/60 transition-all font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.55">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Odd Total Combinada</label>
+                  <input
+                    type="text"
+                    required
+                    value={webSlipTotalOdd}
+                    onChange={(e) => setWebSlipTotalOdd(e.target.value)}
+                    placeholder="Ex: 2.10"
+                    className="w-full bg-[#070709] border border-zinc-850 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-[#00f2fe]/60 transition-all font-mono"
+                  />
+                </div>
+
+                <div className="space-y-1.55">
+                  <label className="text-[9px] uppercase font-bold text-zinc-500 font-mono">Canal do Emissor</label>
+                  <div className="w-full bg-[#070709]/50 border border-zinc-850/40 rounded-xl px-3 py-2 text-xs text-zinc-500 font-mono flex items-center h-[38px] select-none">
+                    🌍 Painel de Gestor VIP
+                  </div>
+                </div>
+              </div>
+
+              {/* Event Selections list */}
+              <div className="space-y-4 pt-4 border-t border-zinc-850/60">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase text-zinc-400 font-mono tracking-wider">
+                    Confrontos e Prognósticos ({webSlipBets.length} Selecionados)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => updateWebSlipBetsAndRecalculate([...webSlipBets, { homeTeam: '', awayTeam: '', betType: '', league: '', odd: '', observations: '', resultStatus: 'pending', sport: 'Futebol' }])}
+                    className="px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-cyan-400 border border-cyan-500/20 hover:border-cyan-550 hover:bg-cyan-500/5 rounded bg-transparent transition-all cursor-pointer font-mono"
+                  >
+                    + Adicionar Evento
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {webSlipBets.map((bet, index) => {
+                    const updateBetField = (field: string, val: string) => {
+                      const updated = [...webSlipBets];
+                      updated[index] = { ...updated[index], [field]: val };
+                      updateWebSlipBetsAndRecalculate(updated);
+                    };
+
+                    return (
+                      <div key={index} className="p-5 bg-[#070709] border border-zinc-850 rounded-2xl relative space-y-4">
+                        <div className="flex justify-between items-center bg-zinc-950/40 p-2.5 rounded-xl">
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                            Seleção #{index + 1}
+                          </span>
+                          {webSlipBets.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => updateWebSlipBetsAndRecalculate(webSlipBets.filter((_, i) => i !== index))}
+                              className="text-rose-500 hover:text-rose-450 text-[10px] uppercase font-bold font-mono transition-colors cursor-pointer hover:underline"
+                            >
+                              Remover Seleção &times;
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Filtro Rápido de Equipas */}
+                        <div className="p-3 bg-zinc-950/60 border border-zinc-850/35 rounded-xl space-y-1">
+                          <label className="text-[8px] uppercase tracking-wider font-extrabold text-cyan-400 font-mono flex items-center justify-between">
+                            <span>🔍 Filtrar Equipas por Campeonato ou Favoritas:</span>
+                            <span className="text-[7.5px] font-normal text-zinc-500 lowercase">(1º PASSO)</span>
+                          </label>
+                          <select
+                            value={multipleTeamFilters[index] || 'all'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMultipleTeamFilters(prev => ({ ...prev, [index]: val }));
+                              if (val !== 'all' && val !== 'favorites' && MAJOR_LEAGUES_SUGGESTIONS.includes(val)) {
+                                updateBetField('league', val);
+                              }
+                            }}
+                            className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono cursor-pointer"
+                          >
+                            <option value="all">🌍 Mostrar Todas as Equipas ({getAllTeamSuggestions().length})</option>
+                            <option value="favorites">⭐ As Minhas Equipas Favoritas ({favoriteTeams.length})</option>
+                            <option value="Campeonato do Mundo">🏆 Campeonato do Mundo (Mundial)</option>
+                            {Object.keys(LEAGUES_TEAMS_MAP).filter(l => l !== "Campeonato do Mundo").map(league => (
+                              <option key={league} value={league}>⚽ {league}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <datalist id={`multiple-teams-datalist-${index}`}>
+                          {getFilteredTeamSuggestions(multipleTeamFilters[index] || 'all').map((team) => (
+                            <option key={team} value={team} />
+                          ))}
+                        </datalist>
+
+                        {/* First Row: Teams, Sport and League */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+                          <div className="md:col-span-4 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Equipa da Casa</label>
+                            <input
+                              type="text"
+                              required
+                              value={bet.homeTeam}
+                              onChange={(e) => updateBetField('homeTeam', e.target.value)}
+                              placeholder="Ex: Rio Ave"
+                              list={`multiple-teams-datalist-${index}`}
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono"
+                            />
+                          </div>
+                          <div className="md:col-span-4 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Equipa de Fora</label>
+                            <input
+                              type="text"
+                              required
+                              value={bet.awayTeam}
+                              onChange={(e) => updateBetField('awayTeam', e.target.value)}
+                              placeholder="Ex: Benfica"
+                              list={`multiple-teams-datalist-${index}`}
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono"
+                            />
+                          </div>
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Desporto</label>
+                            <select
+                              value={bet.sport}
+                              onChange={(e) => updateBetField('sport', e.target.value)}
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-1.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono cursor-pointer"
+                            >
+                              <option value="Futebol">⚽ Futebol</option>
+                              <option value="Basquetebol">🏀 Basquetebol</option>
+                              <option value="Ténis">🎾 Ténis</option>
+                              <option value="Outros">🎲 Outros</option>
+                            </select>
+                          </div>
+                          <div className="md:col-span-2 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Competição / Liga</label>
+                            <input
+                              type="text"
+                              value={bet.league}
+                              onChange={(e) => updateBetField('league', e.target.value)}
+                              placeholder="Ex: Primeira Liga"
+                              list="dashboard-leagues-datalist"
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Second Row: Market, Odd and Status */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5">
+                          <div className="md:col-span-5 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Prognóstico</label>
+                            <input
+                              type="text"
+                              required
+                              value={bet.betType}
+                              onChange={(e) => updateBetField('betType', e.target.value)}
+                              placeholder="Ex: V2 (Benfica)"
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono"
+                            />
+                          </div>
+
+                          <div className="md:col-span-3 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Odd Seleção</label>
+                            <input
+                              type="text"
+                              required
+                              value={bet.odd}
+                              onChange={(e) => updateBetField('odd', e.target.value)}
+                              placeholder="Ex: 1.45"
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 text-center transition-colors font-mono"
+                            />
+                          </div>
+
+                          <div className="md:col-span-4 space-y-1">
+                            <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Estado Prognóstico</label>
+                            <select
+                              value={bet.resultStatus}
+                              onChange={(e) => updateBetField('resultStatus', e.target.value)}
+                              className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono cursor-pointer"
+                            >
+                              <option value="pending">🟡 Pendente</option>
+                              <option value="green">🟢 Ganho (Green)</option>
+                              <option value="red">🔴 Perdido (Red)</option>
+                              <option value="voided">🔵 Devolvido (Void)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Optional Observations and Notes */}
+                        <div className="space-y-1">
+                          <label className="text-[8px] uppercase tracking-wider font-extrabold text-zinc-500 font-mono">Notas / Observações Opcionais da Seleção</label>
+                          <input
+                            type="text"
+                            value={bet.observations || ''}
+                            onChange={(e) => updateBetField('observations', e.target.value)}
+                            placeholder="Ex: Jogo decisivo na luta pela manutenção"
+                            className="w-full bg-[#050507] border border-zinc-900 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-[#00f2fe]/40 transition-colors font-mono"
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Form Footer Action Buttons */}
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-6 border-t border-zinc-850/60 bg-black/10 px-6 py-4 rounded-xl">
+                {/* Visual Draft Status & Reset Option on Left */}
+                <div className="flex items-center justify-between w-full md:w-auto gap-4">
+                  <div className="flex flex-col text-left">
+                    <span className="text-[9px] uppercase font-black text-[#00f2fe] font-mono tracking-widest flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+                      {webSlipKind === 'multiple' ? 'Rascunho Ativo (Múltipla)' : 'Rascunho Ativo (Simples)'}
+                    </span>
+                    <span className="text-[10px] text-zinc-400 font-mono">
+                      {webSlipBets.length} jogo(s) acumulado(s) • Odd Combinada: @{webSlipTotalOdd || '1.00'}
+                    </span>
+                  </div>
+                  
+                  {/* Reset/Clear Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(language === 'pt' ? 'Tem a certeza que deseja limpar todo o rascunho do boletim provisório?' : 'Are you sure you want to clear the entire temporary draft slip?')) {
+                        setWebSlipBets([{ homeTeam: '', awayTeam: '', betType: '', league: '', odd: '', observations: '', resultStatus: 'pending', sport: 'Futebol' }]);
+                        setWebSlipTemplate('');
+                        setWebSlipStake('10');
+                        setWebSlipTotalOdd('1.00');
+                        setWebSlipKind('simple');
+                      }
+                    }}
+                    className="px-3 py-1.5 bg-red-950/30 hover:bg-red-900/40 border border-red-900/35 text-red-400 hover:text-red-300 text-[10px] font-mono font-bold uppercase rounded-xl transition-all cursor-pointer flex items-center gap-1 shrink-0"
+                  >
+                    🗑️ {language === 'pt' ? 'Limpar Rascunho' : 'Clear Draft'}
+                  </button>
+                </div>
+
+                {/* Main Actions on Right */}
+                <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={handleCloseWebSlipModal}
+                    className="px-4.5 py-2.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-400 hover:text-zinc-200 text-xs font-mono rounded-xl transition-all cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingWebSlip}
+                    className="px-6 py-2.5 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-550 hover:to-cyan-450 text-white text-xs font-bold font-mono tracking-wider rounded-xl transition-all cursor-pointer shadow-[0_0_15px_rgba(0,242,254,0.25)] flex items-center gap-2 disabled:opacity-50 font-black uppercase text-[10px]"
+                  >
+                    {submittingWebSlip ? 'A Guardar...' : editingWebSlipId ? 'Gravar Alterações' : 'Criar Boletim'}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- USER SUBSCRIPTION / PERSISTENCE STATUS BLOCK --- */}
+      <div className="p-6 md:p-8 bg-[#09090D] border border-zinc-850 rounded-3xl space-y-6">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 pb-6 border-b border-zinc-850/60">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className={`h-2.5 w-2.5 rounded-full ${userPlan === 'pro' ? 'bg-[#00f2fe] animate-pulse shadow-[0_0_8px_#00f2fe]' : userPlan === 'site' ? 'bg-purple-500 animate-pulse' : 'bg-zinc-650'}`}></span>
+              <h3 className="text-xs font-black uppercase font-mono tracking-wider text-zinc-300">
+                {language === 'pt' ? 'Estatuto de Subscrição do Utilizador (Sync iTunes & Web)' : 
+                 language === 'fr' ? 'Statut d\'Abonnement de l\'Utilisateur (Sync iTunes & Web)' : 
+                 language === 'it' ? 'Stato dell\'Abbonamento Utente (Sincronizzazione iTunes e Web)' : 
+                 language === 'de' ? 'Abonnementstatus des Benutzers (Sync iTunes & Web)' : 
+                 'User Subscription Status (Sync iTunes & Web)'}
+              </h3>
+              {userPlan === 'pro' ? (
+                <span className="text-[9px] bg-[#00f2fe]/10 text-[#00f2fe] border border-[#00f2fe]/30 px-1.5 py-0.5 rounded font-black tracking-wider font-mono">
+                  {language === 'pt' ? 'PRO NUVEM REAL-TIME' : 'PRO REAL-TIME CLOUD'}
+                </span>
+              ) : userPlan === 'site' ? (
+                <span className="text-[9px] bg-purple-500/10 text-[#dd99ff] border border-purple-500/35 px-1.5 py-0.5 rounded font-black tracking-wider font-mono">
+                  {language === 'pt' ? 'SUBSCRIÇÃO DO SITE (FREE)' : 'SITE SUBSCRIPTION'}
+                </span>
+              ) : (
+                <span className="text-[9px] bg-zinc-800 text-zinc-400 border border-zinc-700 px-1.5 py-0.5 rounded font-black tracking-wider font-mono">
+                  {language === 'pt' ? 'DEMO / VISITANTE' : 'DEMO / GUEST'}
+                </span>
+              )}
+            </div>
+
+            {userPlan === 'site' && (
+              <div className="space-y-3">
+                <h4 className="text-base sm:text-lg font-black text-purple-400 uppercase tracking-tight font-display flex items-center gap-1.5">
+                  ✨ {language === 'pt' ? 'SUBSCRIÇÃO DO SITE (PLANO FREE)' : 
+                      language === 'fr' ? 'ABONNEMENT SITE (PLAN FREE)' : 
+                      language === 'it' ? 'ABBONAMENTO SITO (PIANO FREE)' : 
+                      language === 'de' ? 'WEBSITE-ABONNEMENT (FREE PLAN)' : 
+                      'SITE SUBSCRIPTION (FREE PLAN)'} <span className="text-xs text-purple-450 font-mono font-bold drop-shadow-[0_0_6px_#bf5af2] animate-pulse">({language === 'pt' ? 'MODO LOCAL COM LIMITAÇÕES' : 'LOCAL MODE WITH LIMITS'})</span>
+                </h4>
+                <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                  {language === 'pt' ? (
+                    <>
+                      O seu plano ativo é a <strong className="text-purple-400">Subscrição do Site (Free)</strong>. Este plano serve para testes e avaliação básica local, possuindo limitações severas de infraestrutura:
+                    </>
+                  ) : (
+                    <>Your profile has the Free Site Subscription active, with several functional limits:</>
+                  )}
+                </p>
+                <div className="bg-zinc-950/80 border border-zinc-850/50 p-3 rounded-2xl max-w-xl space-y-2">
+                  <span className="text-[9px] uppercase tracking-wider font-extrabold text-amber-500 font-mono block">⚠️ {language === 'pt' ? 'Limitações da Subscrição Gratuita do Site:' : 'Free Plan Constraints:'}</span>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-1.5 text-[10px] font-mono text-zinc-400">
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-rose-500">❌</span> <span>{language === 'pt' ? 'Sem Cloud Backup / Sync nativa iOS-Web' : 'No real-time Cloud Sync'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-rose-500">❌</span> <span>{language === 'pt' ? 'Sem Exportação/Importação Excel (.xls)' : 'Excel Import/Export disabled'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-rose-500">❌</span> <span>{language === 'pt' ? 'Limites estritos de IA e Purificador' : 'Strict daily AI verification limits'}</span>
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="text-rose-500">❌</span> <span>{language === 'pt' ? 'Sem Dashboard Tipster Profissional' : 'No Professional Tipster area'}</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+
+                {userPlan === 'pro' && (
+                  <>
+                    <h4 className="text-base sm:text-lg font-black text-white uppercase tracking-tight font-display flex items-center gap-1.5">
+                      💎 {language === 'pt' ? 'PLANO PREMIUM PRO ATIVO' : 
+                           language === 'fr' ? 'PLAN PREMIUM PRO ACTIF' : 
+                           language === 'it' ? 'PIANO PREMIUM PRO ATTIVO' : 
+                           language === 'de' ? 'PREMIUM PRO PLAN AKTIV' : 
+                           'PREMIUM PRO PLAN ACTIVE'} <span className="text-xs text-[#bf5af2] font-mono font-bold drop-shadow-[0_0_6px_#bf5af2] animate-pulse">({language === 'pt' ? 'CLOUD SYNC ATIVADO' : 'CLOUD SYNC ENABLED'})</span>
+                    </h4>
+                    <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                      {language === 'pt' ? (
+                        <>Sincronização <strong>Firebase Real-time Engine</strong> ativa com sucesso. Os dados da sua banca inicial (€{startingBankroll.toFixed(2)}), casa de apostas ({bettingHouse || 'Sem Casa'}), movimentos de saldo e boletins (<code>{cloudSlips.length} boletins correspondidos</code>) estão seguros, integrados e partilhados em tempo real entre o iPhone, Android e este painel Web.</>
+                      ) : language === 'fr' ? (
+                        <>Synchronisation du <strong>Firebase Real-time Engine</strong> activée avec succès. Vos données de capital (€{startingBankroll.toFixed(2)}), bookmaker ({bettingHouse || 'Aucun'}), transactions et tickets (<code>{cloudSlips.length} tickets associés</code>) sont sécurisées et partagées en temps réel entre iPhone, Android et ce panel Web.</>
+                      ) : language === 'it' ? (
+                        <>Sincronizzazione <strong>Firebase Real-time Engine</strong> attiva con successo. I dati sul bankroll (€{startingBankroll.toFixed(2)}), bookmaker ({bettingHouse || 'Nessuno'}), bilanci e schedine (<code>{cloudSlips.length} schedine corrispondenti</code>) sono protetti e pronti in tempo reale su iPhone, Android e questo pannello Web.</>
+                      ) : language === 'de' ? (
+                        <><strong>Firebase Real-time Engine</strong>-Synchronisierung erfolgreich aktiv. Ihre Bankroll-Daten (€{startingBankroll.toFixed(2)}), Buchmacher ({bettingHouse || 'Keiner'}), Kontobewegungen und Wettscheine (<code>{cloudSlips.length} Wettscheine gefunden</code>) sind sicher und werden in Echtzeit zwischen iPhone, Android und Web-Dashboard synchronisiert.</>
+                      ) : (
+                        <><strong>Firebase Real-time Engine</strong> synchronization active successfully. Your starting bankroll (€{startingBankroll.toFixed(2)}), sportsbook ({bettingHouse || 'None'}), balance changes and betslips (<code>{cloudSlips.length} matched slips</code>) are secure, integrated, and shared in real-time across iPhone, Android, and this Web dashboard.</>
+                      )}
+                    </p>
+                  </>
+                )}
+
+                {userPlan === 'site' && (
+                  <>
+                    <h4 className="text-base sm:text-lg font-black text-purple-450 uppercase tracking-tight font-display flex items-center gap-1.5">
+                      ✨ {language === 'pt' ? 'PLANO FREE ATIVADO' : 
+                          language === 'fr' ? 'PLAN FREE ACTIF' : 
+                          language === 'it' ? 'PIANO FREE ATTIVO' : 
+                          language === 'de' ? 'KOSTENLOSER PLAN AKTIV' : 
+                          'FREE PLAN ACTIVE'} <span className="text-xs text-zinc-400 font-mono font-medium">({language === 'pt' ? 'PROMOÇÃO DO MUNDIAL COM LIMITAÇÕES' : 'WORLD CUP PROMO WITH LIMITS'})</span>
+                    </h4>
+                    <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                      {language === 'pt' ? 'O Plano Free está ativo no seu perfil de utilizador! Tem acesso à análise estatística e ferramenta de banca com limitações diárias em tempo real da campanha do mundial. Os seus dados são guardados exclusivamente de forma local no seu telemóvel.' :
+                       language === 'fr' ? 'Le plan Free est actif sur votre profil ! Les données sont sauvegardées localement.' :
+                       language === 'it' ? 'Il piano Free è attivo sul tuo profilo! Tutti i dati sono memorizzati solo localmente.' :
+                       language === 'de' ? 'Der kostenlose Tarif ist in Ihrem Profil aktiv! Wettscheine werden nur lokal gespeichert.' :
+                       'Free plan is active on your profile! Daily campaign limitations active. Your stats are stored strictly locally on this device.'}
+                    </p>
+                  </>
+                )}
+
+                {userPlan === 'gratuito' && (
+                  <>
+                    <h4 className="text-base sm:text-lg font-black text-zinc-200 uppercase tracking-tight font-display flex flex-wrap items-center gap-2">
+                      {language === 'pt' ? '🛠️ ASSINATURA IRUNBETS GUEST / GRATUITO' : 
+                       language === 'fr' ? '🛠️ ACCÈS IRUNBETS INVITÉ / GRATUIT' : 
+                       language === 'it' ? '🛠️ ACCESSO IRUNBETS OSPITE / GRATUITO' : 
+                       language === 'de' ? '🛠️ IRUNBETS GAST- / KOSTENLOSER ZUGANG' : 
+                       '🛠️ IRUNBETS GUEST / FREE MEMBERSHIP'}
+                      {isMundialActive && (
+                        <span className="text-[10px] bg-gradient-to-r from-orange-500 to-amber-500 text-black px-2 py-0.5 rounded-full font-black tracking-wider animate-pulse font-mono uppercase">
+                          {translateCampaignTitle(mundialCampaignTitle, language)} {language === 'pt' ? 'Ativa (Livre)' : language === 'fr' ? 'Active (Libre)' : language === 'it' ? 'Attiva (Libero)' : language === 'de' ? 'Aktiv (Frei)' : 'Active (Free)'}
+                        </span>
+                      )}
+                    </h4>
+                    <p className="text-xs text-zinc-400 font-light leading-relaxed">
+                      {isMundialActive ? (
+                        language === 'pt' ? `Está a utilizar o modo ${translateCampaignTitle(mundialCampaignTitle, language)}. Por deter esta campanha ativa globalmente, todas as análises de IA, registos de Banca, Boletins, ROI e Histórico estão totalmente DESBLOQUEADOS para si! Caso pretenda salvaguardar as suas estatísticas na Nuvem de forma permanente para lá da campanha, poderá escolher entre os planos:` :
+                        language === 'fr' ? `Vous utilisez le mode ${translateCampaignTitle(mundialCampaignTitle, language)}. Cette campagne étant active à l'échelle mondiale, toutes les analyses d'IA, le suivi de votre Bankroll, les tickets, le ROI et l'historique sont entièrement DÉVERROUILLÉS! Si vous souhaitez conserver vos données de manière permanente dans le Cloud au-delà de la campagne, vous pouvez choisir parmi nos abonnements :` :
+                        language === 'it' ? `Stai utilizzando la modalità ${translateCampaignTitle(mundialCampaignTitle, language)}. Avendo questa campagna attiva a livello globale, tutte le analisi di IA, la gestione del Bankroll, le schedine, il ROI e la cronologia sono completamente SBLOCCATI! Se desideri salvare permanentemente le tue statistiche sul Cloud oltre questa promozione, puoi scegliere tra i piani:` :
+                        language === 'de' ? `Sie nutzen den ${translateCampaignTitle(mundialCampaignTitle, language)}-Modus. Da diese Aktion weltweit aktiv ist, sind sämtliche KI-Analysen, Bankroll-Verfolgungen, Wettscheine, ROI und Verläufe vollständig für Sie FREIGEGEBEN! Wenn Sie Ihre Statistiken über den Aktionszeitraum hinaus dauerhaft in der Cloud sichern möchten, können Sie einen unserer Tarife wählen:` :
+                        `You are using the ${translateCampaignTitle(mundialCampaignTitle, language)} mode. Since this campaign is globally active, all AI analyses, Bankroll tracking, Slips, ROI, and History are fully UNLOCKED for you! If you want to permanently safeguard your stats in the Cloud beyond the campaign period, you can pick one of our plans:`
+                      ) : (
+                        language === 'pt' ? 'Está a utilizar o modo de demonstração clássico. Para usufruir da segurança de armazenamento permanente e sincronização em tempo real nativa, selecione um plano abaixo (mirror com a App Store):' :
+                        language === 'fr' ? 'Vous utilisez le mode de démonstration classique. Pour bénéficier d\'une sécurité de stockage permanente et d\'une synchronisation native en temps réel, sélectionnez un forfait ci-dessous (miroir avec l\'App Store) :' :
+                        language === 'it' ? 'Stai utilizzando la modalità dimostrativa classica. Per usufruire della sicurezza dell\'archiviazione permanente e della sincronizzazione nativa in tempo reale, seleziona un piano di seguito (speculare ad App Store):' :
+                        language === 'de' ? 'Sie nutzen den klassischen Demonstrationsmodus. Um von dauerhafter Speichersicherheit und nativer Echtzeitsynchronisierung zu profitieren, wählen Sie unten einen Tarif aus (gespiegelt mit dem App Store):' :
+                        'You are using the classic demonstration mode. To enjoy permanent storage security and native real-time sync, select a plan below (mirrored with App Store):'
+                      )}
+                    </p>
+                  </>
+                )}
+              </div>
+
+              {/* Dynamic Subscription Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                {userPlan === 'gratuito' && (
+                  <>
+                    <button
+                      onClick={() => handleSelectPlan('site')}
+                      className="px-3 py-2 bg-purple-950/20 hover:bg-purple-950/40 border border-purple-800/40 text-[#c084fc] rounded-xl text-xs font-black uppercase font-mono tracking-wider transition-all cursor-pointer flex flex-col items-center justify-center min-w-[140px]"
+                    >
+                      <span>Plano Free</span>
+                      <span className="text-[9px] text-purple-400 font-medium mt-0.5">Grátis • Limitações</span>
+                    </button>
+                    <button
+                      onClick={() => handleSelectPlan('pro')}
+                      className="px-3 py-2 bg-[#00f2fe]/10 hover:bg-[#00f2fe]/20 border border-[#00f2fe]/30 text-[#00f2fe] rounded-xl text-xs font-black uppercase font-mono tracking-wider transition-all cursor-pointer flex flex-col items-center justify-center min-w-[140px]"
+                    >
+                      <span>Plano PRO</span>
+                      <span className="text-[9px] text-cyan-400 font-bold mt-0.5">Excel Export + Cloud</span>
+                    </button>
+                  </>
+                )}
+
+                {userPlan === 'site' && (
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <button
+                      onClick={() => handleSelectPlan('pro')}
+                      className="px-4 py-2 bg-[#00f2fe]/25 hover:bg-[#00f2fe]/35 border border-[#00f2fe]/40 text-[#00f2fe] rounded-xl text-xs font-black uppercase font-mono tracking-wider transition-all cursor-pointer flex flex-col items-center justify-center"
+                    >
+                      <span>☁️ UPGRADE TO PRO</span>
+                    </button>
+                    <button
+                      onClick={() => handleSelectPlan('gratuito')}
+                      className="px-3 py-1.5 bg-zinc-950 border border-zinc-900 text-zinc-550 hover:text-zinc-300 rounded-lg text-[9px] uppercase font-mono cursor-pointer"
+                    >
+                      Voltar a Gratuito
+                    </button>
+                  </div>
+                )}
+
+                {userPlan === 'pro' && (
+                  <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-[#00f2fe] font-bold text-xs uppercase font-mono flex items-center gap-1">
+                        ✓ CLOUD PRO ATIVO 📱💻
+                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => handleSelectPlan('site')}
+                          className="px-3 py-1 bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-purple-450 rounded-lg text-[9px] uppercase font-mono cursor-pointer transition-colors"
+                          title="Alternar para Plano Free para testes"
+                        >
+                          Mudar p/ Free
+                        </button>
+                        <button
+                          onClick={() => handleSelectPlan('gratuito')}
+                          className="px-3 py-1 bg-zinc-950 border border-zinc-900 text-zinc-500 hover:text-zinc-400 rounded-lg text-[9px] uppercase font-mono cursor-pointer transition-colors"
+                          title="Alternar para Gratuito para testes"
+                        >
+                          Mudar p/ Visitante
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            {/* Benefits Checklist */}
+            <div className="pt-4 mt-4 border-t border-zinc-850/40 flex flex-wrap items-center justify-between gap-3 text-[10px]">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-zinc-500 font-mono">
+                <span className="flex items-center gap-1 text-[#10b981]/80"><span className="text-[#10b981]">✓</span> Múltiplos Boletins</span>
+                <span className="flex items-center gap-1 text-[#10b981]/80"><span className="text-[#10b981]">✓</span> Estatísticas Avançadas</span>
+                <span className="flex items-center gap-1 text-[#10b981]/80"><span className="text-[#10b981]">✓</span> Gestão de Banca Inteligente</span>
+                <span className="flex items-center gap-1 text-[#10b981]/80"><span className="text-[#10b981]">✓</span> Dicas & Alertas Rápidos</span>
+              </div>
+              
+              <span className="text-zinc-500 text-[9px] font-mono tracking-wider">
+                Modelo de Subscrições iRunBets v2.5 • iOS & Web Unificados
+              </span>
+            </div>
+          </div>
+
+      {/* Dynamic Slip Image Preview Modal */}
+      {previewImageForModal && (
+        <div className="fixed inset-0 bg-black/95 z-[99999] flex flex-col items-center justify-center p-4 md:p-8 animate-fade-in backdrop-blur-md">
+          <div className="bg-[#08080B] border-2 border-amber-500/60 rounded-3xl max-w-2xl w-full text-zinc-150 overflow-hidden shadow-[0_0_80px_rgba(245,158,11,0.2)] flex flex-col">
+            
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-4 bg-[#0D0D12] border-b border-zinc-850">
+              <span className="text-xs font-mono font-bold text-amber-500 uppercase tracking-widest">
+                📸 VISUALIZADOR DE BOLETIM iRUNBETS
+              </span>
+              <button 
+                onClick={() => setPreviewImageForModal(null)}
+                className="text-zinc-400 hover:text-white font-mono text-xs uppercase"
+              >
+                [ FECHAR ]
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 space-y-4 overflow-y-auto max-h-[70vh] flex flex-col items-center bg-[#08080B]">
+              <div className="text-center">
+                <h4 className="text-sm font-black text-white font-mono uppercase tracking-wider">{previewImageTitle}</h4>
+                <p className="text-[10px] text-zinc-400 mt-1">{previewImageSummary}</p>
+              </div>
+
+              {/* Ticket Photo Canvas */}
+              <div className="w-full h-[380px] bg-zinc-950/80 rounded-2xl border border-zinc-900 p-2 flex items-center justify-center overflow-hidden">
+                <img 
+                  src={previewImageForModal} 
+                  alt="Talão Digitalizado" 
+                  className="max-w-full max-h-full object-contain rounded-lg"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+
+              <div className="w-full text-center">
+                <p className="text-[10px] text-zinc-500 italic font-mono">
+                  Sincronizado via iRunBets Cloud Engine. Todos os rácios e balanços foram ajustados em tempo real se o talão for finalizado.
+                </p>
+                <button
+                  onClick={() => setPreviewImageForModal(null)}
+                  className="mt-3 px-6 py-1.5 bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 hover:text-white rounded-lg text-xs font-mono"
+                >
+                  Voltar ao Painel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dynamic Slip QR Code Modal */}
+      {selectedQrSlip && (() => {
+        const targetDomain = window.location.origin; // Nota: No futuro, substitua por 'https://irunbets.com'
+        const shareUrl = `${targetDomain}/boletim?id=${selectedQrSlip.id}`;
+        const qrCodeImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&margin=10&data=${encodeURIComponent(shareUrl)}`;
+
+        const copyQrLink = () => {
+          navigator.clipboard.writeText(shareUrl).then(() => {
+            setQrCopied(true);
+            setTimeout(() => setQrCopied(false), 2000);
+          });
+        };
+
+        return (
+          <div className="fixed inset-0 bg-black/95 z-[99999] flex flex-col items-center justify-center p-4 animate-fade-in backdrop-blur-md">
+            <div className="bg-[#08080B] border-2 border-[#00f2fe]/50 rounded-3xl max-w-md w-full text-zinc-150 overflow-hidden shadow-[0_0_80px_rgba(0,242,254,0.25)] flex flex-col">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center px-6 py-4 bg-[#0D0D12] border-b border-zinc-850">
+                <span className="text-xs font-mono font-bold text-[#00f2fe] uppercase tracking-widest flex items-center gap-2">
+                  <QrCode className="w-4 h-4 text-[#00f2fe]" />
+                  <span>Gerador de QR Code</span>
+                </span>
+                <button 
+                  onClick={() => setSelectedQrSlip(null)}
+                  className="text-zinc-400 hover:text-white transition-colors"
+                  title="Fechar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Content Body */}
+              <div className="p-6 space-y-5 overflow-y-auto max-h-[75vh] flex flex-col items-center bg-[#08080B]">
+                <div className="text-center">
+                  <h4 className="text-sm font-black text-white font-mono uppercase tracking-wider">
+                    {selectedQrSlip.kind === 'simple' ? 'Boletim Simples' : 'Boletim Múltiplo'}
+                  </h4>
+                  <p className="text-[10px] text-zinc-400 mt-1 font-mono">
+                    ID: {selectedQrSlip.id}
+                  </p>
+                </div>
+
+                {/* QR Code Container with nice glow */}
+                <div className="relative p-4 bg-white rounded-2xl border border-zinc-200 shadow-xl flex items-center justify-center overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                  <img 
+                    src={qrCodeImgUrl} 
+                    alt="QR Code do Boletim" 
+                    className="w-[200px] h-[200px]"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+
+                {/* Info summary */}
+                <div className="w-full bg-[#0D0D12] border border-zinc-850 p-3.5 rounded-xl space-y-2 text-xs font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Tipster:</span>
+                    <span className="text-zinc-300 font-bold">{selectedQrSlip.tipsterName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Odd Total:</span>
+                    <span className="text-amber-400 font-bold">{selectedQrSlip.totalOdd.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Stake:</span>
+                    <span className="text-zinc-300 font-bold">{selectedQrSlip.stake.toFixed(1)}€</span>
+                  </div>
+                </div>
+
+                {/* Future Proof explanation */}
+                <div className="w-full text-center space-y-3">
+                  <p className="text-[10px] text-zinc-400 leading-relaxed font-light">
+                    Este QR Code está totalmente <strong className="text-[#00f2fe]">preparado para o futuro</strong>. Quando migrar o iRunBets para o seu site oficial, o sistema gerará automaticamente acessos nativos sem que nada quebre!
+                  </p>
+
+                  {/* Share link block */}
+                  <div className="space-y-1 w-full">
+                    <label className="text-[9px] text-zinc-500 font-mono uppercase tracking-wider block text-left">
+                      Link de Destino:
+                    </label>
+                    <div className="flex gap-1 w-full">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={shareUrl}
+                        className="flex-1 bg-zinc-950 border border-zinc-850 rounded-lg px-2.5 py-1.5 text-[10px] text-zinc-300 font-mono focus:outline-none"
+                      />
+                      <button 
+                        type="button"
+                        onClick={copyQrLink}
+                        className="px-3 bg-zinc-900 border border-zinc-800 hover:bg-zinc-850 text-[10px] uppercase font-bold tracking-wider text-zinc-300 hover:text-white rounded-lg transition-colors font-mono cursor-pointer"
+                      >
+                        {qrCopied ? 'Copiado!' : 'Copiar'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedQrSlip(null)}
+                    className="mt-4 w-full py-2 bg-gradient-to-r from-cyan-500 to-indigo-500 hover:from-cyan-600 hover:to-indigo-600 font-mono text-white rounded-xl text-xs uppercase tracking-widest font-black transition-all cursor-pointer"
+                  >
+                    Voltar ao Painel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* SPECIAL RATOEIRA ODDS WARNING MODAL POPUP */}
+      {showOddsWarningModal && (
+        <div className="fixed inset-0 bg-black/92 backdrop-blur-md z-[99999] flex items-center justify-center p-4 overflow-y-auto animate-fade-in font-sans">
+          <div className="bg-[#0E0E12] border-2 border-amber-500/80 rounded-2xl max-w-lg w-full p-6 shadow-[0_0_50px_rgba(245,158,11,0.15)] relative overflow-hidden space-y-4">
+            
+            {/* Ambient amber glow behind */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Header */}
+            <div className="flex items-center gap-3 pb-3 border-b border-zinc-900">
+              <span className="text-3xl animate-bounce">⚠️</span>
+              <div>
+                <span className="text-[9px] font-black uppercase tracking-widest text-amber-500 font-mono block">
+                  {language === 'pt' ? 'MÓDULO DE SEGURANÇA DA BANCA' : 'BANKROLL SECURITY AUDIT'}
+                </span>
+                <h4 className="text-sm font-black text-white uppercase tracking-wider font-mono">
+                  {language === 'pt' ? 'Ratoeira detetada: Odd de Super-Favorito' : 'Super-Favorite Trap Detected'}
+                </h4>
+              </div>
+            </div>
+
+            {/* Warning Body */}
+            <div className="space-y-3.5 text-zinc-300 text-xs leading-relaxed">
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-xl font-medium flex items-center justify-between">
+                <span>{language === 'pt' ? 'Cotação Selecionada:' : 'Audited Odd:'} <strong className="text-white font-mono text-base font-black px-1.5 py-0.5 bg-zinc-950 rounded">{bookmakerOdd}</strong></span>
+                <span className="text-[9px] font-black uppercase text-amber-500 bg-amber-500/5 border border-amber-500/15 px-2 py-0.5 rounded">
+                  {language === 'pt' ? 'RECOMENDAÇÃO: EVITAR' : 'RECOMMENDATION: DANGER'}
+                </span>
+              </div>
+              
+              <div className="space-y-2">
+                <p className="font-bold text-white text-[13px]">
+                  {language === 'pt' 
+                    ? `💡 Por que razão apostar em Odds inferiores a 1.20 (como ${bookmakerOdd}) é uma das maiores armadilhas de longo prazo?`
+                    : `💡 Why are Odds below 1.20 (like ${bookmakerOdd}) a long-term mathematical trap?`}
+                </p>
+                
+                <p>
+                  {language === 'pt' ? (
+                    <>
+                      Ao apostar numa odd de <strong className="text-amber-500 font-mono font-bold">{bookmakerOdd}</strong>, a casa assume que o favorito vencerá com <strong className="text-white font-bold">{(100 / parseFloat(bookmakerOdd || '1.12')).toFixed(1)}%</strong> de probabilidade. No entanto, o futebol real apresenta uma taxa de imprevistos/zebras ("precalços") na ordem de <strong className="text-red-400 font-bold">18% a 22%</strong> em jogos de liga.
+                    </>
+                  ) : (
+                    <>
+                      When putting stakes at odd <strong className="text-amber-500 font-mono font-bold">{bookmakerOdd}</strong>, the house prices the favorite at <strong className="text-white font-bold">{(100 / parseFloat(bookmakerOdd || '1.12')).toFixed(1)}%</strong> probability. However, real-world sports introduce upsets and shock results in around <strong className="text-red-400 font-bold">18% to 22%</strong> of matches.
+                    </>
+                  )}
+                </p>
+
+                {/* Specific Real-life Case Example */}
+                <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-900 text-[11.5px] space-y-1.5">
+                  <span className="text-[9px] font-mono font-black text-rose-455 uppercase block">
+                    {language === 'pt' ? '⚠️ O CASO REAL DE ESPANHA X CABO VERDE' : '⚠️ THE REAL SPAIN VS CAPE VERDE BIAS'}
+                  </span>
+                  <p className="text-zinc-450 leading-relaxed">
+                    {language === 'pt' ? (
+                      <>
+                        No jogo <strong className="text-zinc-200 font-bold">Espanha vs Cabo Verde</strong>, a odd de vitória de Espanha estava avaliada em <strong className="text-white font-mono font-bold">1.08</strong>. No entanto, o embate terminou em <strong className="text-[#FF3131] font-bold">0-0</strong>! Para que a aposta de odd 1.08 fosse rentável a longo prazo, a Espanha teria de vencer este duelo <strong className="text-white font-bold">12 em cada 13 vezes</strong> (92.5%+), o que ignora fadiga, retrancas compactas e falta de motivação tática.
+                      </>
+                    ) : (
+                      <>
+                        In the historic match <strong className="text-zinc-200">Spain vs Cape Verde</strong>, Spain's win odd was set at <strong className="text-white font-mono font-bold">1.08</strong>. Instead, Cape Verde successfully closed lines and got a <strong className="text-[#FF3131] font-bold">0-0</strong> draw! To make a 1.08 bet profitable at long term, Spain was mathematically required to win <strong className="text-white font-bold">12 out of 13 matches</strong> (92.5%+), completely disregarding fatigue and parking-the-bus tactics.
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <p className="text-zinc-400">
+                  {language === 'pt' ? (
+                    <>
+                      Se apostar sistematicamente em odds entre <strong className="text-white font-bold">1.12 e 1.20</strong>, perderá a banca rapidamente com apenas 1 ou 2 zebras, pois uma única perda precisa de <strong className="text-[#39FF14] font-bold">6 a 10 vitórias seguidas</strong> apenas para recuperar a estaca original!
+                    </>
+                  ) : (
+                    <>
+                      If you consistently back odds of <strong className="text-white font-bold">1.12 to 1.20</strong>, a single upset will wipe out your bankroll, requiring <strong className="text-[#39FF14] font-bold">6 to 10 consecutive wins</strong> just to break even!
+                    </>
+                  )}
+                </p>
+              </div>
+
+              {/* Suggestions / Metas Box */}
+              <div className="p-3 bg-emerald-950/15 border border-emerald-500/20 rounded-xl space-y-1">
+                <span className="text-[10px] font-mono font-black text-emerald-400 uppercase tracking-wider block">
+                  🛡️ {language === 'pt' ? 'MÉTRICAS ALTERNATIVAS SUGERIDAS IRUNBETS' : 'IRUNBETS ALTERNATIVE SAFETY METRICS'}
+                </span>
+                <ul className="list-disc pl-4 space-y-1 text-zinc-300 text-[11.5px]">
+                  {language === 'pt' ? (
+                    <>
+                      <li><strong>Ativar o Filtro de Zebra:</strong> Forçar o fator de risco surpresa para compensar e suavizar as expectativas do favorito.</li>
+                      <li><strong>Evitar Vencedor Direto (TR):</strong> Em vez disso, selecione o mercado <strong className="text-emerald-400">"Mais de 1.5 Golos" (Over 1.5)</strong> ou <strong className="text-emerald-400 font-mono">"Under 3.5 Golos"</strong> que oferece um coeficiente de segurança muito maior.</li>
+                      <li><strong>Handicap Asiático Underdog (+2.0 ou +2.5):</strong> Protege a sua aposta mesmo que o favorito ganhe pela margem mínima.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li><strong>Enable Upset Filters:</strong> Auto-increase surprise risk to adjust expected goals.</li>
+                      <li><strong>Avoid 1X2 Winner Markets:</strong> Target <strong className="text-emerald-400">"Over 1.5 Goals"</strong> or <strong className="text-emerald-400">"Under 3.5 Goals"</strong> which offer high mathematical margins.</li>
+                      <li><strong>Asian Handicap Underdog (+2.0 / +2.5):</strong> Keeps stake alive even if favorite secures a tight win.</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+            </div>
+
+            {/* Quick Actions Footer Buttons */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSurpriseRisk(3); // Sets surprise risk to high (3/5)
+                  setTacticalRigor('cup_groups'); // Sets tactical rigor as rigorous
+                  setShowOddsWarningModal(false);
+                  
+                  // Simple alert confirmation
+                  alert(
+                    language === 'pt'
+                      ? '🔒 Purificador Ativo! Fator de Zebra definido para 3/5 e Rigor Tático ativado para blindar o favorito!'
+                      : '🔒 Purifier Engaged! Upset Risk set to 3/5 and Rigor level updated to safeguard stakes!'
+                  );
+                }}
+                className="py-2.5 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-450 hover:to-orange-550 text-zinc-950 font-black text-[11px] uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 cursor-pointer text-center"
+              >
+                🔒 {language === 'pt' ? 'Ativar Purificador Zebra' : 'Engage Upset Purifier'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowOddsWarningModal(false)}
+                className="py-2.5 px-4 bg-zinc-900 hover:bg-zinc-850 text-zinc-350 font-extrabold text-[11px] uppercase tracking-wider rounded-xl transition-all border border-zinc-800 active:scale-95 cursor-pointer text-center"
+              >
+                ⚠️ {language === 'pt' ? 'Ignorar e Manter Risco' : 'Keep Risk & Continue'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Autocomplete Datalists for Teams and Leagues */}
+      <datalist id="simple-teams-datalist">
+        {getFilteredTeamSuggestions(simpleTeamFilter).map((team) => (
+          <option key={team} value={team} />
+        ))}
+      </datalist>
+
+      <datalist id="dashboard-teams-datalist">
+        {getAllTeamSuggestions().map((team) => (
+          <option key={team} value={team} />
+        ))}
+      </datalist>
+
+      <datalist id="dashboard-leagues-datalist">
+        {MAJOR_LEAGUES_SUGGESTIONS.map((league) => (
+          <option key={league} value={league} />
+        ))}
+      </datalist>
+    </div>
+  );
+};
+
+export default VipDashboard;

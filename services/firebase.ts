@@ -3078,3 +3078,89 @@ export const requestBrowserNotificationPermission = async (): Promise<Notificati
 
 
 
+
+
+// ==========================================
+// NEWSLETTER & EMAIL CAMPAIGNS MODULE
+// ==========================================
+export interface NewsletterCampaign {
+  id: string;
+  subject: string;
+  senderName: string;
+  senderEmail: string;
+  targetGroup: 'all' | 'pro' | 'free' | 'selected';
+  totalRecipients: number;
+  recipientEmails: string[];
+  contentHtml: string;
+  contentText: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  status: 'sent' | 'draft' | 'scheduled';
+  sentAt: string;
+  providerUsed?: string;
+}
+
+export const getNewsletterHistoryFromFirebase = async (): Promise<NewsletterCampaign[]> => {
+  if (isFirebaseActive && db) {
+    try {
+      const snap = await getDocs(collection(db, 'newsletter_campaigns'));
+      const list: NewsletterCampaign[] = [];
+      snap.forEach(doc => {
+        list.push({ id: doc.id, ...(doc.data() as any) });
+      });
+      list.sort((a, b) => new Date(b.sentAt || 0).getTime() - new Date(a.sentAt || 0).getTime());
+      return list;
+    } catch (err) {
+      console.warn('Firestore read error for newsletter_campaigns. Falling back to local.', err);
+    }
+  }
+  try {
+    const raw = localStorage.getItem('irunbets_newsletters');
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveNewsletterCampaignToFirebase = async (campaign: NewsletterCampaign): Promise<void> => {
+  if (isFirebaseActive && db) {
+    try {
+      await setDoc(doc(db, 'newsletter_campaigns', campaign.id), campaign, { merge: true });
+    } catch (err) {
+      console.warn('Firestore write error for newsletter campaign:', err);
+    }
+  }
+  try {
+    const raw = localStorage.getItem('irunbets_newsletters');
+    const list: NewsletterCampaign[] = raw ? JSON.parse(raw) : [];
+    const idx = list.findIndex(c => c.id === campaign.id);
+    if (idx >= 0) {
+      list[idx] = campaign;
+    } else {
+      list.unshift(campaign);
+    }
+    localStorage.setItem('irunbets_newsletters', JSON.stringify(list));
+  } catch (e) {
+    console.error('Local storage error saving newsletter campaign:', e);
+  }
+};
+
+export const deleteNewsletterCampaignFromFirebase = async (id: string): Promise<void> => {
+  if (isFirebaseActive && db) {
+    try {
+      await deleteDoc(doc(db, 'newsletter_campaigns', id));
+    } catch (err) {
+      console.warn('Firestore delete error for newsletter campaign:', err);
+    }
+  }
+  try {
+    const raw = localStorage.getItem('irunbets_newsletters');
+    if (raw) {
+      const list: NewsletterCampaign[] = JSON.parse(raw);
+      const filtered = list.filter(c => c.id !== id);
+      localStorage.setItem('irunbets_newsletters', JSON.stringify(filtered));
+    }
+  } catch (e) {
+    console.error('Local storage error deleting newsletter campaign:', e);
+  }
+};

@@ -1389,11 +1389,11 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin: ext
                             type="button"
                             disabled={generatingAiId === match.id}
                             onClick={() => handleOpenAiStudio(match)}
-                            className={`px-2.5 py-1.5 rounded-xl font-extrabold text-[11px] font-mono tracking-wider transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-md ${
+                            className={`px-3 py-1.5 rounded-xl font-extrabold text-[11px] font-mono tracking-wider transition-all cursor-pointer inline-flex items-center gap-1.5 shadow-md hover:scale-105 active:scale-95 ${
                               generatingAiId === match.id
                                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse'
                                 : match.isAiGenerated
-                                ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 hover:bg-cyan-500/30'
                                 : 'bg-zinc-800 text-zinc-300 border border-zinc-700 hover:bg-zinc-750 hover:text-white'
                             }`}
                             title={match.isAiGenerated ? "Abrir Quadro de IA Gemini (Espelho). Clique para ver/editar ou re-analisar." : "Abrir Quadro de IA Gemini para gerar análise automática"}
@@ -1444,7 +1444,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin: ext
                             setIsEditingModal(false);
                             setModalEditMatch(match);
                           }}
-                          className="px-4 py-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/10 transition-all cursor-pointer flex items-center justify-center gap-1.5 mx-auto hover:scale-105 active:scale-95"
+                          className="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-black font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 mx-auto hover:scale-105 active:scale-95"
                         >
                           <span>👁️</span>
                           <span>Previsão</span>
@@ -1537,7 +1537,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin: ext
           onClick={() => setSelectedPredictionMatch(null)}
         >
           <div 
-            className="bg-[#121216] border border-zinc-800 rounded-3xl w-full max-w-6xl max-h-[88vh] overflow-y-auto shadow-2xl relative text-left p-5 sm:px-8 sm:py-6 space-y-5 flex flex-col justify-between"
+            className="bg-[#121216] border border-zinc-800 rounded-3xl w-full max-w-6xl xl:max-w-7xl max-h-[94vh] min-h-[580px] overflow-y-auto shadow-2xl relative text-left p-6 sm:px-10 sm:py-8 space-y-6 flex flex-col justify-between"
             onClick={(e) => e.stopPropagation()}
           >
             <div>

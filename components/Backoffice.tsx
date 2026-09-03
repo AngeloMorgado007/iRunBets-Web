@@ -48,6 +48,7 @@ import {
 import { getCustomizablePlans, saveCustomizablePlans, DEFAULT_PLANS, PricingPlan } from '../services/plansConfig';
 
 import { PillarItem, DEFAULT_PILLARS, mergePillarsWithDefaults } from './PlatformPillars';
+import { BackofficeNewsletter } from './BackofficeNewsletter';
 
 interface BackofficeProps {
   onClose: () => void;
@@ -86,7 +87,7 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [subscribersConfig, setSubscribersConfigState] = useState<SubscribersConfig>({ isEnabled: true, baseCount: 1420 });
   const [pages, setPages] = useState<CustomPage[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'push' | 'analytics' | 'news' | 'pages' | 'plans' | 'tipsters' | 'mural' | 'pillars' | 'billing' | 'promopopup' | 'github'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'newsletter' | 'push' | 'analytics' | 'news' | 'pages' | 'plans' | 'tipsters' | 'mural' | 'pillars' | 'billing' | 'promopopup' | 'github'>('users');
   const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
   const [exportingBackup, setExportingBackup] = useState(false);
   const [githubCopied, setGithubCopied] = useState(false);
@@ -2307,6 +2308,20 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
           </button>
 
           <button
+            onClick={() => setActiveTab('newsletter')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors flex items-center gap-2 ${
+              activeTab === 'newsletter' 
+                ? 'bg-zinc-900 border border-zinc-800 text-[#FFEF00] shadow-sm shadow-yellow-500/10' 
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4 text-[#FFEF00]">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+            </svg>
+            <span>📧 Newsletter & E-mails</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('push')}
             className={`px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors flex items-center gap-2 ${
               activeTab === 'push' 
@@ -2995,6 +3010,14 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
                 )}
 
               </div>
+            )}
+
+            {/* VIEW: Central de Disparo de Newsletter & Campanhas de E-mail */}
+            {activeTab === 'newsletter' && (
+              <BackofficeNewsletter 
+                subscribers={subscribers}
+                onRefreshSubscribers={loadData}
+              />
             )}
 
             {/* VIEW 2: Central de Disparo de Notificações Push */}

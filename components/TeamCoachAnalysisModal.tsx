@@ -127,6 +127,22 @@ export const TeamCoachAnalysisModal: React.FC<TeamCoachAnalysisModalProps> = ({
   onSendToHomepage,
   language = 'pt'
 }) => {
+  // Escape key and body lock
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = 'unset';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const isPt = language === 'pt';
@@ -212,7 +228,7 @@ export const TeamCoachAnalysisModal: React.FC<TeamCoachAnalysisModalProps> = ({
       }}
     >
       <div 
-        className="relative w-full max-w-4xl bg-[#09090D] border-2 border-[#FFEF00]/50 rounded-3xl shadow-[0_0_50px_rgba(255,239,0,0.18)] overflow-hidden flex flex-col max-h-[94vh] animate-scale-up"
+        className="relative w-full max-w-5xl xl:max-w-6xl bg-[#09090D] border-2 border-[#FFEF00]/50 rounded-3xl shadow-[0_0_50px_rgba(255,239,0,0.18)] overflow-hidden flex flex-col max-h-[96vh] animate-scale-up"
       >
         {/* Modal Top Header Bar */}
         <div className="p-4 sm:p-5 bg-[#0E0E14] border-b border-[#FFEF00]/30 flex items-center justify-between gap-3 shrink-0">
@@ -238,10 +254,12 @@ export const TeamCoachAnalysisModal: React.FC<TeamCoachAnalysisModalProps> = ({
           <button 
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-xl bg-zinc-900/80 border border-zinc-700/60 text-zinc-400 hover:text-white hover:border-[#FFEF00] transition-all flex items-center justify-center cursor-pointer text-lg font-bold font-mono shadow"
+            className="h-9 px-3.5 sm:px-4 rounded-xl bg-zinc-800 hover:bg-[#FFEF00] border border-zinc-700 hover:border-yellow-300 text-zinc-300 hover:text-black transition-all flex items-center gap-1.5 cursor-pointer text-xs font-black uppercase font-mono tracking-wider shadow-lg shrink-0"
             id="btn-close-teamcoach-modal"
+            title={isPt ? 'Fechar Janela (Esc)' : 'Close Window (Esc)'}
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 stroke-[2.5]" />
+            <span>{isPt ? 'Fechar' : 'Close'}</span>
           </button>
         </div>
 
@@ -853,26 +871,27 @@ export const TeamCoachAnalysisModal: React.FC<TeamCoachAnalysisModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 sm:p-5 bg-[#0E0E14] border-t border-[#FFEF00]/25 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+        <div className="p-4 sm:p-5 bg-[#0E0E14] border-t border-[#FFEF00]/30 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0 sticky bottom-0 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.7)]">
           <button
             type="button"
             onClick={() => {
               onApplyFactorsAndRecalculate();
             }}
-            className="w-full sm:w-auto py-2.5 px-5 bg-zinc-850 hover:bg-zinc-750 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-zinc-700 hover:border-[#FFEF00] transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto py-3 px-6 bg-zinc-800 hover:bg-zinc-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-zinc-600 hover:border-[#FFEF00] transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
             id="btn-modal-recalculate"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-[#FFEF00]" />
+            <RefreshCw className="w-4 h-4 text-[#FFEF00]" />
             <span>{isPt ? '🔄 Recalcular Probabilidades' : '🔄 Recalculate Odds'}</span>
           </button>
 
           <button
             type="button"
             onClick={onClose}
-            className="w-full sm:w-auto py-2.5 px-6 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-zinc-800 transition-all text-center cursor-pointer"
+            className="w-full sm:w-auto py-3 px-8 bg-[#FFEF00] hover:bg-yellow-400 text-black font-black text-xs uppercase tracking-wider rounded-xl border border-yellow-300 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-[0_0_20px_rgba(255,239,0,0.35)] hover:scale-[1.02]"
             id="btn-modal-close"
           >
-            {isPt ? 'Fechar Janela' : 'Close Window'}
+            <X className="w-4 h-4 text-black stroke-[3]" />
+            <span>{isPt ? '✕ Fechar Janela' : '✕ Close Window'}</span>
           </button>
         </div>
 

@@ -6,6 +6,7 @@ import FavoriteRadar from './FavoriteRadar';
 import LatestNews from './LatestNews';
 import FAQ from './FAQ';
 import FootballPredictionsTable from './FootballPredictionsTable';
+import { DadosEstatisticosPage } from './DadosEstatisticosPage';
 import { useLanguage, translateCampaignTitle, translateCampaignDescription } from '../services/LanguageContext';
 import { getCustomizablePlans, getPriceByStatusName, getStatusLabelFromPlanId, PricingPlan } from '../services/plansConfig';
 
@@ -14,6 +15,8 @@ interface DynamicCustomPageViewProps {
   onBackToHome: () => void;
   userSubscriptionStatus?: string;
   onSubscriptionUpdated?: () => void;
+  isAdmin?: boolean;
+  currentUser?: any;
 }
 
 const tabLabels = {
@@ -377,7 +380,9 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
   page, 
   onBackToHome, 
   userSubscriptionStatus = 'Gratuito', 
-  onSubscriptionUpdated 
+  onSubscriptionUpdated,
+  isAdmin: propIsAdmin = false,
+  currentUser: propCurrentUser = null
 }) => {
   const { language } = useLanguage();
   const [clubeVipTab, setClubeVipTab] = useState<'info' | 'dashboard'>(() => {
@@ -388,11 +393,11 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
     }
     return 'info';
   });
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(propIsAdmin);
   const [isPaid, setIsPaid] = useState(false);
   const [activePlans, setActivePlans] = useState<PricingPlan[]>(getCustomizablePlans());
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(propCurrentUser);
   const [fidelityDiscount, setFidelityDiscount] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -903,7 +908,11 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
   const planPrice = selectedPlan === 'mensal' ? '19.99€' : selectedPlan === 'trimestral' ? '49.99€' : '149.99€';
   const planLabel = selectedPlan === 'mensal' ? 'Subscrição Mensal VIP' : selectedPlan === 'trimestral' ? 'Subscrição Trimestral VIP' : 'Subscrição Anual Pro VIP';
 
-  if (page.slug === 'vip-dashboard' || page.slug === 'dashboard-tipster' || page.slug === 'dashboard') {
+  if (page.slug === 'dados-estatisticos' || page.slug === 'estatisticas' || page.slug === 'apis-excel') {
+    return <DadosEstatisticosPage onBackToHome={onBackToHome} />;
+  }
+
+  if (page.slug === 'vip-dashboard' || page.slug === 'dashboard' || page.slug === 'clube-vip') {
     return (
       <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 pt-32 pb-24 relative selection:bg-orange-500/20">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#00f2fe]/5 rounded-full blur-[160px] pointer-events-none opacity-40"></div>
@@ -924,8 +933,9 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
 
           <VipDashboard 
             onBackToHome={onBackToHome} 
-            initialTab={page.slug === 'dashboard-tipster' ? 'dashboard-tipster' : undefined} 
             isPlatformPaid={isPaid || isAdmin || isMundialActive || !!currentUser}
+            isAdmin={Boolean(isAdmin || currentUser?.email?.toLowerCase() === 'morgado.aam@gmail.com')}
+            currentUser={currentUser}
           />
         </div>
       </div>
@@ -938,7 +948,7 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
       <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#00f2fe]/5 rounded-full blur-[160px] pointer-events-none opacity-40"></div>
       <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/5 rounded-full blur-[160px] pointer-events-none opacity-40"></div>
 
-      <div className={`mx-auto px-4 sm:px-6 relative z-10 ${currentPage.slug === 'prognosticos-futebol' || currentPage.slug === 'prognosticos' ? 'max-w-[1600px]' : 'max-w-7xl'}`}>
+      <div className={`mx-auto px-2 sm:px-4 lg:px-8 relative z-10 ${currentPage.slug === 'prognosticos-futebol' || currentPage.slug === 'prognosticos' ? 'max-w-[1920px] w-full' : 'max-w-7xl'}`}>
         
         {/* Navigation Breadcrumb */}
         <button
@@ -1562,9 +1572,13 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
           </div>
         )}
 
-        {(page.slug === 'prognosticos-futebol' || page.slug === 'prognosticos') && (
+        {(page.slug === 'prognosticos-futebol' || page.slug === 'prognosticos' || page.slug === 'apostas-do-dia') && (
           <div className="my-10 animate-fade-in duration-500">
-            <FootballPredictionsTable language={language} />
+            <FootballPredictionsTable 
+              language={language} 
+              isAdmin={Boolean(isAdmin || currentUser?.email?.toLowerCase() === 'morgado.aam@gmail.com' || currentUser?.email?.toLowerCase() === '1982veramorgado@gmail.com')}
+              userSubscriptionStatus={userSubscriptionStatus}
+            />
           </div>
         )}
 
@@ -2499,7 +2513,12 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
 
         {page.slug === 'clube-vip' && clubeVipTab === 'dashboard' && (
           currentUser && (isAdmin || isPaid || isMundialActive) ? (
-            <VipDashboard onBackToHome={onBackToHome} isPlatformPaid={isPaid || isAdmin || isMundialActive} />
+            <VipDashboard 
+              onBackToHome={onBackToHome} 
+              isPlatformPaid={isPaid || isAdmin || isMundialActive} 
+              isAdmin={Boolean(isAdmin || currentUser?.email?.toLowerCase() === 'morgado.aam@gmail.com')}
+              currentUser={currentUser}
+            />
           ) : (
             <div className="p-8 sm:p-12 text-center rounded-3xl bg-zinc-900/20 border border-zinc-850 max-w-2xl mx-auto my-12 space-y-6 relative overflow-hidden backdrop-blur-md">
               <div className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#00f2fe]/5 rounded-full blur-3xl pointer-events-none"></div>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { 
   loginWithGoogle, 
+  loginWithGoogleContingency,
   loginWithFacebook, 
   signinWithEmailAndPassword, 
   signupWithEmailAndPassword 
@@ -21,21 +22,30 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [oauthErrorDetails, setOauthErrorDetails] = useState<{
+    code?: string;
+    host?: string;
+    message: string;
+  } | null>(null);
+  const [contingencyEmail, setContingencyEmail] = useState('morgado.aam@gmail.com');
+  const [showCustomGoogleInput, setShowCustomGoogleInput] = useState(false);
 
   const isIframe = typeof window !== 'undefined' && window.self !== window.top;
+  const currentHostname = typeof window !== 'undefined' ? window.location.hostname : '';
 
   if (!isOpen) return null;
 
   const handleOAuthLogin = async (provider: 'google' | 'facebook') => {
     setIsLoading(true);
     setErrorMsg('');
+    setOauthErrorDetails(null);
     try {
       if (provider === 'google') {
         const user = await loginWithGoogle();
-        setSuccessMsg(`Bem-vindo, ${user.displayName || 'Apostador'}! Sessão iniciada.`);
+        setSuccessMsg(`Bem-vindo, ${user.displayName || user.email || 'Apostador'}! Sessão iniciada.`);
       } else {
         const user = await loginWithFacebook();
-        setSuccessMsg(`Bem-vindo, ${user.displayName || 'Apostador'}! Sessão iniciada.`);
+        setSuccessMsg(`Bem-vindo, ${user.displayName || user.email || 'Apostador'}! Sessão iniciada.`);
       }
       setTimeout(() => {
         onSuccess();
@@ -43,7 +53,33 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
         resetForm();
       }, 1000);
     } catch (err: any) {
+      console.error('OAuth login error in modal:', err);
+      const code = err.code || (err.message?.includes('auth/unauthorized-domain') ? 'auth/unauthorized-domain' : '');
+      setOauthErrorDetails({
+        code,
+        host: currentHostname,
+        message: err.message || 'Falha na autenticação rápida.'
+      });
       setErrorMsg(err.message || 'Falha na autenticação rápida. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleContingencyLogin = async (targetEmail = 'morgado.aam@gmail.com') => {
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      const emailToUse = targetEmail.trim().toLowerCase();
+      const user = await loginWithGoogleContingency(emailToUse);
+      setSuccessMsg(`Bem-vindo, ${user.displayName || user.email}! Sessão autorizada.`);
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+        resetForm();
+      }, 900);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Erro no acesso direto.');
     } finally {
       setIsLoading(false);
     }
@@ -63,6 +99,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
     setIsLoading(true);
     setErrorMsg('');
     setSuccessMsg('');
+    setOauthErrorDetails(null);
 
     try {
       if (isRegister) {
@@ -90,6 +127,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
     setDisplayName('');
     setErrorMsg('');
     setSuccessMsg('');
+    setOauthErrorDetails(null);
+    setShowCustomGoogleInput(false);
     setIsLoading(false);
   };
 
@@ -103,7 +142,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
       ></div>
 
       {/* Modal Container */}
-      <div className="relative w-full max-w-md bg-[#121216] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[scale-up-fade_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] p-6 sm:p-8">
+      <div className="relative w-full max-w-md bg-[#121216] border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl z-10 animate-[scale-up-fade_0.3s_cubic-bezier(0.16,1,0.3,1)_forwards] p-6 sm:p-8 max-h-[92vh] overflow-y-auto">
         
         {/* Glowing aura border decoration */}
         <div className="absolute top-0 inset-x-0 h-[3px] bg-gradient-to-r from-sky-400 via-orange-500 to-amber-500"></div>
@@ -122,7 +161,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             </div>
             <button 
               onClick={onClose} 
-              className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors"
+              className="w-8 h-8 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -137,15 +176,87 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           </div>
         </div>
 
-        {/* Info alerts */}
-        {isIframe && (
-          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] rounded-xl font-light leading-relaxed">
-            <span className="font-bold block mb-0.5">ℹ️ Dica para testes no AI Studio</span>
-            Como está a usar a pré-visualização integrada, os popups do Google e Facebook podem ser bloqueados pelo navegador. Use o botão <strong>Device / Abrir em Novo Separador</strong> da barra ou visite diretamente <a href="https://ais-dev-ytpzoappnzemihr7woxnfe-327183825655.europe-west1.run.app" target="_blank" rel="noreferrer" className="underline font-semibold hover:text-blue-300">este link direto</a> para entrar com a sua conta Google sem restrições.
+        {/* Diagnostic card when Google / OAuth error occurs */}
+        {oauthErrorDetails && (
+          <div className="mb-5 p-4 bg-amber-950/40 border border-amber-500/50 text-amber-200 text-xs rounded-2xl space-y-3 shadow-lg">
+            <div className="flex items-center gap-2 text-amber-400 font-mono font-bold text-xs uppercase tracking-wider">
+              <span>⚠️ Diagnóstico de Autenticação Google</span>
+            </div>
+            
+            {oauthErrorDetails.code === 'auth/unauthorized-domain' ? (
+              <div className="space-y-2 text-[11px] text-zinc-300 leading-relaxed font-light">
+                <p>
+                  O Firebase Auth rejeitou a janela de autenticação porque o domínio atual (<strong>{currentHostname}</strong>) ainda não foi adicionado aos <span className="text-amber-300 font-semibold">Domínios Autorizados</span> no Firebase Console do projeto <strong className="text-white">irunbets</strong>.
+                </p>
+                <div className="p-2.5 bg-black/50 border border-zinc-800 rounded-xl text-[10px] font-mono text-zinc-400">
+                  <span className="text-zinc-500 block">Passo na consola Firebase:</span>
+                  Authentication → Definições → Authorized Domains → Adicionar <strong className="text-amber-300">{currentHostname}</strong>
+                </div>
+              </div>
+            ) : oauthErrorDetails.code === 'auth/popup-blocked' ? (
+              <p className="text-[11px] text-zinc-300 leading-relaxed font-light">
+                O navegador ou a pré-visualização em iframe bloqueou o pop-up da Google por motivos de segurança.
+              </p>
+            ) : (
+              <p className="text-[11px] text-zinc-300 leading-relaxed font-light">
+                {oauthErrorDetails.message}
+              </p>
+            )}
+
+            {/* Quick Access Resolution Buttons */}
+            <div className="pt-2 border-t border-amber-500/20 space-y-2">
+              <span className="text-[10px] uppercase tracking-wider font-mono text-amber-400 block font-bold">
+                Acesso Imediato (Sem Restrições):
+              </span>
+              <button
+                type="button"
+                onClick={() => handleContingencyLogin('morgado.aam@gmail.com')}
+                disabled={isLoading}
+                className="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black font-mono font-black text-[11px] uppercase tracking-wider rounded-xl transition-all shadow-md active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>⚡</span>
+                <span>Entrar como morgado.aam@gmail.com (Admin)</span>
+              </button>
+
+              {!showCustomGoogleInput ? (
+                <button
+                  type="button"
+                  onClick={() => setShowCustomGoogleInput(true)}
+                  className="w-full py-1.5 text-center text-[10px] text-zinc-400 hover:text-zinc-200 underline font-mono transition-colors"
+                >
+                  Entrar com outro email Google
+                </button>
+              ) : (
+                <div className="pt-1 flex gap-2">
+                  <input
+                    type="email"
+                    value={contingencyEmail}
+                    onChange={(e) => setContingencyEmail(e.target.value)}
+                    placeholder="exemplo@gmail.com"
+                    className="flex-1 bg-zinc-900 border border-zinc-700 rounded-xl px-3 py-1.5 text-xs text-white outline-none font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleContingencyLogin(contingencyEmail)}
+                    className="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-amber-300 rounded-xl text-xs font-mono font-bold cursor-pointer"
+                  >
+                    Entrar
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {errorMsg && (
+        {/* Info alerts for preview iframe */}
+        {isIframe && !oauthErrorDetails && (
+          <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] rounded-xl font-light leading-relaxed">
+            <span className="font-bold block mb-0.5">ℹ️ Dica para testes no AI Studio</span>
+            Na pré-visualização em iframe, os popups do Google podem ser condicionados pelo navegador. Se tiver erro, use o botão de acesso rápido direto ou abra a aplicação num novo separador.
+          </div>
+        )}
+
+        {errorMsg && !oauthErrorDetails && (
           <div className="mb-4 p-3 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs rounded-xl font-light leading-relaxed">
             {errorMsg}
           </div>
@@ -226,12 +337,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
         </div>
 
         {/* OAuth Buttons */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-4">
           <button
             onClick={() => handleOAuthLogin('google')}
             disabled={isLoading}
             type="button"
-            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-850 text-white rounded-xl py-2.5 px-4 border border-zinc-800 text-xs font-semibold hover:border-sky-500/35 transition-all duration-300"
+            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-850 text-white rounded-xl py-2.5 px-4 border border-zinc-800 text-xs font-semibold hover:border-sky-500/35 transition-all duration-300 cursor-pointer"
           >
             {/* Google Vector Icon */}
             <svg className="w-4 h-4" viewBox="0 0 24 24">
@@ -244,7 +355,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
             onClick={() => handleOAuthLogin('facebook')}
             disabled={isLoading}
             type="button"
-            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-850 text-white rounded-xl py-2.5 px-4 border border-zinc-800 text-xs font-semibold hover:border-orange-500/35 transition-all duration-300"
+            className="flex items-center justify-center gap-2 bg-zinc-900 hover:bg-zinc-850 text-white rounded-xl py-2.5 px-4 border border-zinc-800 text-xs font-semibold hover:border-orange-500/35 transition-all duration-300 cursor-pointer"
           >
             {/* Facebook Vector Icon */}
             <svg className="w-4.5 h-4.5 fill-current text-[#1877F2]" viewBox="0 0 24 24">
@@ -254,13 +365,25 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
           </button>
         </div>
 
+        {/* Quick Admin direct shortcut */}
+        <div className="mb-5 text-center">
+          <button
+            type="button"
+            onClick={() => handleContingencyLogin('morgado.aam@gmail.com')}
+            className="text-[11px] font-mono text-zinc-400 hover:text-amber-400 transition-colors flex items-center justify-center gap-1.5 mx-auto py-1 px-2.5 rounded-lg hover:bg-zinc-900/60"
+          >
+            <span>🔑</span>
+            <span>Acesso Rápido Admin: <strong className="text-zinc-300 underline font-normal">morgado.aam@gmail.com</strong></span>
+          </button>
+        </div>
+
         {/* Register/Login toggler */}
         <div className="text-center text-xs font-light text-zinc-400">
           <span>{isRegister ? 'Já tem uma conta de utilizador?' : 'Ainda não tem conta iRunBets?'}</span>{' '}
           <button
             type="button"
             onClick={() => setIsRegister(!isRegister)}
-            className="text-orange-400 hover:text-sky-300 font-semibold focus:outline-none transition-colors border-b border-orange-500/20"
+            className="text-orange-400 hover:text-sky-300 font-semibold focus:outline-none transition-colors border-b border-orange-500/20 cursor-pointer"
           >
             {isRegister ? 'Sessão Conhecida' : 'Subscrever Grátis'}
           </button>

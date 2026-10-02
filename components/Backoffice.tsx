@@ -43,12 +43,15 @@ import {
   savePopupConfigToFirebase,
   PopupConfig,
   sendCloudFunctionPushAlert,
-  requestBrowserNotificationPermission
+  requestBrowserNotificationPermission,
+  db
 } from '../services/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import { getCustomizablePlans, saveCustomizablePlans, DEFAULT_PLANS, PricingPlan } from '../services/plansConfig';
 
 import { PillarItem, DEFAULT_PILLARS, mergePillarsWithDefaults } from './PlatformPillars';
 import { BackofficeNewsletter } from './BackofficeNewsletter';
+import { BackofficeApisExcelTab } from './BackofficeApisExcelTab';
 
 interface BackofficeProps {
   onClose: () => void;
@@ -78,7 +81,7 @@ interface PushAlert {
   message: string;
   longMessage?: string;
   sentAt: string;
-  status: 'Simulado com sucesso' | 'Enviado';
+  status: 'Simulado com sucesso' | 'Enviado' | 'Enviado para Dispositivos (FCM)';
 }
 
 const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
@@ -87,7 +90,7 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
   const [news, setNews] = useState<NewsArticle[]>([]);
   const [subscribersConfig, setSubscribersConfigState] = useState<SubscribersConfig>({ isEnabled: true, baseCount: 1420 });
   const [pages, setPages] = useState<CustomPage[]>([]);
-  const [activeTab, setActiveTab] = useState<'users' | 'newsletter' | 'push' | 'analytics' | 'news' | 'pages' | 'plans' | 'tipsters' | 'mural' | 'pillars' | 'billing' | 'promopopup' | 'github'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'newsletter' | 'push' | 'analytics' | 'news' | 'pages' | 'plans' | 'tipsters' | 'mural' | 'pillars' | 'billing' | 'promopopup' | 'github' | 'apis_excel'>('users');
   const [isGithubModalOpen, setIsGithubModalOpen] = useState(false);
   const [exportingBackup, setExportingBackup] = useState(false);
   const [githubCopied, setGithubCopied] = useState(false);
@@ -2529,6 +2532,19 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
             </svg>
             <span>Exportar & GitHub Sync 🚀</span>
           </button>
+
+          {/* Tab: APIS & Excel */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('apis_excel')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-colors flex items-center gap-2 ${
+              activeTab === 'apis_excel' 
+                ? 'bg-cyan-500/20 border border-cyan-500/50 text-cyan-300 font-bold shadow-lg shadow-cyan-500/10' 
+                : 'text-zinc-400 hover:text-white'
+            }`}
+          >
+            <span>⚡ APIS & Excel</span>
+          </button>
         </div>
 
         {/* Loading display */}
@@ -2938,7 +2954,7 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
                             required
                             value={userFormName}
                             onChange={(e) => setUserFormName(e.target.value)}
-                            placeholder="Ex: Vera Morgado"
+                            placeholder="Ex: Vera Silva"
                             className="w-full bg-[#0a0a0c] border border-zinc-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-orange-500 transition-colors text-white"
                           />
                         </div>
@@ -8318,6 +8334,13 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* VIEW 13: APIS & EXCEL GESTOR */}
+            {activeTab === 'apis_excel' && (
+              <div className="space-y-6 animate-fade-in">
+                <BackofficeApisExcelTab />
               </div>
             )}
 

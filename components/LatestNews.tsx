@@ -250,7 +250,9 @@ const LatestNews: React.FC<LatestNewsProps> = ({ onOpenAuth, refreshCounterTrigg
                     </h3>
 
                     <p className={`text-zinc-400 font-light text-sm leading-relaxed mb-6 ${isExpanded ? '' : 'line-clamp-3'}`}>
-                      {isExpanded ? (art.translations?.[language] || art.content) : (art.translations?.[language] ? (art.translations[language].slice(0, 150) + '...') : art.summary)}
+                      {isExpanded 
+                        ? (art.translations?.[language]?.content || art.content) 
+                        : (art.translations?.[language]?.summary || art.summary)}
                     </p>
                   </div>
 

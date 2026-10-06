@@ -228,7 +228,7 @@ export const TeamCoachAnalysisModal: React.FC<TeamCoachAnalysisModalProps> = ({
       }}
     >
       <div 
-        className="relative w-full max-w-5xl xl:max-w-6xl bg-[#09090D] border-2 border-[#FFEF00]/50 rounded-3xl shadow-[0_0_50px_rgba(255,239,0,0.18)] overflow-hidden flex flex-col max-h-[96vh] animate-scale-up"
+        className="relative w-full max-w-[98vw] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[1500px] bg-[#09090D] border-2 border-[#FFEF00]/50 rounded-3xl shadow-[0_0_50px_rgba(255,239,0,0.18)] overflow-hidden flex flex-col max-h-[96vh] animate-scale-up"
       >
         {/* Modal Top Header Bar */}
         <div className="p-4 sm:p-5 bg-[#0E0E14] border-b border-[#FFEF00]/30 flex items-center justify-between gap-3 shrink-0">

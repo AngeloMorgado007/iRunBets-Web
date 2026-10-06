@@ -36,12 +36,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       if (lang === 'de') return 'Dashboard';
       return 'Dashboard';
     }
-    if (slugLower === 'dashboard-tipster') {
-      if (lang === 'fr') return 'Tableau de Bord Tipster';
-      if (lang === 'it') return 'Pannello Tipster';
-      if (lang === 'de') return 'Tipster-Dashboard';
-      return 'Tipster Dashboard';
-    }
     
     const titleUpper = title.toUpperCase();
     if (titleUpper.includes('REGISTO DE APOSTAS') || titleUpper.includes('REGISTO') || slugLower.includes('registo')) {
@@ -203,15 +197,20 @@ const Sidebar: React.FC<SidebarProps> = ({
         onPageSelect(null);
         onNavClick(e, 'radar');
       } else {
-        // Mentor needs subscription, go to clube-vip page to register/upgrade
-        const vipPage = customPages.find(p => p.slug === 'clube-vip');
-        if (vipPage) {
-          onPageSelect(vipPage);
-          window.scrollTo({ top: 0, behavior: 'instant' });
-        } else {
-          onPageSelect(null);
-          onNavClick(e, 'purificador');
-        }
+        // Mentor discipline -> open dashboard mentor tab directly
+        localStorage.setItem('irunbets_vip_active_tab', 'analise-ia');
+        localStorage.setItem('irunbets_vip_ia_subtab', 'comportamental');
+        const dashPage = customPages.find(p => p.slug === 'vip-dashboard') || {
+          id: 'vip-dashboard',
+          slug: 'vip-dashboard',
+          title: 'Dashboard',
+          description: 'Registo de Apostas Desportivas, Gestão de Banca e IA de Análise de Jogos',
+          createdAt: new Date().toISOString(),
+          blocks: []
+        };
+        onPageSelect(dashPage);
+        window.location.hash = '#mentor';
+        window.scrollTo({ top: 0, behavior: 'instant' });
       }
       onClose();
     }
@@ -305,6 +304,67 @@ const Sidebar: React.FC<SidebarProps> = ({
             </span>
 
             <div className="space-y-1">
+              {/* Prognósticos de Futebol */}
+              <a
+                href="#prognosticos-futebol"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const existingPage = customPages.find(p => p.slug === 'prognosticos-futebol' || p.slug === 'prognosticos');
+                  const progPage = existingPage || {
+                    id: 'prognosticos-futebol',
+                    slug: 'prognosticos-futebol',
+                    title: 'Prognósticos de Futebol',
+                    description: 'Análises de futebol e lista de palpites IA com janela pop-up de previsão',
+                    createdAt: new Date().toISOString(),
+                    blocks: []
+                  };
+                  onPageSelect(progPage);
+                  window.location.hash = '#prognosticos-futebol';
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  onClose();
+                }}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                  (selectedPage?.slug === 'prognosticos-futebol' || selectedPage?.slug === 'prognosticos') && !window.location.hash.includes('apostas-do-dia')
+                    ? 'bg-orange-500/15 text-orange-400 font-bold border-l-2 border-orange-500' 
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-950/40'
+                }`}
+              >
+                <span className="text-sm select-none">⚽</span>
+                <span>Prognósticos de Futebol</span>
+              </a>
+
+              {/* Apostas do Dia Subpage */}
+              <a
+                href="#apostas-do-dia"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const existingPage = customPages.find(p => p.slug === 'prognosticos-futebol' || p.slug === 'prognosticos');
+                  const progPage = existingPage || {
+                    id: 'prognosticos-futebol',
+                    slug: 'prognosticos-futebol',
+                    title: 'Apostas do Dia',
+                    description: 'Tickets de Apostas de Elite (#1 a #5) e Simulador IA',
+                    createdAt: new Date().toISOString(),
+                    blocks: []
+                  };
+                  onPageSelect(progPage);
+                  window.location.hash = '#apostas-do-dia';
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  onClose();
+                }}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                  window.location.hash.includes('apostas-do-dia')
+                    ? 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 text-orange-300 font-bold border-l-2 border-orange-500' 
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-950/40'
+                }`}
+              >
+                <span className="text-sm select-none">🎯</span>
+                <span className="flex-1">Apostas do Dia</span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 font-black">
+                  3 Quadros
+                </span>
+              </a>
+
               {/* Dashboard VIP Link */}
               <a
                 href="#vip-dashboard"
@@ -335,9 +395,38 @@ const Sidebar: React.FC<SidebarProps> = ({
                   {language === 'pt' ? 'Dashboard & Gestão de Banca' :
                    language === 'fr' ? 'Tableau de Bord & Bankroll' :
                    language === 'it' ? 'Dashboard & Gestione Cassa' :
-                   language === 'de' ? 'Dashboard & Bankroll-Plan' :
-                   'Dashboard & Bankroll'}
+                    language === 'de' ? 'Dashboard & Bankroll-Plan' :
+                    'Dashboard & Bankroll'}
                 </span>
+              </a>
+
+              {/* Dados Estatísticos Link */}
+              <a
+                href="#dados-estatisticos"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const existingPage = customPages.find(p => p.slug === 'dados-estatisticos');
+                  const statsPage = existingPage || {
+                    id: 'dados-estatisticos',
+                    slug: 'dados-estatisticos',
+                    title: 'Dados Estatísticos',
+                    description: 'Modelos de Poisson, Exportação Excel e Feeds de API',
+                    createdAt: new Date().toISOString(),
+                    blocks: []
+                  };
+                  onPageSelect(statsPage);
+                  window.location.hash = '#dados-estatisticos';
+                  window.scrollTo({ top: 0, behavior: 'instant' });
+                  onClose();
+                }}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                  selectedPage?.slug === 'dados-estatisticos'
+                    ? 'bg-emerald-500/15 text-emerald-400 font-bold border-l-2 border-emerald-400' 
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-950/40'
+                }`}
+              >
+                <span className="text-sm select-none">📑</span>
+                <span>Dados Estatísticos (Excel & API)</span>
               </a>
 
               {/* Mentor de Disciplina Link */}
@@ -403,7 +492,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             ) : (
               <div className="space-y-1">
                 {customPages
-                  .filter((p) => !p.isSubpage && !p.hidden && !['purificador-radar', 'noticias', 'faq'].includes(p.slug))
+                  .filter((p) => !p.isSubpage && !p.hidden && !['purificador-radar', 'noticias', 'faq', 'clube-vip', 'dashboard-tipster', 'vip-dashboard'].includes(p.slug))
                   .map((page) => {
                     // Check if this page has child subpages
                     const childSubpages = customPages.filter(p => {

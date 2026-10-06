@@ -197,16 +197,49 @@ const Navbar: React.FC<NavbarProps> = ({
                 };
                 onPageSelect(progPage);
                 window.location.hash = '#prognosticos-futebol';
+                window.dispatchEvent(new CustomEvent('irunbets_switch_prognosticos_tab', { detail: 'tabela' }));
                 window.scrollTo({ top: 0, behavior: 'instant' });
               }} 
               className={`transition-colors flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-xl border transition-all ${
-                selectedPage?.slug === 'prognosticos-futebol' || selectedPage?.slug === 'prognosticos'
+                (selectedPage?.slug === 'prognosticos-futebol' || selectedPage?.slug === 'prognosticos') && !window.location.hash.includes('apostas-do-dia')
                   ? 'bg-orange-500/15 border-orange-500/40 text-orange-400 shadow-lg shadow-orange-500/10'
                   : 'bg-zinc-900/60 border-zinc-800/80 hover:border-orange-500/30 text-zinc-300 hover:text-white'
               }`}
             >
               <span className="text-base">⚽</span>
               <span className="uppercase text-xs tracking-wider font-display">Prognósticos de futebol</span>
+            </a>
+
+            {/* Apostas do Dia Subpage Direct Link */}
+            <a 
+              href="#apostas-do-dia" 
+              onClick={(e) => {
+                e.preventDefault();
+                const existingPage = customPages.find(p => p.slug === 'prognosticos-futebol' || p.slug === 'prognosticos');
+                const progPage = existingPage || {
+                  id: 'prognosticos-futebol',
+                  slug: 'prognosticos-futebol',
+                  title: 'Apostas do Dia',
+                  description: 'Tickets de Apostas de Elite (#1 a #6) e Simulador IA',
+                  createdAt: new Date().toISOString(),
+                  blocks: []
+                };
+                onPageSelect(progPage);
+                window.location.hash = '#apostas-do-dia';
+                window.dispatchEvent(new CustomEvent('irunbets_switch_prognosticos_tab', { detail: 'apostas-do-dia' }));
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }} 
+              className={`transition-colors flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-xl border transition-all ${
+                window.location.hash.includes('apostas-do-dia')
+                  ? 'bg-gradient-to-r from-orange-500/20 to-amber-500/20 border-orange-500/50 text-orange-300 shadow-lg shadow-orange-500/10'
+                  : 'bg-zinc-900/60 border-zinc-800/80 hover:border-amber-500/30 text-zinc-300 hover:text-white'
+              }`}
+            >
+              <span className="text-base">🎯</span>
+              <span className="uppercase text-xs tracking-wider font-display">Apostas do dia</span>
+              <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-orange-500 text-black font-black">
+                3 QUADROS
+              </span>
             </a>
 
             {/* VIP Dashboard Link */}
@@ -235,6 +268,34 @@ const Navbar: React.FC<NavbarProps> = ({
             >
               <span className="text-base">📊</span>
               <span className="uppercase text-xs tracking-wider font-display">Dashboard</span>
+            </a>
+
+            {/* Dados Estatísticos Link */}
+            <a 
+              href="#dados-estatisticos" 
+              onClick={(e) => {
+                e.preventDefault();
+                const existingPage = customPages.find(p => p.slug === 'dados-estatisticos');
+                const statsPage = existingPage || {
+                  id: 'dados-estatisticos',
+                  slug: 'dados-estatisticos',
+                  title: 'Dados Estatísticos',
+                  description: 'Modelos de Poisson, Exportação Excel e Feeds de API',
+                  createdAt: new Date().toISOString(),
+                  blocks: []
+                };
+                onPageSelect(statsPage);
+                window.location.hash = '#dados-estatisticos';
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }} 
+              className={`transition-colors flex items-center gap-1.5 font-bold px-3 py-1.5 rounded-xl border transition-all ${
+                selectedPage?.slug === 'dados-estatisticos'
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-lg shadow-emerald-500/10'
+                  : 'bg-zinc-900/60 border-zinc-800/80 hover:border-emerald-500/30 text-zinc-300 hover:text-white'
+              }`}
+            >
+              <span className="text-base">📑</span>
+              <span className="uppercase text-xs tracking-wider font-display">Dados Estatísticos</span>
             </a>
           </div>
 
@@ -303,7 +364,11 @@ const Navbar: React.FC<NavbarProps> = ({
             {currentUser ? (
               <div className="hidden sm:flex items-center gap-3">
                 <span className="text-xs font-medium text-zinc-300 font-mono">
-                  {t('nav.hello')} {currentUser.displayName || currentUser.email.split('@')[0]}
+                  {t('nav.hello')} {
+                    (isAdmin || currentUser.email?.toLowerCase().includes('morgado') || currentUser.displayName?.toLowerCase().includes('morgado') || currentUser.displayName?.toLowerCase().includes('angelo'))
+                      ? 'Admin'
+                      : (currentUser.displayName || currentUser.email.split('@')[0])
+                  }
                 </span>
                 
                 <button
@@ -387,11 +452,37 @@ const Navbar: React.FC<NavbarProps> = ({
                 onPageSelect(progPage);
                 setMobileMenuOpen(false);
                 window.location.hash = '#prognosticos-futebol';
+                window.dispatchEvent(new CustomEvent('irunbets_switch_prognosticos_tab', { detail: 'tabela' }));
                 window.scrollTo({ top: 0, behavior: 'instant' });
               }} 
               className="text-orange-400 hover:text-white font-bold flex items-center gap-1.5"
             >
-              <span>⚽ Prognósticos de futebol</span>
+              <span>⚽ Prognósticos de futebol (Tabela)</span>
+            </a>
+
+            {/* Mobile Apostas do Dia Link */}
+            <a 
+              href="#apostas-do-dia" 
+              onClick={(e) => {
+                e.preventDefault();
+                const existingPage = customPages.find(p => p.slug === 'prognosticos-futebol' || p.slug === 'prognosticos');
+                const progPage = existingPage || {
+                  id: 'prognosticos-futebol',
+                  slug: 'prognosticos-futebol',
+                  title: 'Apostas do Dia',
+                  description: 'Tickets de Apostas de Elite (#1 a #6) e Simulador IA',
+                  createdAt: new Date().toISOString(),
+                  blocks: []
+                };
+                onPageSelect(progPage);
+                setMobileMenuOpen(false);
+                window.location.hash = '#apostas-do-dia';
+                window.dispatchEvent(new CustomEvent('irunbets_switch_prognosticos_tab', { detail: 'apostas-do-dia' }));
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }} 
+              className="text-amber-400 hover:text-white font-bold flex items-center gap-1.5"
+            >
+              <span>🎯 Apostas do Dia (Tickets #1 a #6)</span>
             </a>
 
             {/* Mobile Dashboard Link */}
@@ -416,6 +507,30 @@ const Navbar: React.FC<NavbarProps> = ({
               className="text-[#00f2fe] hover:text-white font-bold flex items-center gap-1.5"
             >
               <span>📊 Dashboard VIP</span>
+            </a>
+
+            {/* Mobile Dados Estatísticos Link */}
+            <a 
+              href="#dados-estatisticos" 
+              onClick={(e) => {
+                e.preventDefault();
+                const existingPage = customPages.find(p => p.slug === 'dados-estatisticos');
+                const statsPage = existingPage || {
+                  id: 'dados-estatisticos',
+                  slug: 'dados-estatisticos',
+                  title: 'Dados Estatísticos',
+                  description: 'Modelos de Poisson, Exportação Excel e Feeds de API',
+                  createdAt: new Date().toISOString(),
+                  blocks: []
+                };
+                onPageSelect(statsPage);
+                setMobileMenuOpen(false);
+                window.location.hash = '#dados-estatisticos';
+                window.scrollTo({ top: 0, behavior: 'instant' });
+              }} 
+              className="text-emerald-400 hover:text-white font-bold flex items-center gap-1.5"
+            >
+              <span>📑 Dados Estatísticos</span>
             </a>
 
             {/* Mobile custom navigation grouped into our Sidebar drawer trigger */}

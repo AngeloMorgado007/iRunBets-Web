@@ -650,7 +650,7 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
   const [activeSubscriberData, setActiveSubscriberData] = useState<any>(null);
   const [clientName, setClientName] = useState('');
   const [clientEmail, setClientEmail] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'skrill' | 'revolut'>('revolut');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'skrill' | 'revolut'>('revolut');
   const [clientMbwayPhone, setClientMbwayPhone] = useState('');
   const [clientSkrillAccount, setClientSkrillAccount] = useState('');
   const [clientRevolutUser, setClientRevolutUser] = useState('');
@@ -2603,7 +2603,7 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
 
               <div className="flex items-center gap-4 border-b border-zinc-900 pb-4">
                 <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center justify-center text-xl">
-                  ðŸš¨
+                  í ½íº¨
                 </div>
                 <div>
                   <h3 className="text-base font-black text-white uppercase tracking-tight">Anular SubscriÃ§Ã£o {cancellingPlanName}</h3>

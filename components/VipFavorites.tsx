@@ -1,7 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Star, Trophy, ChevronRight, Trash2, Plus, Check, Info, 
-  RefreshCw, AlertTriangle, Shield, Calendar, Award, User, X, Edit, MessageSquare, Paintbrush 
+  RefreshCw, AlertTriangle, Shield, Calendar, Award, User, X, Edit, MessageSquare, Paintbrush,
+  MapPin, Flame, Zap, Compass, Users, CheckCircle2, TrendingUp, Activity,
+  SlidersHorizontal, Shirt, Database, Copy, CheckCheck, Sparkles, HelpCircle, Layers, ArrowUpDown,
+  Brain
 } from 'lucide-react';
 import { 
   saveFavoriteTeamsFirestore, 
@@ -9,6 +12,7 @@ import {
   getTeamMetaFirestore, 
   subscribeUtilizadorDoc 
 } from '../services/firebase';
+import { TeamFullProfile } from '../services/teamProfileService';
 
 interface FavoriteTeam {
   name: string;
@@ -82,6 +86,12 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
 
   // Selection Detail Modal state
   const [selectedTeam, setSelectedTeam] = useState<TeamDisplayStats | null>(null);
+  const [fullProfile, setFullProfile] = useState<TeamFullProfile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
+  const [activeDetailTab, setActiveDetailTab] = useState<'stats' | 'treinador' | 'estadio' | 'plantel' | 'carateristicas' | 'simulador'>('stats');
+  const [lineupSort, setLineupSort] = useState<'starter' | 'rating' | 'goals' | 'position'>('starter');
+  const [isSupabaseModalOpen, setIsSupabaseModalOpen] = useState<boolean>(false);
+  const [copiedSql, setCopiedSql] = useState<boolean>(false);
   const [coachName, setCoachName] = useState<string>('');
   const [coachReputation, setCoachReputation] = useState<number>(3);
   const [topScorerName, setTopScorerName] = useState<string>('');
@@ -104,6 +114,21 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
   const [oppScoredAvg, setOppScoredAvg] = useState<number>(1.2);
   const [oppConcededAvg, setOppConcededAvg] = useState<number>(1.4);
   const [simulationResult, setSimulationResult] = useState<any | null>(null);
+
+  const sortedLineup = useMemo(() => {
+    if (!fullProfile?.lineup) return [];
+    const list = [...fullProfile.lineup];
+    if (lineupSort === 'starter') {
+      return list.sort((a, b) => (b.gamesStarted || 0) - (a.gamesStarted || 0));
+    }
+    if (lineupSort === 'rating') {
+      return list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    }
+    if (lineupSort === 'goals') {
+      return list.sort((a, b) => (b.goals || 0) - (a.goals || 0));
+    }
+    return list;
+  }, [fullProfile?.lineup, lineupSort]);
 
   // Tipsters section states and persistence mechanisms
   const [isTipstersModalOpen, setIsTipstersModalOpen] = useState(false);
@@ -363,9 +388,12 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
     }
   };
 
-  // Open Details Modal and Load metadata from Firestore/Cache
+  // Open Details Modal and Load metadata from Firestore/Cache & Supabase API
   const openTeamDetail = async (team: TeamDisplayStats) => {
     setSelectedTeam(team);
+    setActiveDetailTab('stats');
+    setLoadingProfile(true);
+    setFullProfile(null);
     setPoissonSimOpen(false);
     setSimulationResult(null);
     setMetaMessage(null);
@@ -381,6 +409,49 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
       { id: '3', name: '', position: 'Defesa', injured: false, goals: 0 },
     ]);
     setObservations([]);
+
+    // 1. Fetch full team dossier from backend (Supabase + analytics)
+    try {
+      const res = await fetch(`/api/team-full-profile?team=${encodeURIComponent(team.teamName)}&league=${selectedLeague}`);
+      if (res.ok) {
+        const json = await res.json();
+        if (json.status === 'success' && json.data) {
+          const profile = json.data as TeamFullProfile;
+          setFullProfile(profile);
+
+          if (profile.coach?.name) {
+            setCoachName(profile.coach.name);
+            setCoachReputation(Math.round(profile.coach.stars || 4));
+          }
+
+          if (profile.lineup && profile.lineup.length > 0) {
+            const topScorer = profile.lineup.find(p => p.position === 'PL' || p.position === 'AV') || profile.lineup[profile.lineup.length - 1];
+            if (topScorer) {
+              setTopScorerName(topScorer.name);
+              setTopScorerGoals(topScorer.goals ? String(topScorer.goals) : '10');
+            }
+
+            const topSquadScorers = profile.lineup
+              .filter(p => p.position !== 'GR')
+              .slice(0, 3)
+              .map((p, idx) => ({
+                id: String(idx + 1),
+                name: p.name,
+                position: (p.position === 'DC' || p.position === 'LD' || p.position === 'LE' ? 'Defesa' : p.position === 'PL' || p.position === 'AV' || p.position === 'ED' || p.position === 'EE' ? 'Avançado' : 'Médio') as 'Defesa' | 'Avançado' | 'Médio',
+                injured: p.status === 'Indisponível',
+                goals: p.goals || (p.position === 'PL' ? 14 : 4)
+              }));
+            if (topSquadScorers.length > 0) {
+              setTop3(topSquadScorers);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Erro ao carregar perfil completo da equipa:', e);
+    } finally {
+      setLoadingProfile(false);
+    }
 
     if (!currentUser) return;
 
@@ -399,11 +470,11 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
       }
 
       if (data) {
-        setCoachName(data.coachName || '');
-        setCoachReputation(data.coachReputation || 3);
-        setTopScorerName(data.topScorerName || '');
-        setTopScorerGoals(data.topScorerGoals ? String(data.topScorerGoals) : '');
-        if (Array.isArray(data.top3Scorers)) {
+        if (data.coachName) setCoachName(data.coachName);
+        if (data.coachReputation) setCoachReputation(data.coachReputation);
+        if (data.topScorerName) setTopScorerName(data.topScorerName);
+        if (data.topScorerGoals) setTopScorerGoals(String(data.topScorerGoals));
+        if (Array.isArray(data.top3Scorers) && data.top3Scorers.length > 0) {
           setTop3(data.top3Scorers);
         }
         if (Array.isArray(data.observations)) {
@@ -411,7 +482,7 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
         }
       }
     } catch (err) {
-      console.error('Error loading team details:', err);
+      console.error('Error loading team details from Firestore:', err);
     }
   };
 
@@ -582,8 +653,8 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
             <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
             {language === 'en' ? 'CHAMPIONSHIPS & FAVORITES CO-PILOT' : 'MÓDULO DE SELECÇÃO DE EQUIPAS E LIGAS ESPELHADAS'}
           </span>
-          <h2 className="text-xl font-mono font-bold text-white tracking-tight">
-            {language === 'en' ? 'Favourite Teams Workspace' : 'Canais e Equipas Favoritas'}
+          <h2 className="text-xl font-mono font-black text-[#0df5c8] drop-shadow-[0_0_14px_rgba(13,245,200,0.45)] uppercase tracking-wider">
+            {language === 'en' ? 'MAIN EUROPEAN & SOUTH AMERICAN LEAGUES' : 'PRINCIPAIS LIGAS EUROPEIAS E SUL AMERICANAS'}
           </h2>
           <p className="text-xs text-zinc-400 font-light max-w-2xl">
             {language === 'en' 
@@ -946,44 +1017,104 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
 
       {/* TEAM DETAILED SHEET / PROFILE MODAL */}
       {selectedTeam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
-          <div className="w-full max-w-2xl bg-[#0b0b0e] border border-zinc-800 rounded-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto flex flex-col text-zinc-300 font-mono">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4 overflow-y-auto">
+          <div className="w-full max-w-4xl bg-[#0b0b0e] border border-zinc-800 rounded-2xl shadow-2xl relative max-h-[92vh] overflow-y-auto flex flex-col text-zinc-300 font-mono">
             
             {/* Modal Header */}
-            <div className="p-4 sm:p-5 border-b border-zinc-900 flex items-center justify-between bg-zinc-950">
+            <div className="p-4 sm:p-5 border-b border-zinc-900 flex items-center justify-between bg-zinc-950/90 backdrop-blur sticky top-0 z-20">
               <div className="flex items-center gap-3">
                 {selectedTeam.crestUrl ? (
-                  <img src={selectedTeam.crestUrl} alt={selectedTeam.teamName} className="w-8 h-8 object-contain" />
+                  <img src={selectedTeam.crestUrl} alt={selectedTeam.teamName} className="w-9 h-9 object-contain" />
                 ) : (
-                  <Shield size={24} className="text-cyan-400" />
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">
+                    <Shield size={20} className="text-cyan-400" />
+                  </div>
                 )}
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-white leading-tight font-display">{selectedTeam.teamName}</h3>
-                  <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-mono">
-                    {selectedLeague} • {language === 'en' ? 'CO-PILOT DATA SYNC' : 'REGISTO DE VALOR IA'}
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base sm:text-lg font-black text-white leading-tight font-display">{selectedTeam.teamName}</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-yellow-400 font-bold">
+                      {selectedLeague}
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 flex items-center gap-1.5 mt-0.5">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>API Supabase Ativa</span>
+                    <span className="text-zinc-600">•</span>
+                    <span className="text-zinc-500 truncate max-w-[200px] sm:max-w-none">sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ</span>
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
+                  type="button"
+                  onClick={() => setIsSupabaseModalOpen(true)}
+                  className="p-1.5 px-2.5 bg-zinc-900 hover:bg-zinc-850 text-cyan-400 border border-cyan-500/30 rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                  title="Ver Estado Supabase e SQL para Atualizar"
+                >
+                  <Database size={13} />
+                  <span className="hidden sm:inline">Supabase DB</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => toggleFavorite({ name: selectedTeam.teamName, crestUrl: selectedTeam.crestUrl, leagueCode: selectedLeague })}
-                  className="p-1.5 px-2 bg-gradient-to-r from-zinc-900 to-zinc-950 text-xs border border-zinc-800 rounded-lg hover:border-yellow-400 text-yellow-500 flex items-center gap-1.5 transition-colors font-mono"
+                  className="p-1.5 px-2.5 bg-gradient-to-r from-zinc-900 to-zinc-950 text-xs border border-zinc-800 rounded-lg hover:border-yellow-400 text-yellow-500 flex items-center gap-1.5 transition-colors font-mono"
                 >
                   <Star size={13} fill={favoriteTeams.some(f => f.name === selectedTeam.teamName && f.leagueCode === selectedLeague) ? 'currentColor' : 'none'} />
-                  {favoriteTeams.some(f => f.name === selectedTeam.teamName && f.leagueCode === selectedLeague) ? 'FAV' : '+ FAV'}
+                  <span>{favoriteTeams.some(f => f.name === selectedTeam.teamName && f.leagueCode === selectedLeague) ? 'FAV' : '+ FAV'}</span>
                 </button>
                 <button 
+                  type="button"
                   onClick={() => setSelectedTeam(null)}
-                  className="p-1 px-1.5 text-zinc-500 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg transition-colors"
+                  className="p-1.5 px-2 text-zinc-400 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg transition-colors"
                 >
-                  <X size={15} />
+                  <X size={16} />
                 </button>
               </div>
             </div>
 
+            {/* Supabase Status Summary Ribbon */}
+            <div className="bg-gradient-to-r from-cyan-950/30 via-zinc-950 to-zinc-900/40 border-b border-zinc-900 px-4 py-2 text-[10px] flex flex-wrap items-center justify-between gap-2 select-none">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-zinc-400 font-bold flex items-center gap-1">
+                  <Database size={11} className="text-cyan-400" />
+                  Origem dos Dados:
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 ${
+                  fullProfile?.coach?.source === 'supabase_db' 
+                    ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-400'
+                }`}>
+                  👔 Treinador: {fullProfile?.coach?.source === 'supabase_db' ? 'Supabase DB' : 'Modelo Calibrado'}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 ${
+                  fullProfile?.stadium?.source === 'supabase_db' 
+                    ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-400'
+                }`}>
+                  🏟️ Estádio: {fullProfile?.stadium?.source === 'supabase_db' ? 'Supabase DB' : 'Modelo Calibrado'}
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[9px] font-bold flex items-center gap-1 ${
+                  (fullProfile?.supabaseInfo?.jogadoresFound || 0) > 0
+                    ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-400' 
+                    : 'bg-zinc-900 border border-zinc-800 text-zinc-400'
+                }`}>
+                  👥 Plantel: {(fullProfile?.supabaseInfo?.jogadoresFound || 0) > 0 ? `${fullProfile?.supabaseInfo?.jogadoresFound} Atletas Supabase` : 'Equipa Tipo 11'}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsSupabaseModalOpen(true)}
+                className="text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 font-bold text-[9.5px]"
+              >
+                <span>Fazer Update no Supabase?</span>
+                <ChevronRight size={11} />
+              </button>
+            </div>
+
             {/* Modal Body */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1 text-xs">
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1 text-xs">
               
               {/* COMPACT BASIC STATS CARDS */}
               {selectedTeam.playedGames > 0 && (
@@ -1002,7 +1133,7 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
                   </div>
                   <div>
                     <span className="block text-zinc-500 text-[8px] uppercase">{language === 'en' ? 'GOALS' : 'GOLOS'}</span>
-                    <span className="block font-bold text-zinc-400 text-sm mt-0.5">{selectedTeam.goalsFor}:{selectedTeam.goalsAgainst}</span>
+                    <span className="block font-bold text-zinc-300 text-sm mt-0.5">{selectedTeam.goalsFor}:{selectedTeam.goalsAgainst}</span>
                   </div>
                   <div>
                     <span className="block text-zinc-500 text-[8px] uppercase">{language === 'en' ? 'PTS' : 'PONTOS'}</span>
@@ -1011,336 +1142,962 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
                 </div>
               )}
 
-              {/* SIMULATE POISSON WORKSPACE TOGGLE */}
-              <div className="p-4 bg-gradient-to-r from-cyan-950/10 to-zinc-950/40 border border-[#00f2fe]/10 rounded-xl space-y-3">
-                <div className="flex justify-between items-center bg-zinc-950/50 p-1 px-2.5 rounded-lg border border-zinc-900">
-                  <span className="text-zinc-300 font-bold flex items-center gap-1.5 truncate">
-                    <Trophy size={13} className="text-cyan-400" />
-                    {language === 'en' ? 'Quick Poisson Match Predictor' : 'Calculador / Simulador Poisson Clássico'}
-                  </span>
-                  <button 
-                    onClick={() => {
-                      setPoissonSimOpen(!poissonSimOpen);
-                      if (!poissonSimOpen) handleRunPoissonSimulation();
-                    }}
-                    className="text-[10px] text-cyan-400 hover:underline font-mono"
-                  >
-                    {poissonSimOpen ? (language === 'en' ? 'Hide Simulator' : 'Ocultar Simulador') : (language === 'en' ? 'Open Calculator' : 'Simular 1-Clique')}
-                  </button>
-                </div>
+              {/* INTERACTIVE NAVIGATION TABS (Requirements 1, 2, 3, 4, 5) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-zinc-850 scrollbar-thin">
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('stats')}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                    activeDetailTab === 'stats'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:bg-zinc-900'
+                  }`}
+                >
+                  <TrendingUp size={13} className={activeDetailTab === 'stats' ? 'text-cyan-400' : 'text-zinc-500'} />
+                  <span>3. Estatísticas & Alertas σ</span>
+                  {fullProfile?.statistics?.patternAlerts && fullProfile.statistics.patternAlerts.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-rose-500/30 text-rose-300 text-[9px] font-black">
+                      {fullProfile.statistics.patternAlerts.length}
+                    </span>
+                  )}
+                </button>
 
-                {poissonSimOpen && (
-                  <div className="space-y-4 pt-1 transition-all">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                      <div className="space-y-1">
-                        <label className="text-[9px] text-zinc-500 uppercase font-mono tracking-widest">Oponente (Personalizado)</label>
-                        <input 
-                          type="text" 
-                          value={opponentName}
-                          onChange={(e) => setOpponentName(e.target.value)}
-                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan-400"
-                        />
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('treinador')}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                    activeDetailTab === 'treinador'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:bg-zinc-900'
+                  }`}
+                >
+                  <User size={13} className={activeDetailTab === 'treinador' ? 'text-cyan-400' : 'text-zinc-500'} />
+                  <span>1. Treinador & Ficha</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('estadio')}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                    activeDetailTab === 'estadio'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:bg-zinc-900'
+                  }`}
+                >
+                  <MapPin size={13} className={activeDetailTab === 'estadio' ? 'text-cyan-400' : 'text-zinc-500'} />
+                  <span>2. Estádio & Local</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('plantel')}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                    activeDetailTab === 'plantel'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:bg-zinc-900'
+                  }`}
+                >
+                  <Users size={13} className={activeDetailTab === 'plantel' ? 'text-cyan-400' : 'text-zinc-500'} />
+                  <span>4. Equipa Tipo (11)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('carateristicas')}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                    activeDetailTab === 'carateristicas'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:bg-zinc-900'
+                  }`}
+                >
+                  <Zap size={13} className={activeDetailTab === 'carateristicas' ? 'text-cyan-400' : 'text-zinc-500'} />
+                  <span>5. Características</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveDetailTab('simulador')}
+                  className={`px-3 py-2 rounded-xl text-[11px] font-bold flex items-center gap-1.5 whitespace-nowrap transition-all ${
+                    activeDetailTab === 'simulador'
+                      ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                      : 'bg-zinc-950 text-zinc-400 hover:text-zinc-200 border border-zinc-850 hover:bg-zinc-900'
+                  }`}
+                >
+                  <Trophy size={13} className={activeDetailTab === 'simulador' ? 'text-cyan-400' : 'text-zinc-500'} />
+                  <span>Simulador & Notas</span>
+                </button>
+              </div>
+
+              {/* TAB 1: TREINADOR E TODA A SUA INFORMAÇÃO */}
+              {activeDetailTab === 'treinador' && (
+                <div className="space-y-4 animate-fadeIn">
+                  {fullProfile?.coach ? (
+                    <div className="p-4 sm:p-5 bg-gradient-to-b from-zinc-900/60 to-zinc-950 border border-zinc-850 rounded-2xl space-y-4">
+                      {/* Coach Title Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xl">
+                            👔
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-base sm:text-lg font-black text-white">{fullProfile.coach.name}</h4>
+                              {fullProfile.coach.recentCoachChange && (
+                                <span className="px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40 text-rose-300 text-[9px] font-bold">
+                                  Mudança Recente
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
+                              <span>🌍 {fullProfile.coach.nationality}</span>
+                              {fullProfile.coach.age && <span>• {fullProfile.coach.age} anos</span>}
+                              {fullProfile.coach.birthDate && <span className="text-zinc-500">({fullProfile.coach.birthDate})</span>}
+                              {fullProfile.coach.zodiacSign && (
+                                <span className="px-1.5 py-0.5 rounded bg-zinc-800 text-yellow-400 text-[9.5px]">
+                                  Signo: {fullProfile.coach.zodiacSign}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                            fullProfile.coach.source === 'supabase_db'
+                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                              : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                          }`}>
+                            {fullProfile.coach.source === 'supabase_db' ? '🟢 Supabase DB (treinadores)' : '⚡ Modelo Calibrado'}
+                          </span>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-1.5">
-                        <div className="space-y-1">
-                          <label className="text-[8px] text-zinc-500 uppercase truncate block">GM/Jogo Oponente</label>
-                          <input 
-                            type="number" 
-                            step="0.1" 
-                            value={oppScoredAvg}
-                            onChange={(e) => {
-                              setOppScoredAvg(parseFloat(e.target.value) || 0);
-                              setTimeout(handleRunPoissonSimulation, 100);
-                            }}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-emerald-400 text-center outline-none focus:border-cyan-400"
-                          />
+
+                      {/* Coach Numerical KPI Cards */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Esquema Predileto</span>
+                          <span className="text-sm font-black text-cyan-400 mt-0.5 block">{fullProfile.coach.preferredFormation}</span>
+                          <span className="text-[9px] text-zinc-500">Sistemas táticos flexíveis</span>
                         </div>
-                        <div className="space-y-1">
-                          <label className="text-[8px] text-zinc-500 uppercase truncate block">GS/Jogo Oponente</label>
-                          <input 
-                            type="number" 
-                            step="0.1" 
-                            value={oppConcededAvg}
-                            onChange={(e) => {
-                              setOppConcededAvg(parseFloat(e.target.value) || 0);
-                              setTimeout(handleRunPoissonSimulation, 100);
-                            }}
-                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-rose-400 text-center outline-none focus:border-cyan-400"
-                          />
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Dias no Cargo</span>
+                          <span className="text-sm font-black text-white mt-0.5 block">{fullProfile.coach.daysInCharge} dias</span>
+                          <span className="text-[9px] text-zinc-500">Tempo de trabalho contínuo</span>
                         </div>
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Taxa de Vitória</span>
+                          <span className="text-sm font-black text-emerald-400 mt-0.5 block">{fullProfile.coach.winRatePercentage}%</span>
+                          <span className="text-[9px] text-zinc-500">{fullProfile.coach.pointsPerMatch} pontos/jogo</span>
+                        </div>
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Reputação / Balneário</span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star 
+                                key={s} 
+                                size={12} 
+                                className={s <= Math.round(fullProfile.coach.stars) ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'} 
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[9px] text-zinc-500">Motivação: {fullProfile.coach.lockerRoomMotivation}/5</span>
+                        </div>
+                      </div>
+
+                      {/* Psychological Profile */}
+                      <div className="p-3.5 bg-zinc-950/60 border border-zinc-850 rounded-xl space-y-1">
+                        <span className="text-[9.5px] text-cyan-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <Brain size={12} />
+                          Perfil Psicológico & Estilo de Liderança:
+                        </span>
+                        <p className="text-[11.5px] text-zinc-200 leading-relaxed font-sans">
+                          {fullProfile.coach.psychologicalProfile}
+                        </p>
                       </div>
                     </div>
+                  ) : (
+                    <div className="p-6 text-center text-zinc-500 border border-zinc-850 rounded-xl">
+                      A carregar dados do treinador...
+                    </div>
+                  )}
+                </div>
+              )}
 
-                    <button 
-                      onClick={handleRunPoissonSimulation}
-                      className="w-full py-1.5 text-xs font-black uppercase text-center bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20 rounded-lg transition-colors font-mono"
-                    >
-                      {language === 'en' ? 'Re-run Poisson Probability Grid' : 'Calcular Probabilidades de Golos'}
-                    </button>
-
-                    {simulationResult && (
-                      <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-850 space-y-2 text-xs font-mono">
-                        <div className="grid grid-cols-3 gap-2.5 text-center text-[10px]">
-                          <div className="p-2 bg-gradient-to-b from-[#07070a] to-zinc-950 rounded border border-zinc-900">
-                            <span className="block text-[8px] text-zinc-500 uppercase">Vitória {selectedTeam.teamName}</span>
-                            <span className="block font-bold text-emerald-400 text-xs mt-0.5">{simulationResult.win.toFixed(1)}%</span>
+              {/* TAB 2: ESTÁDIO E LOCAL */}
+              {activeDetailTab === 'estadio' && (
+                <div className="space-y-4 animate-fadeIn">
+                  {fullProfile?.stadium ? (
+                    <div className="p-4 sm:p-5 bg-gradient-to-b from-zinc-900/60 to-zinc-950 border border-zinc-850 rounded-2xl space-y-4">
+                      {/* Stadium Title Header */}
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-850 pb-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xl">
+                            🏟️
                           </div>
-                          <div className="p-2 bg-gradient-to-b from-[#07070a] to-zinc-950 rounded border border-zinc-900">
-                            <span className="block text-[8px] text-zinc-500 uppercase">Empate</span>
-                            <span className="block font-bold text-zinc-300 text-xs mt-0.5">{simulationResult.draw.toFixed(1)}%</span>
-                          </div>
-                          <div className="p-2 bg-gradient-to-b from-[#07070a] to-zinc-950 rounded border border-zinc-900">
-                            <span className="block text-[8px] text-zinc-500 uppercase">Vitória {opponentName}</span>
-                            <span className="block font-bold text-rose-400 text-xs mt-0.5">{simulationResult.loss.toFixed(1)}%</span>
+                          <div>
+                            <h4 className="text-base sm:text-lg font-black text-white">{fullProfile.stadium.name}</h4>
+                            <p className="text-[11px] text-zinc-400 flex items-center gap-2 mt-0.5">
+                              <span className="flex items-center gap-1 text-emerald-400">
+                                <MapPin size={11} />
+                                {fullProfile.stadium.city}, {fullProfile.stadium.country}
+                              </span>
+                              <span>• Lotação: {fullProfile.stadium.capacity?.toLocaleString() || '35.000'} adeptos</span>
+                            </p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2.5 text-center text-[10px] pt-1">
-                          <div className="p-1 px-2.5 flex items-center justify-between bg-zinc-900/40 rounded border border-zinc-900">
-                            <span className="text-zinc-500 uppercase text-[8px]">{language === 'en' ? 'PROB OVER 2.5:' : 'Probabilidade +2.5 Golos:'}</span>
-                            <span className="font-bold text-yellow-400">{simulationResult.over25.toFixed(1)}%</span>
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border self-start sm:self-auto ${
+                          fullProfile.stadium.source === 'supabase_db'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400'
+                        }`}>
+                          {fullProfile.stadium.source === 'supabase_db' ? '🟢 Supabase DB (estadios)' : '⚡ Modelo Calibrado'}
+                        </span>
+                      </div>
+
+                      {/* Pitch & Metric Cards */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Tipo de Piso</span>
+                          <span className="text-sm font-black text-emerald-400 mt-0.5 block">{fullProfile.stadium.pitchType}</span>
+                          <span className="text-[9px] text-zinc-500">Relvado desportivo</span>
+                        </div>
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Dimensões do Terreno</span>
+                          <span className="text-sm font-black text-white mt-0.5 block">{fullProfile.stadium.lengthMeters}m x {fullProfile.stadium.widthMeters}m</span>
+                          <span className="text-[9px] text-zinc-500">Comprimento x Largura</span>
+                        </div>
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Capacidade Oficial</span>
+                          <span className="text-sm font-black text-yellow-400 mt-0.5 block">{fullProfile.stadium.capacity.toLocaleString()}</span>
+                          <span className="text-[9px] text-zinc-500">Lotação máxima</span>
+                        </div>
+                        <div className="p-3 bg-zinc-950/70 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Qualidade do Relvado</span>
+                          <div className="flex items-center gap-1 mt-0.5">
+                            {[1, 2, 3, 4, 5].map((s) => (
+                              <Star 
+                                key={s} 
+                                size={12} 
+                                className={s <= Math.round(fullProfile.stadium.pitchQualityStars) ? 'text-emerald-400 fill-emerald-400' : 'text-zinc-700'} 
+                              />
+                            ))}
                           </div>
-                          <div className="p-1 px-2.5 flex items-center justify-between bg-zinc-900/40 rounded border border-zinc-900">
-                            <span className="text-zinc-500 uppercase text-[8px]">{language === 'en' ? 'PROB UNDER 2.5:' : 'Probabilidade -2.5 Golos:'}</span>
-                            <span className="font-bold text-zinc-400">{simulationResult.under25.toFixed(1)}%</span>
+                          <span className="text-[9px] text-zinc-500">{fullProfile.stadium.pitchQualityStars}/5 Estrelas</span>
+                        </div>
+                      </div>
+
+                      {/* Tactical Pitch Influence Description */}
+                      <div className="p-3.5 bg-zinc-950/60 border border-zinc-850 rounded-xl space-y-1">
+                        <span className="text-[9.5px] text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                          <Compass size={12} />
+                          Impacto Tático do Terreno no Modelo de Jogo:
+                        </span>
+                        <p className="text-[11.5px] text-zinc-200 leading-relaxed font-sans">
+                          {fullProfile.stadium.widthMeters >= 68 
+                            ? `O campo largo (${fullProfile.stadium.widthMeters}m) do ${fullProfile.stadium.name} permite grande amplitude nas alas, facilitando cruzamentos, saídas rápidas de transição e elevado volume de cantos.`
+                            : `Terreno com perfil mais compacto, favorecendo duelos físicos no corredor central e recuperação rápida em bloco médio-baixo.`}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-zinc-500 border border-zinc-850 rounded-xl">
+                      A carregar dados do estádio...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: DADOS ESTATÍSTICOS E ALERTAS QUANDO SE DESVIA DE UM PADRÃO */}
+              {activeDetailTab === 'stats' && (
+                <div className="space-y-4 animate-fadeIn">
+                  {fullProfile?.statistics ? (
+                    <div className="space-y-4">
+                      
+                      {/* STATS OVERVIEW CARDS */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Golos Marcados (GM)</span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="text-base font-black text-emerald-400">{fullProfile.statistics.goalsFor}</span>
+                            <span className="text-[10px] text-zinc-400 font-bold">({fullProfile.statistics.avgGoalsScored}/jogo)</span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">Desvio: {fullProfile.statistics.stdDevGoalsScored}σ</span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Golos Sofridos (GS)</span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="text-base font-black text-rose-400">{fullProfile.statistics.goalsAgainst}</span>
+                            <span className="text-[10px] text-zinc-400 font-bold">({fullProfile.statistics.avgGoalsConceded}/jogo)</span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">Desvio: {fullProfile.statistics.stdDevGoalsConceded}σ</span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Média Cantos Totais</span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="text-base font-black text-cyan-400">{fullProfile.statistics.avgCornersTotal}</span>
+                            <span className="text-[10px] text-zinc-400 font-bold">({fullProfile.statistics.avgCornersFor} a favor)</span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">Contra: {fullProfile.statistics.avgCornersAgainst}</span>
+                        </div>
+
+                        <div className="p-3 bg-zinc-950/80 border border-zinc-850 rounded-xl">
+                          <span className="text-[9px] text-zinc-500 uppercase block">Média Pontuação Equipa</span>
+                          <div className="flex items-baseline gap-1.5 mt-0.5">
+                            <span className="text-base font-black text-yellow-400">⭐ {fullProfile.statistics.teamRating}</span>
+                            <span className="text-[10px] text-zinc-400 font-bold">/ 10</span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">Rating Global Sofascore</span>
+                        </div>
+                      </div>
+
+                      {/* SECONDARY ROW: CARTOES, CLEAN SHEETS, BTTS, OVER 2.5 */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        <div className="p-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl flex items-center justify-between">
+                          <div>
+                            <span className="text-[8.5px] text-zinc-500 uppercase block">Média Cartões</span>
+                            <span className="text-xs font-bold text-yellow-400 mt-0.5 block">
+                              🟨 {fullProfile.statistics.avgYellowCards} | 🟥 {fullProfile.statistics.avgRedCards}
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">por encontro</span>
+                        </div>
+
+                        <div className="p-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl flex items-center justify-between">
+                          <div>
+                            <span className="text-[8.5px] text-zinc-500 uppercase block">Clean Sheets</span>
+                            <span className="text-xs font-bold text-emerald-400 mt-0.5 block">
+                              🛡️ {fullProfile.statistics.cleanSheetsCount} Jogos
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">{Math.round((fullProfile.statistics.cleanSheetsCount / Math.max(1, fullProfile.statistics.played)) * 100)}%</span>
+                        </div>
+
+                        <div className="p-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl flex items-center justify-between">
+                          <div>
+                            <span className="text-[8.5px] text-zinc-500 uppercase block">Ambas Marcam (BTTS)</span>
+                            <span className="text-xs font-bold text-cyan-400 mt-0.5 block">
+                              ⚽ {fullProfile.statistics.bttsPercentage}%
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">frequência</span>
+                        </div>
+
+                        <div className="p-2.5 bg-zinc-950/60 border border-zinc-850 rounded-xl flex items-center justify-between">
+                          <div>
+                            <span className="text-[8.5px] text-zinc-500 uppercase block">Mais de 2.5 Golos</span>
+                            <span className="text-xs font-bold text-purple-400 mt-0.5 block">
+                              🔥 {fullProfile.statistics.over25Percentage}%
+                            </span>
+                          </div>
+                          <span className="text-[9px] text-zinc-500">tendência</span>
+                        </div>
+                      </div>
+
+                      {/* ALERTAS QUANDO SE DESVIA DE UM PADRÃO (REQUISITO 3) */}
+                      <div className="p-4 bg-gradient-to-b from-zinc-900/70 to-zinc-950 border border-cyan-500/20 rounded-2xl space-y-3">
+                        <div className="flex items-center justify-between border-b border-zinc-850 pb-2">
+                          <h5 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <AlertTriangle size={13} className="text-yellow-400" />
+                            <span>Deteção de Desvios de Padrão Algorítmicos (σ Sigma)</span>
+                          </h5>
+                          <span className="text-[9px] text-zinc-500">
+                            Fórmula Poisson & Z-Score
+                          </span>
+                        </div>
+
+                        {fullProfile.statistics.patternAlerts && fullProfile.statistics.patternAlerts.length > 0 ? (
+                          <div className="space-y-2.5">
+                            {fullProfile.statistics.patternAlerts.map((alert) => (
+                              <div 
+                                key={alert.id}
+                                className={`p-3 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-2 transition-all ${
+                                  alert.severity === 'high' 
+                                    ? 'bg-rose-950/20 border-rose-500/40 text-rose-200' 
+                                    : alert.severity === 'medium'
+                                    ? 'bg-yellow-950/20 border-yellow-500/40 text-yellow-200'
+                                    : 'bg-cyan-950/20 border-cyan-500/40 text-cyan-200'
+                                }`}
+                              >
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold">{alert.title}</span>
+                                    <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-black/40 border border-white/10">
+                                      {alert.deviationMetric}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                                    {alert.description}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="p-3 text-center text-zinc-400 bg-zinc-950/40 border border-zinc-850 rounded-xl text-[11px]">
+                            ✅ Parâmetros equilibrados: Esta equipa encontra-se dentro da média esperada da competição sem desvios anómalos.
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-zinc-500 border border-zinc-850 rounded-xl">
+                      A carregar dados estatísticos...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: EQUIPA TIPO COM PONTUAÇÃO DE CADA JOGADOR E MAIS JOGOS COMO TITULAR */}
+              {activeDetailTab === 'plantel' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-zinc-850 pb-2.5">
+                    <div>
+                      <h4 className="text-xs sm:text-sm font-black text-white flex items-center gap-2">
+                        <Users size={14} className="text-cyan-400" />
+                        <span>Equipa Tipo (Plantel & Titulares Habitual)</span>
+                      </h4>
+                      <p className="text-[10px] text-zinc-500">
+                        Pontuações Sofascore, titularidade acumulada e métricas por jogador.
+                      </p>
+                    </div>
+
+                    {/* SORT BUTTONS */}
+                    <div className="flex items-center gap-1 bg-zinc-950 p-1 rounded-xl border border-zinc-850 text-[10px]">
+                      <span className="text-zinc-500 px-1 font-bold">Ordenar:</span>
+                      <button
+                        type="button"
+                        onClick={() => setLineupSort('starter')}
+                        className={`px-2 py-1 rounded-lg font-bold transition-colors ${
+                          lineupSort === 'starter' ? 'bg-cyan-500 text-black' : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        🎯 + Titularidades
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLineupSort('rating')}
+                        className={`px-2 py-1 rounded-lg font-bold transition-colors ${
+                          lineupSort === 'rating' ? 'bg-cyan-500 text-black' : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        ⭐ Rating
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setLineupSort('goals')}
+                        className={`px-2 py-1 rounded-lg font-bold transition-colors ${
+                          lineupSort === 'goals' ? 'bg-cyan-500 text-black' : 'text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        ⚽ Golos
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* SQUAD GRID */}
+                  {sortedLineup && sortedLineup.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      {sortedLineup.map((player, idx) => (
+                        <div 
+                          key={player.id || idx}
+                          className="p-3 bg-zinc-950/80 border border-zinc-850 hover:border-cyan-500/40 rounded-xl flex items-center justify-between gap-3 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center font-black text-xs text-white">
+                              {player.number || (idx + 1)}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-bold text-white text-[12px]">{player.name}</span>
+                                {player.status && (
+                                  <span className={`px-1.5 py-0.2 rounded text-[8.5px] font-bold ${
+                                    player.status === 'Capitão' 
+                                      ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' 
+                                      : player.status === 'Em Destaque'
+                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                      : player.status === 'Indisponível'
+                                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                                      : 'bg-zinc-800 text-zinc-400'
+                                  }`}>
+                                    {player.status}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-[10px] text-zinc-400 flex items-center gap-2 mt-0.5">
+                                <span className={`font-bold px-1.5 rounded text-[9px] ${
+                                  player.position === 'GR' 
+                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                    : player.position === 'DC' || player.position === 'LD' || player.position === 'LE'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : player.position === 'MC' || player.position === 'MD' || player.position === 'ME' || player.position === 'MO'
+                                    ? 'bg-purple-500/20 text-purple-400'
+                                    : 'bg-orange-500/20 text-orange-400'
+                                }`}>
+                                  {player.position} • {player.positionFull}
+                                </span>
+                                <span>🎯 {player.gamesStarted} jogos titular</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Star size={11} className="text-yellow-400 fill-yellow-400" />
+                              <span className="font-black text-xs text-yellow-400">{player.rating.toFixed(1)}</span>
+                            </div>
+                            <span className="text-[9.5px] text-zinc-500 block mt-0.5">
+                              ⚽ {player.goals} | 👟 {player.assists} | 🟨 {player.yellowCards}
+                            </span>
                           </div>
                         </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-zinc-500 border border-zinc-850 rounded-xl">
+                      A carregar equipa tipo...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 5: CARACTERÍSTICAS DA EQUIPA */}
+              {activeDetailTab === 'carateristicas' && (
+                <div className="space-y-4 animate-fadeIn">
+                  {fullProfile?.characteristics ? (
+                    <div className="space-y-4">
+                      
+                      {/* TACTICAL IDENTITY */}
+                      <div className="p-4 bg-zinc-950/80 border border-zinc-850 rounded-2xl space-y-3">
+                        <h4 className="text-xs font-black text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-zinc-850 pb-2">
+                          <Zap size={13} />
+                          Identidade & Modelo de Jogo Coletivo
+                        </h4>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 space-y-1">
+                            <span className="text-[9px] text-zinc-400 uppercase font-bold block">Estilo Principal</span>
+                            <p className="text-[11px] text-white leading-relaxed font-sans">{fullProfile.characteristics.styleOfPlay}</p>
+                          </div>
+                          <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 space-y-1">
+                            <span className="text-[9px] text-zinc-400 uppercase font-bold block">Dinâmica de Posse</span>
+                            <p className="text-[11px] text-white leading-relaxed font-sans">{fullProfile.characteristics.possessionStyle}</p>
+                          </div>
+                          <div className="p-3 bg-zinc-900/50 rounded-xl border border-zinc-800 space-y-1">
+                            <span className="text-[9px] text-zinc-400 uppercase font-bold block">Organização Defensiva</span>
+                            <p className="text-[11px] text-white leading-relaxed font-sans">{fullProfile.characteristics.defensiveStyle}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* STRENGTHS AND VULNERABILITIES */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {/* Strengths */}
+                        <div className="p-4 bg-emerald-950/15 border border-emerald-500/30 rounded-2xl space-y-2.5">
+                          <h5 className="text-xs font-black text-emerald-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-emerald-500/20 pb-2">
+                            <CheckCircle2 size={13} />
+                            Pontos Fortes Chave
+                          </h5>
+                          <ul className="space-y-2 text-[11px] text-zinc-200 font-sans">
+                            {fullProfile.characteristics.keyStrengths.map((str, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-emerald-400 mt-0.5">✔</span>
+                                <span>{str}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Vulnerabilities */}
+                        <div className="p-4 bg-rose-950/15 border border-rose-500/30 rounded-2xl space-y-2.5">
+                          <h5 className="text-xs font-black text-rose-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-rose-500/20 pb-2">
+                            <AlertTriangle size={13} className="text-rose-400" />
+                            Vulnerabilidades Detetadas
+                          </h5>
+                          <ul className="space-y-2 text-[11px] text-zinc-200 font-sans">
+                            {fullProfile.characteristics.vulnerabilities.map((vul, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-rose-400 mt-0.5">✖</span>
+                                <span>{vul}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+
+                      {/* RECOMMENDED BETTING ANGLES */}
+                      <div className="p-4 bg-gradient-to-r from-yellow-950/20 via-zinc-950 to-zinc-900 border border-yellow-500/30 rounded-2xl space-y-2.5">
+                        <h5 className="text-xs font-black text-yellow-400 uppercase tracking-wider flex items-center gap-1.5 border-b border-yellow-500/20 pb-2">
+                          <Sparkles size={13} />
+                          Ângulos de Aposta Recomendados pela IA para {selectedTeam.teamName}
+                        </h5>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                          {fullProfile.characteristics.recommendedBetAngles.map((angle, i) => (
+                            <div key={i} className="p-2.5 bg-black/40 border border-zinc-800 rounded-xl text-[11px] text-yellow-300 font-bold flex items-center gap-2">
+                              <span className="w-5 h-5 rounded-full bg-yellow-500/20 flex items-center justify-center text-[10px] text-yellow-400 shrink-0">
+                                {i + 1}
+                              </span>
+                              <span>{angle}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+                  ) : (
+                    <div className="p-6 text-center text-zinc-500 border border-zinc-850 rounded-xl">
+                      A carregar características da equipa...
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 6: SIMULADOR POISSON & NOTAS PESSOAIS */}
+              {activeDetailTab === 'simulador' && (
+                <div className="space-y-5 animate-fadeIn">
+                  
+                  {/* SIMULATE POISSON WORKSPACE */}
+                  <div className="p-4 bg-gradient-to-r from-cyan-950/10 to-zinc-950/40 border border-[#00f2fe]/10 rounded-xl space-y-3">
+                    <div className="flex justify-between items-center bg-zinc-950/50 p-1 px-2.5 rounded-lg border border-zinc-900">
+                      <span className="text-zinc-300 font-bold flex items-center gap-1.5 truncate">
+                        <Trophy size={13} className="text-cyan-400" />
+                        {language === 'en' ? 'Quick Poisson Match Predictor' : 'Calculador / Simulador Poisson Clássico'}
+                      </span>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          setPoissonSimOpen(!poissonSimOpen);
+                          if (!poissonSimOpen) handleRunPoissonSimulation();
+                        }}
+                        className="text-[10px] text-cyan-400 hover:underline font-mono"
+                      >
+                        {poissonSimOpen ? (language === 'en' ? 'Hide Simulator' : 'Ocultar Simulador') : (language === 'en' ? 'Open Calculator' : 'Simular 1-Clique')}
+                      </button>
+                    </div>
+
+                    {poissonSimOpen && (
+                      <div className="space-y-4 pt-1 transition-all">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                          <div className="space-y-1">
+                            <label className="text-[9px] text-zinc-500 uppercase font-mono tracking-widest">Oponente (Personalizado)</label>
+                            <input 
+                              type="text" 
+                              value={opponentName}
+                              onChange={(e) => setOpponentName(e.target.value)}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none focus:border-cyan-400"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <div className="space-y-1">
+                              <label className="text-[8px] text-zinc-500 uppercase truncate block">GM/Jogo Oponente</label>
+                              <input 
+                                type="number" 
+                                step="0.1" 
+                                value={oppScoredAvg}
+                                onChange={(e) => {
+                                  setOppScoredAvg(parseFloat(e.target.value) || 0);
+                                  setTimeout(handleRunPoissonSimulation, 100);
+                                }}
+                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-emerald-400 text-center outline-none focus:border-cyan-400"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[8px] text-zinc-500 uppercase truncate block">GS/Jogo Oponente</label>
+                              <input 
+                                type="number" 
+                                step="0.1" 
+                                value={oppConcededAvg}
+                                onChange={(e) => {
+                                  setOppConcededAvg(parseFloat(e.target.value) || 0);
+                                  setTimeout(handleRunPoissonSimulation, 100);
+                                }}
+                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-rose-400 text-center outline-none focus:border-cyan-400"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <button 
+                          type="button"
+                          onClick={handleRunPoissonSimulation}
+                          className="w-full py-1.5 text-xs font-black uppercase text-center bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20 rounded-lg transition-colors font-mono"
+                        >
+                          {language === 'en' ? 'Re-run Poisson Probability Grid' : 'Calcular Probabilidades de Golos'}
+                        </button>
+
+                        {simulationResult && (
+                          <div className="bg-zinc-950 p-3 rounded-lg border border-zinc-850 space-y-2 text-xs font-mono">
+                            <div className="grid grid-cols-3 gap-2.5 text-center text-[10px]">
+                              <div className="p-2 bg-gradient-to-b from-[#07070a] to-zinc-950 rounded border border-zinc-900">
+                                <span className="block text-[8px] text-zinc-500 uppercase">Vitória {selectedTeam.teamName}</span>
+                                <span className="block font-bold text-emerald-400 text-xs mt-0.5">{simulationResult.win.toFixed(1)}%</span>
+                              </div>
+                              <div className="p-2 bg-gradient-to-b from-[#07070a] to-zinc-950 rounded border border-zinc-900">
+                                <span className="block text-[8px] text-zinc-500 uppercase">Empate</span>
+                                <span className="block font-bold text-zinc-300 text-xs mt-0.5">{simulationResult.draw.toFixed(1)}%</span>
+                              </div>
+                              <div className="p-2 bg-gradient-to-b from-[#07070a] to-zinc-950 rounded border border-zinc-900">
+                                <span className="block text-[8px] text-zinc-500 uppercase">Vitória {opponentName}</span>
+                                <span className="block font-bold text-rose-400 text-xs mt-0.5">{simulationResult.loss.toFixed(1)}%</span>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2.5 text-center text-[10px] pt-1">
+                              <div className="p-1 px-2.5 flex items-center justify-between bg-zinc-900/40 rounded border border-zinc-900">
+                                <span className="text-zinc-500 uppercase text-[8px]">{language === 'en' ? 'PROB OVER 2.5:' : 'Probabilidade +2.5 Golos:'}</span>
+                                <span className="font-bold text-yellow-400">{simulationResult.over25.toFixed(1)}%</span>
+                              </div>
+                              <div className="p-1 px-2.5 flex items-center justify-between bg-zinc-900/40 rounded border border-zinc-900">
+                                <span className="text-zinc-500 uppercase text-[8px]">{language === 'en' ? 'PROB UNDER 2.5:' : 'Probabilidade -2.5 Golos:'}</span>
+                                <span className="font-bold text-zinc-400">{simulationResult.under25.toFixed(1)}%</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                )}
-              </div>
 
-              {/* COACH AND PLAYER EDIT FIELDS */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-4 p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center gap-1.5">
-                    <User size={12} className="text-cyan-400" />
-                    {language === 'en' ? 'Coach Profile' : 'Ficha Técnica do Treinador'}
-                  </h4>
+                  {/* COACH AND PLAYER EDIT FIELDS */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-4 p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+                      <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center gap-1.5">
+                        <User size={12} className="text-cyan-400" />
+                        {language === 'en' ? 'Coach Profile' : 'Ficha Técnica do Treinador'}
+                      </h4>
 
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'COACH NAME:' : 'TREINADOR:'}</label>
-                    <input 
-                      type="text"
-                      value={coachName}
-                      onChange={(e) => setCoachName(e.target.value)}
-                      placeholder="Ex: José Mourinho"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-400 placeholder-zinc-700"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'REPUTATION TEAM VALUE:' : 'REPUTAÇÃO ESTRELA (1-5):'}</label>
-                    <div className="flex items-center gap-1.5 pt-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <button 
-                          key={star} 
-                          onClick={() => setCoachReputation(star)}
-                          className="hover:scale-110 transition-transform"
-                        >
-                          <Star 
-                            size={16} 
-                            className={star <= coachReputation ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'} 
-                          />
-                        </button>
-                      ))}
-                      <span className="text-[10px] text-zinc-500 ml-2 font-mono">{coachReputation}/5 Stars</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-4 p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                  <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center gap-1.5">
-                    <Award size={12} className="text-yellow-400" />
-                    {language === 'en' ? 'Season Goal Scorer' : 'Melhor Marcador da Época'}
-                  </h4>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'PLAYER:' : 'NOME DO ATLETA:'}</label>
-                    <input 
-                      type="text"
-                      value={topScorerName}
-                      onChange={(e) => setTopScorerName(e.target.value)}
-                      placeholder="Ex: Viktor Gyökeres"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-400 placeholder-zinc-700"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'ESTIMATED GOALS:' : 'SOMA DE GOLOS REGISTADOS:'}</label>
-                    <input 
-                      type="number"
-                      value={topScorerGoals}
-                      onChange={(e) => setTopScorerGoals(e.target.value)}
-                      placeholder="Ex: 12"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-400 placeholder-zinc-700"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* TOP 3 SCORERS SUB-LIST */}
-              <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl space-y-3">
-                <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center gap-1.5 font-mono">
-                  <Award size={12} className="text-[#00f2fe]" />
-                  {language === 'en' ? 'Squad Key Scorers (Avançado/Médio)' : 'Plantel de Destaques (Top 3 Melhores Marcadores)'}
-                </h4>
-
-                <div className="space-y-2.5">
-                  {top3.map((scorer, index) => (
-                    <div key={scorer.id || `scorer-${index}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-[#060608] p-2.5 rounded-lg border border-zinc-900 items-center">
-                      <div className="md:col-span-1 text-zinc-500 font-bold text-center text-[10px]">{index + 1}</div>
-                      
-                      {/* Name input */}
-                      <div className="md:col-span-4 select-none">
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'COACH NAME:' : 'TREINADOR:'}</label>
                         <input 
                           type="text"
-                          value={scorer.name}
-                          onChange={(e) => {
-                            const updated = [...top3];
-                            updated[index].name = e.target.value;
-                            setTop3(updated);
-                          }}
-                          placeholder={language === 'en' ? `Scorer Name ${index+1}` : `Nome do Jogador ${index+1}`}
-                          className="w-full bg-zinc-950 border border-zinc-850 rounded px-2 py-1 text-[11px] text-white outline-none placeholder-zinc-800 focus:border-cyan-400/50"
+                          value={coachName}
+                          onChange={(e) => setCoachName(e.target.value)}
+                          placeholder="Ex: José Mourinho"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-400 placeholder-zinc-700"
                         />
                       </div>
 
-                      {/* Position Select */}
-                      <div className="md:col-span-3">
-                        <select
-                          value={scorer.position}
-                          onChange={(e) => {
-                            const updated = [...top3];
-                            updated[index].position = e.target.value as any;
-                            setTop3(updated);
-                          }}
-                          className="w-full bg-zinc-950 border border-zinc-850 rounded px-2 py-1 text-[11px] text-zinc-400 outline-none"
-                        >
-                          <option value="Avançado">Avançado</option>
-                          <option value="Médio">Médio</option>
-                          <option value="Defesa">Defesa</option>
-                        </select>
-                      </div>
-
-                      {/* Goals input */}
-                      <div className="md:col-span-2">
-                        <input 
-                          type="number"
-                          value={scorer.goals || ''}
-                          onChange={(e) => {
-                            const updated = [...top3];
-                            updated[index].goals = parseInt(e.target.value) || 0;
-                            setTop3(updated);
-                          }}
-                          placeholder="Golos"
-                          className="w-full bg-zinc-950 border border-zinc-850 rounded px-2 py-1 text-[11px] text-center text-emerald-400 outline-none"
-                        />
-                      </div>
-
-                      {/* Injured toggle */}
-                      <div className="md:col-span-2 text-center flex items-center justify-center gap-1.5">
-                        <input 
-                          type="checkbox"
-                          id={`injured-${scorer.id}`}
-                          checked={scorer.injured}
-                          onChange={(e) => {
-                            const updated = [...top3];
-                            updated[index].injured = e.target.checked;
-                            setTop3(updated);
-                          }}
-                          className="rounded border-zinc-850 bg-zinc-950 accent-rose-500 h-3 w-3"
-                        />
-                        <label htmlFor={`injured-${scorer.id}`} className="text-[10px] text-rose-400 font-bold font-mono uppercase select-none cursor-pointer">
-                          {language === 'en' ? 'INJURED' : 'LESIONADO'}
-                        </label>
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'REPUTATION TEAM VALUE:' : 'REPUTAÇÃO ESTRELA (1-5):'}</label>
+                        <div className="flex items-center gap-1.5 pt-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button 
+                              key={star} 
+                              type="button"
+                              onClick={() => setCoachReputation(star)}
+                              className="hover:scale-110 transition-transform"
+                            >
+                              <Star 
+                                size={16} 
+                                className={star <= coachReputation ? 'text-yellow-400 fill-yellow-400' : 'text-zinc-700'} 
+                              />
+                            </button>
+                          ))}
+                          <span className="text-[10px] text-zinc-500 ml-2 font-mono">{coachReputation}/5 Stars</span>
+                        </div>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* TIMELINE OBSERVATIONS NOTES LIST */}
-              <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl space-y-4">
-                <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center justify-between font-mono">
-                  <span className="flex items-center gap-1.5">
-                    <MessageSquare size={12} className="text-cyan-400" />
-                    {language === 'en' ? 'Observations Timeline' : 'Notas e Observações (Lançamentos de Valor)'}
-                  </span>
-                  <span className="text-[9px] text-zinc-500 font-mono">
-                    {observations.length} {language === 'en' ? 'entries' : 'entradas'}
-                  </span>
-                </h4>
+                    <div className="space-y-4 p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+                      <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center gap-1.5">
+                        <Award size={12} className="text-yellow-400" />
+                        {language === 'en' ? 'Season Goal Scorer' : 'Melhor Marcador da Época'}
+                      </h4>
 
-                {/* Add new Observation */}
-                <div className="space-y-2">
-                  <textarea 
-                    value={newObsText}
-                    onChange={(e) => setNewObsText(e.target.value)}
-                    placeholder={language === 'en' ? 'Ex: High tactical advantage detected. Strong defense at home...' : 'Insira novo registo (ex: Benfica completo, excelente forma fora de portas)...'}
-                    className="w-full h-16 bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-[#00f2fe] placeholder-zinc-700 outline-none focus:border-cyan-400 font-mono resize-none leading-relaxed"
-                  />
-                  <div className="flex justify-end gap-2">
-                    <button 
-                      onClick={handleAddObservation}
-                      disabled={!newObsText.trim()}
-                      className="px-3.5 py-1.5 bg-cyan-500 text-black text-[11px] font-black uppercase rounded-lg hover:bg-cyan-400 disabled:opacity-50 disabled:hover:bg-cyan-500 flex items-center gap-1 transition-colors font-mono"
-                    >
-                      <Plus size={13} strokeWidth={3} />
-                      {language === 'en' ? 'Insert Entry' : 'Inserir Nota'}
-                    </button>
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'PLAYER:' : 'NOME DO ATLETA:'}</label>
+                        <input 
+                          type="text"
+                          value={topScorerName}
+                          onChange={(e) => setTopScorerName(e.target.value)}
+                          placeholder="Ex: Viktor Gyökeres"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-400 placeholder-zinc-700"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] text-zinc-500 uppercase block font-mono">{language === 'en' ? 'ESTIMATED GOALS:' : 'SOMA DE GOLOS REGISTADOS:'}</label>
+                        <input 
+                          type="number"
+                          value={topScorerGoals}
+                          onChange={(e) => setTopScorerGoals(e.target.value)}
+                          placeholder="Ex: 12"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 outline-none focus:border-cyan-400 placeholder-zinc-700"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                {/* Observations list */}
-                {observations.length === 0 ? (
-                  <p className="text-center py-4 text-[10px] text-zinc-600 font-mono uppercase">
-                    {language === 'en' ? 'No observations for this squad.' : 'Sem notas ou observações associadas a este clube.'}
-                  </p>
-                ) : (
-                  <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
-                    {observations.map((obs) => {
-                      const color = OBSERVATION_PALETTE[obs.colorIndex] || OBSERVATION_PALETTE[0];
-                      return (
-                        <div 
-                          key={obs.id || `obs-${obs.date}-${obs.text}`}
-                          className={`p-2.5 border rounded-lg space-y-1.5 relative transition-all ${color.bg}`}
-                          style={{
-                            boxShadow: `0 0 2px ${color.glow}12`
-                          }}
-                        >
-                          <div className="flex items-center justify-between text-[8px] font-mono border-b border-white/[0.04] pb-1">
-                            <span className="text-zinc-400 flex items-center gap-1">
-                              <Calendar size={10} />
-                              {obs.date}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <button 
-                                onClick={() => cycleColorIndex(obs.id)}
-                                className="hover:scale-110 active:scale-90 transition-transform text-white/40 hover:text-white"
-                                title="Mudar Cor"
-                              >
-                                <Paintbrush size={10} />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteObs(obs.id)}
-                                className="hover:scale-110 active:scale-90 transition-transform text-zinc-500 hover:text-rose-400"
-                                title="Apagar"
-                              >
-                                <X size={10} className="stroke-[3]" />
-                              </button>
-                            </div>
+                  {/* TOP 3 SCORERS SUB-LIST */}
+                  <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl space-y-3">
+                    <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center gap-1.5 font-mono">
+                      <Award size={12} className="text-[#00f2fe]" />
+                      {language === 'en' ? 'Squad Key Scorers (Avançado/Médio)' : 'Plantel de Destaques (Top 3 Melhores Marcadores)'}
+                    </h4>
+
+                    <div className="space-y-2.5">
+                      {top3.map((scorer, index) => (
+                        <div key={scorer.id || `scorer-${index}`} className="grid grid-cols-1 md:grid-cols-12 gap-2 bg-[#060608] p-2.5 rounded-lg border border-zinc-900 items-center">
+                          <div className="md:col-span-1 text-zinc-500 font-bold text-center text-[10px]">{index + 1}</div>
+                          
+                          {/* Name input */}
+                          <div className="md:col-span-4 select-none">
+                            <input 
+                              type="text"
+                              value={scorer.name}
+                              onChange={(e) => {
+                                const updated = [...top3];
+                                updated[index].name = e.target.value;
+                                setTop3(updated);
+                              }}
+                              placeholder={language === 'en' ? `Scorer Name ${index+1}` : `Nome do Jogador ${index+1}`}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-2 py-1 text-[11px] text-white outline-none placeholder-zinc-800 focus:border-cyan-400/50"
+                            />
                           </div>
-                          <p className="text-[11px] text-zinc-200 leading-normal whitespace-pre-line font-mono font-medium">
-                            {obs.text}
-                          </p>
+
+                          {/* Position Select */}
+                          <div className="md:col-span-3">
+                            <select
+                              value={scorer.position}
+                              onChange={(e) => {
+                                const updated = [...top3];
+                                updated[index].position = e.target.value as any;
+                                setTop3(updated);
+                              }}
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-2 py-1 text-[11px] text-zinc-400 outline-none"
+                            >
+                              <option value="Avançado">Avançado</option>
+                              <option value="Médio">Médio</option>
+                              <option value="Defesa">Defesa</option>
+                            </select>
+                          </div>
+
+                          {/* Goals input */}
+                          <div className="md:col-span-2">
+                            <input 
+                              type="number"
+                              value={scorer.goals || ''}
+                              onChange={(e) => {
+                                const updated = [...top3];
+                                updated[index].goals = parseInt(e.target.value) || 0;
+                                setTop3(updated);
+                              }}
+                              placeholder="Golos"
+                              className="w-full bg-zinc-950 border border-zinc-850 rounded px-2 py-1 text-[11px] text-center text-emerald-400 outline-none"
+                            />
+                          </div>
+
+                          {/* Injured toggle */}
+                          <div className="md:col-span-2 text-center flex items-center justify-center gap-1.5">
+                            <input 
+                              type="checkbox"
+                              id={`injured-${scorer.id}`}
+                              checked={scorer.injured}
+                              onChange={(e) => {
+                                const updated = [...top3];
+                                updated[index].injured = e.target.checked;
+                                setTop3(updated);
+                              }}
+                              className="rounded border-zinc-850 bg-zinc-950 accent-rose-500 h-3 w-3"
+                            />
+                            <label htmlFor={`injured-${scorer.id}`} className="text-[10px] text-rose-400 font-bold font-mono uppercase select-none cursor-pointer">
+                              {language === 'en' ? 'INJURED' : 'LESIONADO'}
+                            </label>
+                          </div>
                         </div>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  {/* TIMELINE OBSERVATIONS NOTES LIST */}
+                  <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl space-y-4">
+                    <h4 className="font-bold text-white uppercase tracking-wider text-[10px] border-b border-zinc-900 pb-2 flex items-center justify-between font-mono">
+                      <span className="flex items-center gap-1.5">
+                        <MessageSquare size={12} className="text-cyan-400" />
+                        {language === 'en' ? 'Observations Timeline' : 'Notas e Observações (Lançamentos de Valor)'}
+                      </span>
+                      <span className="text-[9px] text-zinc-500 font-mono">
+                        {observations.length} {language === 'en' ? 'entries' : 'entradas'}
+                      </span>
+                    </h4>
+
+                    {/* Add new Observation */}
+                    <div className="space-y-2">
+                      <textarea 
+                        value={newObsText}
+                        onChange={(e) => setNewObsText(e.target.value)}
+                        placeholder={language === 'en' ? 'Ex: High tactical advantage detected. Strong defense at home...' : 'Insira novo registo (ex: Benfica completo, excelente forma fora de portas)...'}
+                        className="w-full h-16 bg-zinc-950 border border-zinc-800 rounded-lg p-2 text-xs text-[#00f2fe] placeholder-zinc-700 outline-none focus:border-cyan-400 font-mono resize-none leading-relaxed"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button 
+                          type="button"
+                          onClick={handleAddObservation}
+                          disabled={!newObsText.trim()}
+                          className="px-3.5 py-1.5 bg-cyan-500 text-black text-[11px] font-black uppercase rounded-lg hover:bg-cyan-400 disabled:opacity-50 disabled:hover:bg-cyan-500 flex items-center gap-1 transition-colors font-mono"
+                        >
+                          <Plus size={13} strokeWidth={3} />
+                          {language === 'en' ? 'Insert Entry' : 'Inserir Nota'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Observations list */}
+                    {observations.length === 0 ? (
+                      <p className="text-center py-4 text-[10px] text-zinc-600 font-mono uppercase">
+                        {language === 'en' ? 'No observations for this squad.' : 'Sem notas ou observações associadas a este clube.'}
+                      </p>
+                    ) : (
+                      <div className="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
+                        {observations.map((obs) => {
+                          const color = OBSERVATION_PALETTE[obs.colorIndex] || OBSERVATION_PALETTE[0];
+                          return (
+                            <div 
+                              key={obs.id || `obs-${obs.date}-${obs.text}`}
+                              className={`p-2.5 border rounded-lg space-y-1.5 relative transition-all ${color.bg}`}
+                              style={{
+                                boxShadow: `0 0 2px ${color.glow}12`
+                              }}
+                            >
+                              <div className="flex items-center justify-between text-[8px] font-mono border-b border-white/[0.04] pb-1">
+                                <span className="text-zinc-400 flex items-center gap-1">
+                                  <Calendar size={10} />
+                                  {obs.date}
+                                </span>
+                                <div className="flex items-center gap-1.5">
+                                  <button 
+                                    type="button"
+                                    onClick={() => cycleColorIndex(obs.id)}
+                                    className="hover:scale-110 active:scale-90 transition-transform text-white/40 hover:text-white"
+                                    title="Mudar Cor"
+                                  >
+                                    <Paintbrush size={10} />
+                                  </button>
+                                  <button 
+                                    type="button"
+                                    onClick={() => handleDeleteObs(obs.id)}
+                                    className="hover:scale-110 active:scale-90 transition-transform text-zinc-500 hover:text-rose-400"
+                                    title="Apagar"
+                                  >
+                                    <X size={10} className="stroke-[3]" />
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-[11px] text-zinc-200 leading-normal whitespace-pre-line font-mono font-medium">
+                                {obs.text}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
 
             </div>
 
@@ -1355,15 +2112,17 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
               </div>
               <div className="flex items-center gap-2.5">
                 <button 
+                  type="button"
                   onClick={() => setSelectedTeam(null)}
                   className="px-4 py-2 bg-zinc-800 border border-zinc-700 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold font-mono transition-colors"
                 >
                   {language === 'en' ? 'Close' : 'Fechar'}
                 </button>
                 <button 
+                  type="button"
                   onClick={handleSaveMeta}
                   disabled={savingDetail}
-                  className="px-5 py-2 bg-gradient-to-r from-red-650 to-red-600 hover:from-red-600 hover:to-red-550 disabled:opacity-60 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors shadow-lg shadow-red-500/10 border border-red-500/10 font-mono"
+                  className="px-5 py-2 bg-gradient-to-r from-cyan-600 to-cyan-500 hover:from-cyan-500 hover:to-cyan-400 disabled:opacity-60 text-black font-black rounded-xl text-xs uppercase tracking-wider transition-colors shadow-lg shadow-cyan-500/10 font-mono"
                 >
                   {savingDetail 
                     ? (language === 'en' ? 'Saving...' : 'A guardar...') 
@@ -1372,6 +2131,140 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* SUPABASE INFORMATION & SQL UPDATE MODAL (Requirement 6) */}
+      {isSupabaseModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-2xl bg-[#0d0d12] border border-cyan-500/30 rounded-2xl shadow-2xl relative max-h-[90vh] overflow-y-auto flex flex-col text-zinc-300 font-mono">
+            <div className="p-4 sm:p-5 border-b border-zinc-900 flex items-center justify-between bg-zinc-950">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+                  <Database size={18} />
+                </div>
+                <div>
+                  <h3 className="text-sm sm:text-base font-bold text-white">Integração Supabase & Guia de Update</h3>
+                  <p className="text-[10px] text-zinc-400">Chave pública: sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ</p>
+                </div>
+              </div>
+              <button 
+                type="button"
+                onClick={() => setIsSupabaseModalOpen(false)}
+                className="p-1 px-1.5 text-zinc-500 hover:text-white hover:bg-zinc-900 border border-zinc-800 rounded-lg transition-colors"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-zinc-950 border border-zinc-850 rounded-xl space-y-2">
+                <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block">Estado Atual das Tabelas no Supabase:</span>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px]">
+                  <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800">
+                    <span className="text-zinc-500 block text-[9px]">Tabela equipas:</span>
+                    <span className="font-bold text-white">234 equipas</span>
+                  </div>
+                  <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800">
+                    <span className="text-zinc-500 block text-[9px]">Tabela treinadores:</span>
+                    <span className="font-bold text-white">166 treinadores</span>
+                  </div>
+                  <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800">
+                    <span className="text-zinc-500 block text-[9px]">Tabela estadios:</span>
+                    <span className="font-bold text-white">46 estádios</span>
+                  </div>
+                  <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800">
+                    <span className="text-zinc-500 block text-[9px]">Tabela jogadores:</span>
+                    <span className="font-bold text-white">118 atletas</span>
+                  </div>
+                  <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800">
+                    <span className="text-zinc-500 block text-[9px]">Tabela jogos_do_dia:</span>
+                    <span className="font-bold text-emerald-400">3.507 jogos</span>
+                  </div>
+                  <div className="p-2 bg-zinc-900/60 rounded border border-zinc-800">
+                    <span className="text-zinc-500 block text-[9px]">Tabela classificacoes:</span>
+                    <span className="font-bold text-emerald-400">100+ classificações</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-yellow-400 uppercase tracking-wider">Como fazer UPDATE na Supabase (SQL Editor):</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sql = `-- Script de Exemplo para Atualizar no Supabase Studio (SQL Editor)
+-- 1. Assegurar permissão de leitura pública com a chave pública sb_publishable:
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.treinadores FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.estadios FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.jogadores FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.equipas FOR SELECT USING (true);
+
+-- 2. Inserir ou Atualizar Treinador:
+INSERT INTO public.treinadores (nome, nacionalidade, data_nascimento, signo_zodiaco, perfil_lideranca_psicologica, estrelas_treinador_1_a_5, capacidade_motivacao_balneario, esquema_tatico_predileto, dias_no_cargo)
+VALUES ('Nome do Treinador', 'Portugal', '1980-05-12', 'Touro', 'Liderança Tática de Pressão Alta', 4.5, 4, '4-3-3', 180);
+
+-- 3. Inserir ou Atualizar Estádio:
+INSERT INTO public.estadios (nome, cidade, capacidade, tipo_piso, comprimento_metros, largura_metros, qualidade_relvado_1_a_5)
+VALUES ('Nome do Estádio', 'Cidade', 50000, 'Híbrido', 105, 68, 5);
+
+-- 4. Inserir ou Atualizar Atleta na Equipa Tipo:
+INSERT INTO public.jogadores (nome, clube, posicao, titular_habitual, media_rating, numero_camisola, golos_marcados, assistencias, cartoes_amarelos)
+VALUES ('Nome do Atleta', '${selectedTeam.teamName}', 'PL', true, 8.2, 9, 15, 6, 2);`;
+                      navigator.clipboard.writeText(sql);
+                      setCopiedSql(true);
+                      setTimeout(() => setCopiedSql(false), 2500);
+                    }}
+                    className="p-1 px-2.5 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-[10px] font-bold border border-cyan-500/40 flex items-center gap-1.5 transition-colors"
+                  >
+                    {copiedSql ? <CheckCheck size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    <span>{copiedSql ? 'Copiado!' : 'Copiar SQL'}</span>
+                  </button>
+                </div>
+
+                <div className="p-3 bg-zinc-950 border border-zinc-850 rounded-xl overflow-x-auto text-[10px] font-mono text-zinc-300 max-h-48 leading-relaxed">
+                  <pre>{`-- 1. Políticas de Leitura Pública (RLS):
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.treinadores FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.estadios FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.jogadores FOR SELECT USING (true);
+CREATE POLICY IF NOT EXISTS "Allow public read" ON public.equipas FOR SELECT USING (true);
+
+-- 2. Inserir ou Atualizar Treinador:
+INSERT INTO public.treinadores (nome, nacionalidade, data_nascimento, signo_zodiaco, perfil_lideranca_psicologica, estrelas_treinador_1_a_5, capacidade_motivacao_balneario, esquema_tatico_predileto, dias_no_cargo)
+VALUES ('Nome do Treinador', 'Portugal', '1980-05-12', 'Touro', 'Liderança Tática', 4.5, 4, '4-3-3', 180);
+
+-- 3. Inserir ou Atualizar Estádio:
+INSERT INTO public.estadios (nome, cidade, capacidade, tipo_piso, comprimento_metros, largura_metros, qualidade_relvado_1_a_5)
+VALUES ('Nome do Estádio', 'Cidade', 50000, 'Híbrido', 105, 68, 5);
+
+-- 4. Inserir Atleta na Equipa Tipo:
+INSERT INTO public.jogadores (nome, clube, posicao, titular_habitual, media_rating, numero_camisola, golos_marcados, assistencias, cartoes_amarelos)
+VALUES ('Nome do Atleta', '${selectedTeam.teamName}', 'PL', true, 8.2, 9, 15, 6, 2);`}</pre>
+                </div>
+              </div>
+
+              <div className="p-3 bg-cyan-950/20 border border-cyan-500/30 rounded-xl text-[11px] text-cyan-200 space-y-1">
+                <span className="font-bold flex items-center gap-1.5 text-cyan-300">
+                  <Sparkles size={12} />
+                  Transparência de Dados Inteligente iRunBets:
+                </span>
+                <p className="text-zinc-300 text-[10.5px] leading-relaxed">
+                  Mesmo para equipas ou ligas onde ainda não tenha inserido linhas nas tabelas <code className="text-cyan-400">treinadores</code>, <code className="text-cyan-400">estadios</code> ou <code className="text-cyan-400">jogadores</code>, a aplicação calcula automaticamente as métricas com base nos <strong>3.507 jogos reais da tabela jogos_do_dia</strong> e na tabela <strong>classificacoes</strong>, complementando com o modelo calibrado de alta precisão.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-zinc-900 bg-zinc-950 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsSupabaseModalOpen(false)}
+                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition-colors"
+              >
+                Entendido / Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}

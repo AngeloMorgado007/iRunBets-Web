@@ -220,28 +220,28 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
     if (!text) return null;
     return text.split('\n').map((line, i) => {
       if (line.startsWith('### ')) {
-        return <h4 key={i} className="text-xs font-bold text-[#00f2fe] uppercase mt-3 mb-1 font-mono">{line.replace('### ', '')}</h4>;
+        return <h4 key={i} className="text-sm sm:text-base font-bold text-[#00f2fe] uppercase mt-3.5 mb-1.5 font-mono">{line.replace('### ', '')}</h4>;
       }
       if (line.startsWith('## ')) {
-        return <h3 key={i} className="text-sm font-black text-white uppercase mt-3.5 mb-1.5 border-l-2 border-[#00f2fe] pl-2 font-display">{line.replace('## ', '')}</h3>;
+        return <h3 key={i} className="text-base sm:text-lg font-black text-white uppercase mt-4 mb-2 border-l-2 border-[#00f2fe] pl-2 font-display">{line.replace('## ', '')}</h3>;
       }
       if (line.startsWith('# ')) {
-        return <h2 key={i} className="text-base font-black text-[#FFEF00] uppercase mt-4 mb-2 font-display pb-1 border-b border-zinc-800">{line.replace('# ', '')}</h2>;
+        return <h2 key={i} className="text-lg sm:text-xl font-black text-[#FFEF00] uppercase mt-4.5 mb-2.5 font-display pb-1 border-b border-zinc-800">{line.replace('# ', '')}</h2>;
       }
       if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={i} className="text-xs text-zinc-300 font-light ml-4 list-disc mt-1 leading-relaxed">{line.substring(2)}</li>;
+        return <li key={i} className="text-sm sm:text-base text-zinc-200 font-normal ml-4 list-disc mt-1.5 leading-relaxed">{line.substring(2)}</li>;
       }
-      if (line.trim() === '') return <div key={i} className="h-1.5" />;
+      if (line.trim() === '') return <div key={i} className="h-2" />;
       
       const parts = line.split('**');
       if (parts.length > 1) {
         return (
-          <p key={i} className="text-xs text-zinc-300 leading-relaxed mt-1">
+          <p key={i} className="text-sm sm:text-base text-zinc-200 leading-relaxed mt-1.5">
             {parts.map((pPart, idx) => idx % 2 === 1 ? <strong key={idx} className="font-bold text-white pr-0.5">{pPart}</strong> : pPart)}
           </p>
         );
       }
-      return <p key={i} className="text-xs text-zinc-300 leading-relaxed mt-1">{line}</p>;
+      return <p key={i} className="text-sm sm:text-base text-zinc-200 leading-relaxed mt-1.5">{line}</p>;
     });
   };
 
@@ -255,7 +255,7 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
 
       {/* Main Container */}
       <div 
-        className="relative w-full max-w-4xl bg-[#0E0E12] border border-[#00f2fe]/40 rounded-2xl sm:rounded-3xl shadow-[0_0_50px_rgba(0,242,254,0.18)] overflow-hidden flex flex-col my-auto max-h-[92vh] z-10 animate-fade-in"
+        className="relative w-full max-w-[98vw] sm:max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl 2xl:max-w-[1500px] bg-[#0E0E12] border border-[#00f2fe]/40 rounded-2xl sm:rounded-3xl shadow-[0_0_50px_rgba(0,242,254,0.18)] overflow-hidden flex flex-col my-auto max-h-[94vh] z-10 animate-fade-in"
         onClick={(e) => e.stopPropagation()}
         id="hybrid-analysis-modal-container"
       >
@@ -380,39 +380,39 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
               )}
 
               {/* Highlight Best Bet Banner inside Overview */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-500/30 relative overflow-hidden">
+              <div className="p-5 sm:p-6 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-500/30 relative overflow-hidden">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="px-2 py-0.5 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-widest font-mono">
+                      <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-xs font-black uppercase tracking-widest font-mono">
                         {isPt ? 'ENTRADA DE MÁXIMO VALOR' : 'MAX VALUE ENTRY'}
                       </span>
-                      <span className="text-xs font-bold text-amber-400">
+                      <span className="text-sm font-bold text-amber-400">
                         {isPt ? 'Confiança:' : 'Confidence:'} {bestPossibleBet?.confidence || '86%'}
                       </span>
                     </div>
-                    <div className="text-lg sm:text-xl font-black text-white font-display flex items-center gap-2">
-                      <Target className="w-5 h-5 text-amber-400" />
+                    <div className="text-xl sm:text-2xl font-black text-white font-display flex items-center gap-2.5">
+                      <Target className="w-6 h-6 text-amber-400 shrink-0" />
                       <span>{bestPossibleBet?.selection || 'Ambas Marcam (BTTS) / Mais de 2.0 Golos'}</span>
                     </div>
-                    <p className="text-xs text-zinc-300 font-sans leading-relaxed max-w-2xl">
+                    <p className="text-sm sm:text-base text-zinc-200 font-sans leading-relaxed max-w-2xl">
                       {bestPossibleBet?.rationale || 'Estatísticas indicam futebol de transições ricas com expectativa equilibrada de golos, contornando a volatilidade do mercado 1X2 clássico.'}
                     </p>
                   </div>
 
-                  <div className="flex sm:flex-col items-center justify-between sm:items-end gap-2 bg-black/40 p-3 sm:p-4 rounded-xl border border-zinc-800/80 shrink-0">
-                    <span className="text-[10px] uppercase font-bold text-zinc-400 font-mono">
+                  <div className="flex sm:flex-col items-center justify-between sm:items-end gap-2.5 bg-black/40 p-3.5 sm:p-5 rounded-xl border border-zinc-800/80 shrink-0">
+                    <span className="text-xs uppercase font-bold text-zinc-400 font-mono">
                       {isPt ? 'ODD ALVO RECOMENDADA' : 'TARGET ODD'}
                     </span>
-                    <span className="text-xl sm:text-2xl font-black text-[#00f2fe] font-mono">
+                    <span className="text-2xl sm:text-3xl font-black text-[#00f2fe] font-mono">
                       @{bestPossibleBet?.targetOdd || '1.65'}
                     </span>
                     <button
                       type="button"
                       onClick={handleSendBetSlipClick}
-                      className="px-3 py-1.5 bg-[#00f2fe] hover:bg-cyan-400 text-zinc-950 font-black text-[11px] uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="px-3.5 py-2 bg-[#00f2fe] hover:bg-cyan-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
                     >
-                      <Send className="w-3.5 h-3.5" />
+                      <Send className="w-4 h-4" />
                       <span>{isPt ? 'Boletim' : 'Bet Slip'}</span>
                     </button>
                   </div>
@@ -421,47 +421,47 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
 
               {/* 1X2 Probabilities Grid */}
               <div className="space-y-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400 font-mono flex items-center gap-2">
-                  <Activity className="w-4 h-4 text-[#00f2fe]" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-zinc-300 font-mono flex items-center gap-2">
+                  <Activity className="w-4.5 h-4.5 text-[#00f2fe]" />
                   <span>{isPt ? 'Probabilidades 1X2 & Golos Esperados (Poisson EV)' : '1X2 Probabilities & Expected Goals'}</span>
                 </h3>
 
                 <div className="grid grid-cols-3 gap-3">
                   {/* Home */}
-                  <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col items-center text-center">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase truncate max-w-full font-mono mb-1">
+                  <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col items-center text-center">
+                    <span className="text-xs sm:text-sm text-zinc-300 font-bold uppercase truncate max-w-full font-mono mb-1">
                       1 - {homeTeam || 'Casa'}
                     </span>
-                    <span className="text-lg sm:text-xl font-black text-white font-mono">
+                    <span className="text-xl sm:text-2xl font-black text-white font-mono">
                       {homeWinProb.toFixed(1)}%
                     </span>
-                    <span className="text-[10px] text-[#00f2fe] font-bold font-mono mt-0.5">
+                    <span className="text-xs text-[#00f2fe] font-bold font-mono mt-1">
                       Odd: @{fairHomeOdd}
                     </span>
                   </div>
 
                   {/* Draw */}
-                  <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col items-center text-center">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase font-mono mb-1">
+                  <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col items-center text-center">
+                    <span className="text-xs sm:text-sm text-zinc-300 font-bold uppercase font-mono mb-1">
                       X - {isPt ? 'Empate' : 'Draw'}
                     </span>
-                    <span className="text-lg sm:text-xl font-black text-zinc-300 font-mono">
+                    <span className="text-xl sm:text-2xl font-black text-zinc-300 font-mono">
                       {drawProb.toFixed(1)}%
                     </span>
-                    <span className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                    <span className="text-xs text-zinc-400 font-mono mt-1">
                       Odd: @{fairDrawOdd}
                     </span>
                   </div>
 
                   {/* Away */}
-                  <div className="p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col items-center text-center">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase truncate max-w-full font-mono mb-1">
+                  <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 flex flex-col items-center text-center">
+                    <span className="text-xs sm:text-sm text-zinc-300 font-bold uppercase truncate max-w-full font-mono mb-1">
                       2 - {awayTeam || 'Fora'}
                     </span>
-                    <span className="text-lg sm:text-xl font-black text-white font-mono">
+                    <span className="text-xl sm:text-2xl font-black text-white font-mono">
                       {awayWinProb.toFixed(1)}%
                     </span>
-                    <span className="text-[10px] text-[#00f2fe] font-bold font-mono mt-0.5">
+                    <span className="text-xs text-[#00f2fe] font-bold font-mono mt-1">
                       Odd: @{fairAwayOdd}
                     </span>
                   </div>
@@ -471,30 +471,30 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
               {/* Markets Matrix: Over/Under & BTTS */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Over/Under Matrix */}
-                <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300 font-mono flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-200 font-mono flex items-center justify-between">
                     <span>{isPt ? 'Mercados de Golos' : 'Goal Markets'}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono font-normal">Over / Under</span>
+                    <span className="text-xs text-zinc-400 font-mono font-normal">Over / Under</span>
                   </h4>
 
-                  <div className="space-y-2 text-xs font-sans">
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-850">
-                      <span className="text-zinc-300 font-medium">Mais de 1.5 Golos</span>
-                      <span className="font-mono font-bold text-emerald-400">
+                  <div className="space-y-2.5 text-sm font-sans">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-850">
+                      <span className="text-zinc-200 font-medium">Mais de 1.5 Golos</span>
+                      <span className="font-mono font-bold text-emerald-400 text-sm sm:text-base">
                         {over15Prob.toFixed(1)}%
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-850">
-                      <span className="text-zinc-300 font-medium">Mais de 2.5 Golos</span>
-                      <span className="font-mono font-bold text-white">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-850">
+                      <span className="text-zinc-200 font-medium">Mais de 2.5 Golos</span>
+                      <span className="font-mono font-bold text-white text-sm sm:text-base">
                         {over25Prob.toFixed(1)}%
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-850">
-                      <span className="text-zinc-300 font-medium">Menos de 3.5 Golos</span>
-                      <span className="font-mono font-bold text-[#00f2fe]">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-850">
+                      <span className="text-zinc-200 font-medium">Menos de 3.5 Golos</span>
+                      <span className="font-mono font-bold text-[#00f2fe] text-sm sm:text-base">
                         {under35Prob.toFixed(1)}%
                       </span>
                     </div>
@@ -502,30 +502,30 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
                 </div>
 
                 {/* BTTS & Factors Matrix */}
-                <div className="p-4 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-3">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-300 font-mono flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-xl bg-zinc-950/80 border border-zinc-800 space-y-3">
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-zinc-200 font-mono flex items-center justify-between">
                     <span>{isPt ? 'Ambas Marcam & Contexto' : 'BTTS & Match Context'}</span>
-                    <span className="text-[10px] text-zinc-500 font-mono font-normal">Fatores</span>
+                    <span className="text-xs text-zinc-400 font-mono font-normal">Fatores</span>
                   </h4>
 
-                  <div className="space-y-2 text-xs font-sans">
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-850">
-                      <span className="text-zinc-300 font-medium">Ambas Marcam (Sim)</span>
-                      <span className="font-mono font-bold text-amber-400">
+                  <div className="space-y-2.5 text-sm font-sans">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-850">
+                      <span className="text-zinc-200 font-medium">Ambas Marcam (Sim)</span>
+                      <span className="font-mono font-bold text-amber-400 text-sm sm:text-base">
                         {bttsProb.toFixed(1)}%
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-850">
-                      <span className="text-zinc-300 font-medium">Risco Surpresa / Zebra</span>
-                      <span className={`font-mono font-bold ${surpriseRisk > 2 ? 'text-red-400' : 'text-zinc-400'}`}>
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-850">
+                      <span className="text-zinc-200 font-medium">Risco Surpresa / Zebra</span>
+                      <span className={`font-mono font-bold text-sm sm:text-base ${surpriseRisk > 2 ? 'text-red-400' : 'text-zinc-300'}`}>
                         {surpriseRisk}/5 ({surpriseRisk === 0 ? 'Estável' : surpriseRisk <= 2 ? 'Moderado' : 'Crítico'})
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between p-2 rounded-lg bg-zinc-900/60 border border-zinc-850">
-                      <span className="text-zinc-300 font-medium">Rigor Tático</span>
-                      <span className="font-mono font-bold text-[#00f2fe]">
+                    <div className="flex items-center justify-between p-2.5 rounded-lg bg-zinc-900/60 border border-zinc-850">
+                      <span className="text-zinc-200 font-medium">Rigor Tático</span>
+                      <span className="font-mono font-bold text-[#00f2fe] text-sm sm:text-base">
                         {tacticalRigor === 'cup_knockout' ? 'Extremo (-30%)' : tacticalRigor === 'cup_groups' ? 'Rigoroso (-15%)' : 'Padrão (0%)'}
                       </span>
                     </div>
@@ -548,8 +548,8 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
                   </span>
                 </div>
 
-                <div className="space-y-1">
-                  <span className="text-xs text-zinc-400 uppercase font-mono tracking-wider block">
+                <div className="space-y-1.5">
+                  <span className="text-xs sm:text-sm text-zinc-300 font-bold uppercase font-mono tracking-wider block">
                     {isPt ? 'Seleção Recomendada' : 'Recommended Selection'}
                   </span>
                   <h3 className="text-2xl sm:text-3xl font-black text-white font-display">
@@ -557,23 +557,23 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
                   </h3>
                 </div>
 
-                <div className="p-4 rounded-xl bg-black/50 border border-zinc-800/80 space-y-2">
-                  <span className="text-xs font-bold text-zinc-400 uppercase font-mono block">
+                <div className="p-4 sm:p-5 rounded-xl bg-black/50 border border-zinc-800/80 space-y-2.5">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-300 uppercase font-mono block">
                     {isPt ? 'Justificação Detalhada & Análise de Risco:' : 'Detailed Rationale & Risk Analysis:'}
                   </span>
-                  <p className="text-sm text-zinc-200 font-sans leading-relaxed">
+                  <p className="text-sm sm:text-base text-zinc-100 font-sans leading-relaxed">
                     {bestPossibleBet?.rationale || 'Estatísticas indicam futebol de transições ricas com expectativa de 3.05 golos, contornando a volatilidade do mercado 1X2 clássico.'}
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 font-medium">{isPt ? 'Odd Mínima de Valor (+EV):' : 'Min +EV Odd:'}</span>
-                    <span className="text-base font-black text-[#00f2fe] font-mono">@{bestPossibleBet?.targetOdd || '1.65'}</span>
+                  <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-zinc-300 font-medium">{isPt ? 'Odd Mínima de Valor (+EV):' : 'Min +EV Odd:'}</span>
+                    <span className="text-lg sm:text-xl font-black text-[#00f2fe] font-mono">@{bestPossibleBet?.targetOdd || '1.65'}</span>
                   </div>
-                  <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
-                    <span className="text-xs text-zinc-400 font-medium">{isPt ? 'Gestão de Stake Recomendada:' : 'Recommended Stake:'}</span>
-                    <span className="text-base font-black text-emerald-400 font-mono">1.0% - 2.5%</span>
+                  <div className="p-3.5 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-between">
+                    <span className="text-xs sm:text-sm text-zinc-300 font-medium">{isPt ? 'Gestão de Stake Recomendada:' : 'Recommended Stake:'}</span>
+                    <span className="text-lg sm:text-xl font-black text-emerald-400 font-mono">1.0% - 2.5%</span>
                   </div>
                 </div>
 
@@ -582,7 +582,7 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSendBetSlipClick}
-                    className="w-full sm:flex-1 py-3 px-4 bg-gradient-to-r from-[#00f2fe] to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:flex-1 py-3 px-4 bg-gradient-to-r from-[#00f2fe] to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-zinc-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-cyan-500/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Send className="w-4 h-4" />
                     <span>{isPt ? 'Adicionar ao Boletim de Apostas' : 'Add to Bet Slip'}</span>
@@ -591,7 +591,7 @@ export const HybridAnalysisModal: React.FC<HybridAnalysisModalProps> = ({
                   <button
                     type="button"
                     onClick={handleSendHomepageClick}
-                    className="w-full sm:flex-1 py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-zinc-950 font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-orange-500/10 flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:flex-1 py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-zinc-950 font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-orange-500/10 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <Share2 className="w-4 h-4" />
                     <span>{isPt ? 'Publicar na Página Inicial' : 'Publish to Homepage'}</span>

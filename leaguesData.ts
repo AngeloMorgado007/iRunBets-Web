@@ -232,7 +232,17 @@ export const GLOBAL_LEAGUES_TEAMS_MAP: Record<string, string[]> = {
     "Palmeiras", "Flamengo", "Botafogo", "Grêmio", "Atlético Mineiro", "São Paulo", 
     "Fluminense", "Athletico Paranaense", "Internacional", "Fortaleza", "Bahia", 
     "Cruzeiro", "Corinthians", "Vasco da Gama", "Criciúma", "Juventude", "Atlético Goianiense", 
-    "Cuiabá", "Vitória", "Red Bull Bragantino"
+    "Cuiabá", "Vitória", "Red Bull Bragantino", "Remo", "Clube do Remo"
+  ],
+
+  // --- ARGENTINA ---
+  "Liga Profesional (Argentina)": [
+    "River Plate", "Boca Juniors", "Racing Club", "San Lorenzo", "Independiente", 
+    "Vélez Sarsfield", "Estudiantes de La Plata", "Huracán", "Talleres de Córdoba", 
+    "Newell's Old Boys", "Rosario Central", "Lanús", "Defensa y Justicia", 
+    "Argentinos Juniors", "Belgrano", "Godoy Cruz", "Gimnasia La Plata", "Banfield", 
+    "Tigre", "Platense", "Unión de Santa Fe", "Central Córdoba", "Instituto", 
+    "Barracas Central", "Sarmiento", "Deportivo Riestra", "Atlético Tucumán", "Independiente Rivadavia"
   ],
 
   // --- ESTADOS UNIDOS ---

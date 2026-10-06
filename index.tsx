@@ -6,7 +6,12 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import ErrorBoundary from './components/ErrorBoundary';
 import { LanguageProvider } from './services/LanguageContext';
+
+if (typeof window !== 'undefined') {
+  (window as any).textoAnalise = (window as any).textoAnalise || 'Análise quantitativa SuperIA';
+}
 
 // Safe non-blocking protection logic for sandbox environment WebSocket connection logs
 if (typeof window !== 'undefined') {
@@ -47,8 +52,10 @@ if (!rootElement) {
 const root = createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <LanguageProvider>
-      <App />
-    </LanguageProvider>
+    <ErrorBoundary>
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
+    </ErrorBoundary>
   </React.StrictMode>
 );

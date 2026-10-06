@@ -125,6 +125,10 @@
     "/webBetSlips/{slipId}": {
       "schema": "BetSlip",
       "description": "Central isolada de boletins registados a partir do site Web, protegendo o histórico do iOS"
+    },
+    "/cached_data/{docId}": {
+      "schema": "CachedData",
+      "description": "Cache de dados de ligas, classificações e perfis de equipas sincronizados pelo servidor proxy"
     }
   }
 }

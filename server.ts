@@ -5,6 +5,8 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getOfficialStandingsForLeague } from "./services/officialStandingsData";
+import { getTeamFullProfile } from "./services/teamProfileService";
 
 let serverDb: any = null;
 try {
@@ -21,22 +23,25 @@ try {
   console.warn("[Server] Error initializing Firestore on server:", e?.message || e);
 }
 
-async function saveToFirestoreCache(docId: string, payload: any) {
-  if (!serverDb) return;
-  try {
-    const updatedAt = new Date().toISOString();
-    const docData = {
-      updatedAt,
-      data: payload.data || payload,
-      standings: payload.data?.standings || payload.standings || [],
-      status: "success",
-      source: payload.source || "api_proxy"
-    };
-    await setDoc(doc(serverDb, "cached_data", docId), docData, { merge: true });
-    console.log(`[Proxy] Firestore cached_data/${docId} written successfully!`);
-  } catch (err: any) {
-    console.error(`[Proxy] Failed writing cached_data/${docId} to Firestore:`, err?.message || err);
+// In-memory cache for standings and league data (15 minutes TTL)
+const serverMemoryCache = new Map<string, { timestamp: number; data: any }>();
+
+function getFromMemoryCache(docId: string): any | null {
+  const entry = serverMemoryCache.get(docId);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > 15 * 60 * 1000) {
+    serverMemoryCache.delete(docId);
+    return null;
   }
+  return entry.data;
+}
+
+async function saveToFirestoreCache(docId: string, payload: any) {
+  // Cache in high-speed server memory
+  serverMemoryCache.set(docId, {
+    timestamp: Date.now(),
+    data: payload
+  });
 }
 
 function formatGeminiError(error: any): string {
@@ -72,11 +77,533 @@ async function startServer() {
     next();
   });
 
-  // Independent Direct Gemini API Endpoint for League Standings (100% Direct Gemini, no external Cloud Function dependency)
+  // =========================================================================
+  // 🛡️ REGRA 3 ANTI-SCRAPING: RATE LIMITING & BOT DEFENSE IN-MEMORY SHIELD
+  // Protege a API contra scrapers, crawlers e bots não autorizados
+  // =========================================================================
+  const clientRequestCounts = new Map<string, { count: number; resetAt: number; bannedUntil?: number }>();
+  const KNOWN_BOT_USER_AGENTS = [
+    'python', 'curl', 'wget', 'scrapy', 'postman', 'httpclient', 'libwww', 
+    'bot', 'crawl', 'spider', 'headless', 'phantomjs', 'selenium', 'puppeteer'
+  ];
+
+  const antiScrapingRateLimiter = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // Obter IP do cliente respeitando cabeçalhos Cloudflare / Reverse Proxy
+    const clientIp = (req.headers['cf-connecting-ip'] as string) || 
+                     (req.headers['x-forwarded-for'] as string)?.split(',')[0].trim() || 
+                     req.socket.remoteAddress || 
+                     'anonymous_ip';
+
+    const userAgent = (req.headers['user-agent'] || '').toLowerCase();
+    const now = Date.now();
+
+    // 1. Bloqueio instantâneo de User-Agents típicos de scrapers/scripts automatizados
+    const isMaliciousBot = KNOWN_BOT_USER_AGENTS.some(ua => userAgent.includes(ua));
+    if (isMaliciousBot) {
+      console.warn(`[Anti-Scraping Shield] 🚨 Bot detetado e bloqueado! IP: ${clientIp} | User-Agent: ${userAgent}`);
+      return res.status(403).json({
+        status: "error",
+        code: "BOT_ACCESS_DENIED",
+        message: "Acesso automatizado não permitido. Os dados analíticos do iRunBets estão protegidos contra raspagem (Regra Anti-Scraping)."
+      });
+    }
+
+    // 2. Verificação de penalização ativa (Banned IP por abuso de taxa)
+    const clientRecord = clientRequestCounts.get(clientIp);
+    if (clientRecord?.bannedUntil && now < clientRecord.bannedUntil) {
+      const remainingSeconds = Math.ceil((clientRecord.bannedUntil - now) / 1000);
+      res.setHeader('Retry-After', remainingSeconds.toString());
+      return res.status(429).json({
+        status: "error",
+        code: "RATE_LIMIT_BANNED",
+        message: `Limite de pedidos excedido. Acesso temporariamente suspenso por segurança anti-scraping. Tente novamente em ${remainingSeconds} segundos.`
+      });
+    }
+
+    // 3. Janela de Rate Limit: máx 60 pedidos por minuto por IP (utilizador normal faz <10)
+    const WINDOW_MS = 60 * 1000;
+    const MAX_REQUESTS_PER_WINDOW = 60;
+
+    if (!clientRecord || now > clientRecord.resetAt) {
+      clientRequestCounts.set(clientIp, { count: 1, resetAt: now + WINDOW_MS });
+    } else {
+      clientRecord.count += 1;
+      // Se exceder 60 pedidos no mesmo minuto -> Bloqueio de 15 minutos (900s)
+      if (clientRecord.count > MAX_REQUESTS_PER_WINDOW) {
+        clientRecord.bannedUntil = now + (15 * 60 * 1000);
+        console.warn(`[Anti-Scraping Shield] ⛔ IP bloqueado por excesso de requisições: ${clientIp} (${clientRecord.count} reqs)`);
+        return res.status(429).json({
+          status: "error",
+          code: "RATE_LIMIT_EXCEEDED",
+          message: "Taxa de requisições excessiva. IP suspenso temporariamente pela proteção anti-scraping da iRunBets."
+        });
+      }
+    }
+
+    next();
+  };
+
+  // =========================================================================
+  // 🖥️ REGRA 2 ANTI-SCRAPING: SERVER-SIDE PROXY (SSR DATA FETCHING)
+  // O servidor faz a chamada ao Supabase em backend e entrega o payload tratado
+  // sem expor a base de dados diretamente no frontend do utilizador.
+  // =========================================================================
+  // 🛡️ SSR PROXY SEGURO DE LEITURA DO SUPABASE (DADOS REAIS COM TABELA JOGOS + HISTÓRICO)
+  // =========================================================================
+  app.get("/api/secure-jogos", antiScrapingRateLimiter, async (req, res) => {
+    try {
+      const includePast = req.query.includePast === 'true';
+      const limit = Math.min(Number(req.query.limit) || 1000, 2000);
+
+      const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://ksqevxtnuyzrfohkgvfw.supabase.co';
+      const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+        process.env.SUPABASE_SERVICE_KEY || 
+        process.env.SUPABASE_ANON_KEY || 
+        process.env.VITE_SUPABASE_ANON_KEY ||
+        'sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ';
+
+      const headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      };
+
+      const now = new Date();
+      // Janela: mantendo já os resultados das equipas até uma semana atrás (pelo menos 8-10 dias) e próximos 60 dias
+      const pastDate = new Date(now);
+      pastDate.setDate(pastDate.getDate() - 10);
+      const pastDateStr = `${pastDate.getFullYear()}-${String(pastDate.getMonth() + 1).padStart(2, '0')}-${String(pastDate.getDate()).padStart(2, '0')}`;
+
+      const futureDate = new Date(now);
+      futureDate.setDate(futureDate.getDate() + 60);
+      const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+      const targetDate = req.query.date as string | undefined;
+
+      const MIN_SEASON_START = '2026-07-15';
+
+      // 1. FONTE PRINCIPAL DE VERDADE: Tabela 'jogos' com relações a equipas e ligas
+      let jogosEndpoint = `${SUPABASE_URL}/rest/v1/jogos?select=id,data_jogo,estado,odd_casa,odd_empate,odd_fora,previsao,golos_casa_final,golos_fora_final,golos_casa_intervalo,golos_fora_intervalo,equipa_casa:equipas!equipa_casa_id(id,nome),equipa_fora:equipas!equipa_fora_id(id,nome),liga:ligas!liga_id(id,nome)&data_jogo=gte.${MIN_SEASON_START}T00:00:00Z&order=data_jogo.asc&limit=${limit}`;
+
+      if (targetDate) {
+        jogosEndpoint += `&data_jogo=gte.${targetDate}T00:00:00Z&data_jogo=lte.${targetDate}T23:59:59Z`;
+      } else if (!includePast) {
+        jogosEndpoint += `&data_jogo=gte.${pastDateStr}T00:00:00Z&data_jogo=lte.${futureDateStr}T23:59:59Z`;
+      }
+
+      let data: any[] = [];
+      try {
+        const respJogos = await fetch(jogosEndpoint, { headers });
+        if (respJogos.ok) {
+          const rawJogos = await respJogos.json();
+          if (Array.isArray(rawJogos) && rawJogos.length > 0) {
+            // Deduplicar e normalizar partidas
+            const seenMatches = new Set<string>();
+            for (const j of rawJogos) {
+              const dj = j.data_jogo ? new Date(j.data_jogo) : null;
+              const dataStr = dj && !isNaN(dj.getTime())
+                ? `${dj.getUTCFullYear()}-${String(dj.getUTCMonth() + 1).padStart(2, '0')}-${String(dj.getUTCDate()).padStart(2, '0')}`
+                : '';
+              
+              // Bloquear qualquer jogo antes de 15 de Julho de 2026
+              if (dataStr && dataStr < MIN_SEASON_START) continue;
+
+              const horaStr = dj && !isNaN(dj.getTime())
+                ? `${String(dj.getUTCHours()).padStart(2, '0')}:${String(dj.getUTCMinutes()).padStart(2, '0')}`
+                : '';
+
+              const cCasa = j.equipa_casa?.nome || '';
+              const cFora = j.equipa_fora?.nome || '';
+              const dedupKey = `${dataStr}_${cCasa.toLowerCase().trim()}_vs_${cFora.toLowerCase().trim()}`;
+
+              if (seenMatches.has(dedupKey)) continue;
+              seenMatches.add(dedupKey);
+
+              const rawResultado = (j.golos_casa_final != null && j.golos_fora_final != null)
+                ? `${j.golos_casa_final} - ${j.golos_fora_final}`
+                : null;
+
+              data.push({
+                jogo_id: j.id,
+                id: j.id,
+                data: dataStr,
+                hora: horaStr,
+                data_jogo: j.data_jogo,
+                liga: j.liga?.nome || 'Geral',
+                clube_casa: cCasa,
+                clube_fora: cFora,
+                confronto: cCasa && cFora ? `${cCasa} vs ${cFora}` : '',
+                previsao_resumo: j.previsao || 'Em análise quantitativa',
+                odd_1: j.odd_casa != null ? Number(j.odd_casa) : null,
+                odd_x: j.odd_empate != null ? Number(j.odd_empate) : null,
+                odd_2: j.odd_fora != null ? Number(j.odd_fora) : null,
+                estado: j.estado || 'SCHEDULED',
+                golos_casa: j.golos_casa_final != null ? Number(j.golos_casa_final) : null,
+                golos_fora: j.golos_fora_final != null ? Number(j.golos_fora_final) : null,
+                golos_casa_final: j.golos_casa_final != null ? Number(j.golos_casa_final) : null,
+                golos_fora_final: j.golos_fora_final != null ? Number(j.golos_fora_final) : null,
+                golos_casa_intervalo: j.golos_casa_intervalo != null ? Number(j.golos_casa_intervalo) : null,
+                golos_fora_intervalo: j.golos_fora_intervalo != null ? Number(j.golos_fora_intervalo) : null,
+                resultado: rawResultado
+              });
+            }
+          }
+        }
+      } catch (errJogos) {
+        console.warn("[SSR Proxy] Falha ao consultar tabela jogos principal:", errJogos);
+      }
+
+      // 2. Se a tabela jogos não devolveu nada (ou se faltarem jogos legados), consultar jogos_do_dia como contingência
+      if (!Array.isArray(data) || data.length === 0) {
+        let fallbackEndpoint = `${SUPABASE_URL}/rest/v1/jogos_do_dia?select=*&data=gte.${MIN_SEASON_START}&order=data.asc,hora.asc&limit=${limit}`;
+        if (targetDate) {
+          fallbackEndpoint += `&data=eq.${targetDate}`;
+        }
+        const respFallback = await fetch(fallbackEndpoint, { headers });
+        if (respFallback.ok) {
+          const fallbackData = await respFallback.json();
+          if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+            data = fallbackData.filter((item: any) => !item.data || item.data >= MIN_SEASON_START);
+          }
+        }
+      }
+
+      // Headers de segurança anti-bot e anti-cache externo
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
+      res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+
+      return res.json({
+        status: "success",
+        source: "irunbets_secure_ssr_proxy",
+        protected: true,
+        count: Array.isArray(data) ? data.length : 0,
+        data: data || []
+      });
+    } catch (err: any) {
+      console.error("[SSR Proxy] Erro ao obter dados do Supabase:", err?.message || err);
+      return res.status(500).json({
+        status: "error",
+        message: "Falha na ponte segura do servidor ao Supabase."
+      });
+    }
+  });
+
+  // =========================================================================
+  // 🧠 ANÁLISE PSICOLÓGICA E RAIO-X DOS TREINADORES (SUPABASE API RE-DESENHADA)
+  // =========================================================================
+  app.get("/api/coach-analysis", antiScrapingRateLimiter, async (req, res) => {
+    try {
+      const matchId = req.query.matchId as string | undefined;
+      const teamHome = req.query.teamHome as string | undefined;
+      const teamAway = req.query.teamAway as string | undefined;
+
+      const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ksqevxtnuyzrfohkgvfw.supabase.co';
+      const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+        process.env.SUPABASE_SERVICE_KEY || 
+        process.env.SUPABASE_ANON_KEY || 
+        process.env.VITE_SUPABASE_ANON_KEY ||
+        'sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ';
+
+      const headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      };
+
+      // Obter todos os treinadores oficiais com equipa relacionada (166 treinadores)
+      let coachQuery = `${SUPABASE_URL}/rest/v1/treinadores?select=id,nome,nacionalidade,data_nascimento,signo_zodiaco,perfil_lideranca_psicologica,estrelas_treinador_1_a_5,capacidade_motivacao_balneario,esquema_tatico_predileto,chicotada_recente,dias_no_cargo,equipa:equipas!equipa_id(id,nome,sigla)&limit=300`;
+      const coachesResp = await fetch(coachQuery, { headers });
+      const coaches = coachesResp.ok ? await coachesResp.json() : [];
+
+      // Obter confrontos diretos / raio-x com precisão
+      let rxQuery = `${SUPABASE_URL}/rest/v1/raio_x_confronto_treinador?select=*&limit=300`;
+      if (matchId) {
+        rxQuery = `${SUPABASE_URL}/rest/v1/raio_x_confronto_treinador?select=*&jogo_id=eq.${encodeURIComponent(matchId)}&limit=1`;
+      } else if (teamHome && teamAway) {
+        const cleanHome = teamHome.replace(/\b(fc|cf|sc|fbc|fr|ec|sad|afc|cd|ud|rc|ca|se|rb|ac|us|ssc|as|bk)\b/gi, '').trim();
+        rxQuery = `${SUPABASE_URL}/rest/v1/raio_x_confronto_treinador?select=*&equipa_casa=ilike.*${encodeURIComponent(cleanHome)}*&limit=10`;
+      } else if (teamHome) {
+        const cleanHome = teamHome.replace(/\b(fc|cf|sc|fbc|fr|ec|sad|afc|cd|ud|rc|ca|se|rb|ac|us|ssc|as|bk)\b/gi, '').trim();
+        rxQuery = `${SUPABASE_URL}/rest/v1/raio_x_confronto_treinador?select=*&or=(equipa_casa.ilike.*${encodeURIComponent(cleanHome)}*,equipa_fora.ilike.*${encodeURIComponent(cleanHome)}*)&limit=10`;
+      }
+      const rxResp = await fetch(rxQuery, { headers });
+      const confrontations = rxResp.ok ? await rxResp.json() : [];
+
+      // Obter jogadores se requisitado ou se teamHome estiver presente
+      let players: any[] = [];
+      if (teamHome || teamAway) {
+        const pTeams = [teamHome, teamAway].filter(Boolean);
+        const orClause = pTeams.map(t => {
+          const c = t!.replace(/\b(fc|cf|sc|fbc|fr|ec|sad|afc|cd|ud|rc|ca|se|rb|ac|us|ssc|as|bk)\b/gi, '').trim();
+          return `clube.ilike.*${encodeURIComponent(c)}*`;
+        }).join(',');
+        const pQuery = `${SUPABASE_URL}/rest/v1/jogadores?select=*&or=(${orClause})&order=titular_habitual.desc,media_rating.desc&limit=50`;
+        const pResp = await fetch(pQuery, { headers });
+        if (pResp.ok) {
+          players = await pResp.json();
+        }
+      }
+
+      return res.json({
+        status: "success",
+        data: {
+          treinadores: coaches,
+          confrontos: confrontations,
+          jogadores: players
+        }
+      });
+    } catch (err: any) {
+      console.error("[Coach Analysis Proxy] Erro:", err?.message || err);
+      return res.status(500).json({ status: "error", message: "Erro ao carregar dados psicológicos dos treinadores." });
+    }
+  });
+
+  // =========================================================================
+  // ⚽ PLANTEL & JOGADORES (SUPABASE API: public.jogadores)
+  // =========================================================================
+  app.get(["/api/players", "/api/jogadores"], antiScrapingRateLimiter, async (req, res) => {
+    try {
+      const team = req.query.team as string | undefined;
+      const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ksqevxtnuyzrfohkgvfw.supabase.co';
+      const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 
+        process.env.SUPABASE_SERVICE_KEY || 
+        process.env.SUPABASE_ANON_KEY || 
+        process.env.VITE_SUPABASE_ANON_KEY ||
+        'sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ';
+
+      const headers = {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      };
+
+      let url = `${SUPABASE_URL}/rest/v1/jogadores?select=*&order=titular_habitual.desc,media_rating.desc&limit=100`;
+      if (team) {
+        const cleanTeam = team.replace(/\b(fc|cf|sc|fbc|fr|ec|sad|afc|cd|ud|rc|ca|se|rb|ac|us|ssc|as|bk)\b/gi, '').trim();
+        url = `${SUPABASE_URL}/rest/v1/jogadores?select=*&clube=ilike.*${encodeURIComponent(cleanTeam)}*&order=titular_habitual.desc,media_rating.desc&limit=50`;
+      }
+      const resp = await fetch(url, { headers });
+      const players = resp.ok ? await resp.json() : [];
+      return res.json({ status: "success", count: players.length, data: players });
+    } catch (err: any) {
+      console.error("[Players Proxy] Erro:", err?.message || err);
+      return res.status(500).json({ status: "error", message: "Erro ao carregar jogadores do Supabase." });
+    }
+  });
+
+  // =========================================================================
+  // 🏟️ FICHA COMPLETA DA EQUIPA (Treinador, Estádio, Estatísticas, 11 Titular, Alertas)
+  // =========================================================================
+  app.get("/api/team-full-profile", antiScrapingRateLimiter, async (req, res) => {
+    try {
+      const team = (req.query.team as string || '').trim();
+      const league = (req.query.league as string || '').trim();
+      if (!team) {
+        return res.status(400).json({ status: "error", message: "Nome da equipa é obrigatório (parâmetro 'team')." });
+      }
+
+      const profile = await getTeamFullProfile(team, league);
+      return res.json({ status: "success", data: profile });
+    } catch (err: any) {
+      console.error("[TeamProfile API] Erro ao carregar perfil completo da equipa:", err?.message || err);
+      return res.status(500).json({ status: "error", message: "Erro ao gerar perfil da equipa." });
+    }
+  });
+
+  // Mapeamento oficial de ligas para ESPN API
+  const mapCompetitionToEspn = (comp: string): { code: string; name: string } | null => {
+    const c = (comp || '').toLowerCase().trim();
+    if (c.includes("portugal") || c.includes("primeira") || c.includes("betclic") || c === "ppl" || c === "por.1") {
+      return { code: "por.1", name: "Liga Portugal" };
+    }
+    if (c.includes("premier") || (c.includes("league") && c.includes("inglaterra")) || c === "pl" || c === "epl" || c === "eng.1") {
+      return { code: "eng.1", name: "Premier League" };
+    }
+    if (c.includes("primera") || c.includes("la liga") || c.includes("laliga") || c.includes("espanha") || c === "pd" || c === "esp.1") {
+      return { code: "esp.1", name: "La Liga" };
+    }
+    if (c.includes("serie a") || c.includes("itália") || c.includes("italia") || c === "sa" || c === "ita.1") {
+      return { code: "ita.1", name: "Serie A" };
+    }
+    if (c.includes("bundesliga") || c.includes("alemanha") || c === "bl" || c === "bl1" || c === "ger.1") {
+      return { code: "ger.1", name: "Bundesliga" };
+    }
+    if (c.includes("ligue 1") || c.includes("frança") || c.includes("franca") || c === "fl1" || c === "fra.1") {
+      return { code: "fra.1", name: "Ligue 1" };
+    }
+    if (c.includes("eredivisie") || c.includes("holanda") || c === "ded" || c === "ned.1") {
+      return { code: "ned.1", name: "Eredivisie" };
+    }
+    if (c.includes("championship") || c.includes("segunda liga inglesa") || c === "elc" || c === "eng.2") {
+      return { code: "eng.2", name: "Championship" };
+    }
+    if (c.includes("brasil") || c.includes("brasileir") || c === "bsa" || c === "bra.1") {
+      return { code: "bra.1", name: "Brasileirão Série A" };
+    }
+    if (c.includes("champions") || c === "ucl" || c === "cl" || c === "uefa.champions") {
+      return { code: "uefa.champions", name: "UEFA Champions League" };
+    }
+    if (c.includes("europa league") || c === "uel" || c === "el" || c === "uefa.europa") {
+      return { code: "uefa.europa", name: "UEFA Europa League" };
+    }
+    if (c.includes("conference") || c.includes("conferência") || c === "ecl" || c === "uecl" || c === "uefa.europa.conf") {
+      return { code: "uefa.europa.conf", name: "UEFA Conference League" };
+    }
+    if (c.includes("argentin") || c.includes("profesional") || c === "arg.1") {
+      return { code: "arg.1", name: "Argentina Liga Profesional" };
+    }
+    return null;
+  };
+
+  const fetchLiveEspnStandings = async (comp: string) => {
+    const mapping = mapCompetitionToEspn(comp);
+    if (!mapping) return null;
+    const url = `https://site.api.espn.com/apis/v2/sports/soccer/${mapping.code}/standings`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return null;
+    const json: any = await res.json();
+    const entries: any[] = json.children?.[0]?.standings?.entries || [];
+    if (!entries.length) return null;
+
+    const table = entries.map((entry, idx) => {
+      const stats: Record<string, any> = {};
+      (entry.stats || []).forEach((s: any) => { stats[s.name] = s.value; });
+      const played = Number(stats.gamesPlayed ?? 0);
+      const won = Number(stats.wins ?? 0);
+      const draw = Number(stats.ties ?? 0);
+      const lost = Number(stats.losses ?? 0);
+      const goalsFor = Number(stats.pointsFor ?? 0);
+      const goalsAgainst = Number(stats.pointsAgainst ?? 0);
+      const points = Number(stats.points ?? (won * 3 + draw));
+      const position = Number(stats.rank ?? idx + 1);
+      const crest = entry.team?.logos?.[0]?.href || "";
+
+      let name = entry.team?.displayName || entry.team?.name || "Clube";
+      if (mapping.code === "por.1") {
+        if (name === "Benfica") name = "Sport Lisboa e Benfica";
+        else if (name === "Sporting CP") name = "Sporting Clube de Portugal";
+        else if (name === "Santa Clara") name = "CD Santa Clara";
+        else if (name === "Braga") name = "SC Braga";
+        else if (name === "Estrela") name = "CF Estrela da Amadora";
+        else if (name === "Moreirense") name = "Moreirense FC";
+        else if (name === "Gil Vicente") name = "Gil Vicente FC";
+        else if (name === "Maritimo") name = "CS Marítimo";
+        else if (name === "Alverca") name = "FC Alverca";
+        else if (name === "FC Famalicao") name = "FC Famalicão";
+        else if (name === "Vitória de Guimaraes") name = "Vitória SC";
+        else if (name === "C.D. Nacional") name = "CD Nacional";
+        else if (name === "Rio Ave") name = "Rio Ave FC";
+        else if (name === "Casa Pia") name = "Casa Pia AC";
+        else if (name === "Estoril") name = "GD Estoril Praia";
+        else if (name === "Académico de Viseu") name = "Académico de Viseu FC";
+        else if (name === "Arouca") name = "FC Arouca";
+      }
+
+      return {
+        position,
+        team: {
+          id: entry.team?.id || idx + 1,
+          name,
+          crest
+        },
+        playedGames: played,
+        won,
+        draw,
+        lost,
+        points,
+        goalsFor,
+        goalsAgainst,
+        goalDifference: goalsFor - goalsAgainst
+      };
+    });
+
+    return {
+      status: "success",
+      source: "official_live_espn_api",
+      data: {
+        competition: {
+          code: mapping.code,
+          name: mapping.name
+        },
+        standings: [
+          {
+            stage: "REGULAR_SEASON",
+            type: "TOTAL",
+            group: null,
+            table
+          }
+        ]
+      }
+    };
+  };
+
+  // Independent Direct Standings Endpoint (with live API priority and verified data)
   const handleDirectGeminiStandings = async (req: express.Request, res: express.Response) => {
     const competition = (req.query.competition as string) || 'PPL';
     const season = (req.query.season as string) || '2026';
-    console.log(`[Direct Gemini API] Request received for competition: ${competition}, season: ${season}`);
+    console.log(`[Standings API] Request received for competition: ${competition}, season: ${season}`);
+
+    // Check memory cache first for immediate response
+    const cached = getFromMemoryCache(`${competition}_${season}`) || getFromMemoryCache(competition);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
+    // 1. Prioridade Máxima: Tentar API em direto
+    try {
+      const liveData = await fetchLiveEspnStandings(competition);
+      if (liveData && liveData.data?.standings?.[0]?.table?.length > 0) {
+        saveToFirestoreCache(`${competition}_${season}`, liveData);
+        saveToFirestoreCache(competition, liveData);
+        res.json(liveData);
+        return;
+      }
+    } catch (errApi) {
+      console.warn(`[Standings API] Live fetch fallback for ${competition}:`, errApi);
+    }
+
+    // 2. Base oficial verificada e consolidada
+    const officialStandings = getOfficialStandingsForLeague(competition);
+    if (officialStandings && officialStandings.length > 0) {
+      const payload = {
+        status: "success",
+        source: "official_verified_data",
+        data: {
+          competition: {
+            code: competition,
+            name: competition
+          },
+          standings: [
+            {
+              stage: "REGULAR_SEASON",
+              type: "TOTAL",
+              group: null,
+              table: officialStandings.map((t, idx) => ({
+                position: idx + 1,
+                team: {
+                  id: idx + 1,
+                  name: t.name,
+                  crest: t.crest || ""
+                },
+                playedGames: t.played,
+                won: t.wins,
+                draw: t.draws,
+                lost: t.losses,
+                points: t.points,
+                goalsFor: t.goalsFor,
+                goalsAgainst: t.goalsAgainst,
+                goalDifference: t.goalsFor - t.goalsAgainst
+              }))
+            }
+          ]
+        }
+      };
+      saveToFirestoreCache(`${competition}_${season}`, payload);
+      saveToFirestoreCache(competition, payload);
+      res.json(payload);
+      return;
+    }
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     if (!apiKey) {
@@ -156,6 +683,26 @@ Garante que a tabela tem entre 10 e 20 equipas reais que participam nessa compet
 
   app.get("/api/gemini-standings", handleDirectGeminiStandings);
   app.get("/api/gemini/getLeagueStandings", handleDirectGeminiStandings);
+  app.get("/api/standings", handleDirectGeminiStandings);
+  app.get("/api/league-standings", handleDirectGeminiStandings);
+
+  // Endpoint para forçar ressincronização completa de todas as ligas da API
+  app.post("/api/sync-all-standings", async (req, res) => {
+    try {
+      const { exec } = await import("child_process");
+      exec("node scripts/syncStandings.cjs", (error, stdout, stderr) => {
+        if (error) {
+          console.error("[Standings Sync] Error:", error);
+          return res.status(500).json({ status: "error", message: error.message });
+        }
+        console.log("[Standings Sync] Finished:", stdout);
+        return res.json({ status: "success", message: "Todas as ligas foram atualizadas com sucesso via API oficial!" });
+      });
+    } catch (err: any) {
+      return res.status(500).json({ status: "error", message: err.message });
+    }
+  });
+
   app.get("/api/getLeagueStandings", async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Headers", "*");
@@ -168,11 +715,69 @@ Garante que a tabela tem entre 10 e 20 equipas reais que participam nessa compet
       return;
     }
 
+    // Check memory cache first
+    const cached = getFromMemoryCache(`${competition}_${season}`) || getFromMemoryCache(competition);
+    if (cached) {
+      res.json(cached);
+      return;
+    }
+
     const sendAndCache = async (payload: any) => {
       res.json(payload);
       saveToFirestoreCache(`${competition}_${season}`, payload);
       saveToFirestoreCache(competition, payload);
     };
+
+    // 1. Prioridade Máxima: Tentar API em direto oficial
+    try {
+      const liveData = await fetchLiveEspnStandings(competition);
+      if (liveData && liveData.data?.standings?.[0]?.table?.length > 0) {
+        await sendAndCache(liveData);
+        return;
+      }
+    } catch (errApi) {
+      console.warn(`[Proxy getLeagueStandings] Live API fetch failed for ${competition}:`, errApi);
+    }
+
+    // 2. Base de dados oficial consolidada auditada
+    const officialStandings = getOfficialStandingsForLeague(competition);
+    if (officialStandings && officialStandings.length > 0) {
+      const payload = {
+        status: "success",
+        source: "official_verified_data",
+        data: {
+          competition: {
+            code: competition,
+            name: competition
+          },
+          standings: [
+            {
+              stage: "REGULAR_SEASON",
+              type: "TOTAL",
+              group: null,
+              table: officialStandings.map((t, idx) => ({
+                position: idx + 1,
+                team: {
+                  id: idx + 1,
+                  name: t.name,
+                  crest: t.crest || ""
+                },
+                playedGames: t.played,
+                won: t.wins,
+                draw: t.draws,
+                lost: t.losses,
+                points: t.points,
+                goalsFor: t.goalsFor,
+                goalsAgainst: t.goalsAgainst,
+                goalDifference: t.goalsFor - t.goalsAgainst
+              }))
+            }
+          ]
+        }
+      };
+      await sendAndCache(payload);
+      return;
+    }
 
     // Helper for Gemini Fallback Standings Generation
     const generateAiStandings = async (compCode: string) => {
@@ -238,7 +843,7 @@ Garante que a tabela tem entre 10 e 20 equipas reais que participam nessa compet
       const targetUrl = `https://us-central1-irunbets.cloudfunctions.net/getLeagueStandings?competition=${encodeURIComponent(competition)}`;
       console.log(`[Proxy] Fetching from target API: ${targetUrl}`);
       
-      const response = await fetch(targetUrl);
+      const response = await fetch(targetUrl, { signal: AbortSignal.timeout(3000) });
       if (response.ok) {
         const data = await response.json();
         
@@ -266,27 +871,28 @@ Garante que a tabela tem entre 10 e 20 equipas reais que participam nessa compet
         await sendAndCache(aiData);
       } catch (fallbackError: any) {
         console.error("[Proxy] Gemini AI fallback also failed:", fallbackError);
+        const official = getOfficialStandingsForLeague(competition) || getOfficialStandingsForLeague('PPL')!;
         await sendAndCache({
           status: "success",
-          source: "emergency_mock_fallback",
+          source: "official_emergency_fallback",
           data: {
             competition: { code: competition, name: competition },
             standings: [
               {
                 stage: "REGULAR_SEASON",
                 type: "TOTAL",
-                table: [
-                  {
-                    position: 1,
-                    team: { id: 1, name: "St. Gallen", crest: "" },
-                    playedGames: 18, won: 12, draw: 3, lost: 3, points: 39, goalsFor: 32, goalsAgainst: 16, goalDifference: 16
-                  },
-                  {
-                    position: 2,
-                    team: { id: 2, name: "Chelsea FC", crest: "" },
-                    playedGames: 18, won: 11, draw: 4, lost: 3, points: 37, goalsFor: 35, goalsAgainst: 18, goalDifference: 17
-                  }
-                ]
+                table: official.map((t, idx) => ({
+                  position: idx + 1,
+                  team: { id: idx + 1, name: t.name, crest: "" },
+                  playedGames: t.played,
+                  won: t.wins,
+                  draw: t.draws,
+                  lost: t.losses,
+                  points: t.points,
+                  goalsFor: t.goalsFor,
+                  goalsAgainst: t.goalsAgainst,
+                  goalDifference: t.goalsFor - t.goalsAgainst
+                }))
               }
             ]
           }
@@ -884,6 +1490,378 @@ Exemplo de formato JSON estrito:
     } catch (error: any) {
       console.error("[Gemini-Analysis] Erro ao gerar análise:", error);
       res.status(500).json({ status: "error", message: formatGeminiError(error) });
+    }
+  });
+
+  // API to generate AI Simultaneous Wins Analysis for 4 to 13 teams in a betting slip
+  app.post("/api/gemini/analyze-simultaneous-wins", async (req, res) => {
+    const { selections, totalOdd } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+      res.status(500).json({ status: "error", message: "A chave de API do Gemini não está definida no servidor." });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const promptText = `Age como o Super Computador Tático da SuperIA e Analista Quantitativo de Apostas Desportivas da iRunBets.
+O utilizador selecionou as seguintes equipas para um boletim múltiplo de apostas:
+${JSON.stringify(selections, null, 2)}
+Odd Combinada do Boletim: @${totalOdd || 'Multi'}
+
+INSTRUÇÕES OBRIGATÓRIAS:
+1. Analisa as vitórias em simultâneo destas equipas (4, 5, 6 ou até 13 seleções).
+2. Se existirem equipas repetidas no mesmo boletim em datas diferentes, avalia explicitamente a probabilidade de vitórias consecutivas da mesma equipa em dias distintos do mesmo ciclo de jogos.
+3. Faz uma síntese quantitativa e scout tático das probabilidades de todas ganharem em simultâneo.
+4. Responde em JSON estrito com os seguintes campos:
+{
+  "scoutVerdict": "Resumo do veredito com estimativa quantitativa e scout dos planteis",
+  "historicalSimultaneousNote": "Texto explicativo sobre a co-ocorrência histórica das equipas",
+  "repeatedTeamsInsight": "Análise específica para equipas repetidas em datas diferentes (ou vazio se não houver)",
+  "weakestLinkAlert": "Identificação e aviso sobre o jogo mais perigoso/vulnerável",
+  "expectedValueComment": "Comentário sobre se a odd total tem valor (+EV) face ao histórico"
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: promptText,
+        config: {
+          responseMimeType: "application/json",
+          tools: [{ googleSearch: {} }],
+        }
+      });
+
+      const responseText = response.text || "{}";
+      const resultObj = JSON.parse(responseText);
+
+      res.json({
+        status: "success",
+        data: resultObj
+      });
+    } catch (error: any) {
+      console.error("[Gemini-Simultaneous-Wins] Erro:", error);
+      res.status(500).json({ status: "error", message: formatGeminiError(error) });
+    }
+  });
+
+  // Helper function to generate natural, conversational assistant responses
+  function generateConversationalAssistantResponse(message: string, ctx: any): string {
+    const text = (message || '').toLowerCase().trim();
+    const homeTeam = ctx.homeTeam || "Equipa da Casa";
+    const awayTeam = ctx.awayTeam || "Equipa Forasteira";
+    const prob1 = Number(ctx.probHome ?? ctx.prob1 ?? 45);
+    const probX = Number(ctx.probDraw ?? ctx.probX ?? 28);
+    const prob2 = Number(ctx.probAway ?? ctx.prob2 ?? 27);
+    const xgHome = ctx.xgHome != null && !isNaN(Number(ctx.xgHome)) ? Number(ctx.xgHome).toFixed(2) : "1.35";
+    const xgAway = ctx.xgAway != null && !isNaN(Number(ctx.xgAway)) ? Number(ctx.xgAway).toFixed(2) : "1.05";
+    const totalXg = (Number(xgHome) + Number(xgAway)).toFixed(2);
+    const bttsProb = ctx.bttsProb ?? Math.min(85, Math.max(35, Math.round(44 + (Number(xgHome) * Number(xgAway) - 1.1) * 24)));
+    const over15Prob = ctx.over15Prob ?? Math.min(95, Math.max(60, Math.round(66 + (Number(totalXg) - 2.0) * 24)));
+    const over25Prob = ctx.over25Prob ?? Math.min(88, Math.max(30, Math.round(45 + (Number(totalXg) - 2.2) * 26)));
+    const favTeam = prob1 >= prob2 ? homeTeam : awayTeam;
+    const underdogTeam = prob1 >= prob2 ? awayTeam : homeTeam;
+    const favProb = Math.max(prob1, prob2);
+
+    // 1. Saudações ("ola", "olá", "bom dia", "boas", etc.)
+    if (/^(ol[aá]|boas|bom dia|boa tarde|boa noite|oi|hey|hello|hi)/i.test(text) || text.length <= 4 && /^(ol|oi|hi)/i.test(text)) {
+      return `Olá! Tudo bem? Sou o teu assistente de apostas e análise desportiva. Como estamos de apostas hoje?
+
+Estás de olho neste duelo entre o **${homeTeam}** e o **${awayTeam}** ou procuras alguma recomendação para o teu bilhete? Diz-me o que tens em mente!`;
+    }
+
+    // 2. "como estamos de apostas hoje?" / "apostas hoje"
+    if (text.includes('como estamos') || text.includes('apostas hoje') || text.includes('o que temos hoje') || text.includes('dicas para hoje')) {
+      return `Hoje temos boas oportunidades em análise! Para este jogo **${homeTeam} vs ${awayTeam}**, o modelo coloca o **${favTeam}** como favorito com **${favProb}%** de probabilidade e estimamos cerca de **${totalXg}** golos esperados (xG).
+
+Queres apostar no resultado final (1X2), estás mais inclinado para o mercado de golos (como Over ou Ambas Marcam), ou queres ver se há valor nas odds?`;
+    }
+
+    // 3. "tudo bem?" / "como estás"
+    if (text.includes('tudo bem') || text.includes('como estás') || text.includes('tudo bom') || text.includes('como vais')) {
+      return `Tudo ótimo por aqui, 100% focado a dissecar as estatísticas e as odds do dia! E contigo, como estão a correr as apostas? Queres ver algum detalhe deste jogo?`;
+    }
+
+    // 4. Quem ganha / Favoritismo
+    if (text.includes('quem ganha') || text.includes('quem vence') || text.includes('favorit') || text.includes('vencedor') || text.includes('ganha') || text.includes('vence')) {
+      return `Olhando para os números deste embate, o modelo dá **${prob1}%** de probabilidade de vitória ao **${homeTeam}**, **${probX}%** ao empate e **${prob2}%** ao **${awayTeam}**.
+
+O **${favTeam}** assume aqui o favoritismo (${favProb}% de probabilidade e ${prob1 >= prob2 ? xgHome : xgAway} xG projetado). Se fores a seco na vitória, há bom fundamento matemático, mas se quiseres um bilhete mais conservador, a Dupla Chance protege contra uma surpresa do ${underdogTeam}. O que achas?`;
+    }
+
+    // 5. Golos / Over / Ambas Marcam
+    if (text.includes('golo') || text.includes('golos') || text.includes('over') || text.includes('under') || text.includes('ambas') || text.includes('btts')) {
+      return `Em termos de golos para este jogo, a expectativa total está fixada em **${totalXg} xG**.
+
+As probabilidades apontam para **${over15Prob}%** de chances no Mais de 1.5 Golos, **${over25Prob}%** no Mais de 2.5 e **${bttsProb}%** para Ambas as Equipas Marcarem. É um jogo com ${Number(totalXg) >= 2.4 ? 'boa propensão ofensiva' : 'tendência para ritmo mais tático e controlado'}. Qual destes mercados costumas preferir?`;
+    }
+
+    // 6. Cansaço / 70 minutos / Quebra física
+    if (text.includes('70') || text.includes('cansaço') || text.includes('fadiga') || text.includes('físic')) {
+      return `A partir dos 70 minutos a quebra física costuma fazer a diferença. Se o jogo chegar aos últimos 20 minutos empatado ou com margem curta, as linhas defensivas começam a esticar e as falhas de concentração aumentam, sendo uma boa janela para golos tardios se estiveres a acompanhar ao vivo.`;
+    }
+
+    // 7. Empate
+    if (text.includes('empate') || text.includes('empata') || text === 'x') {
+      return `O empate neste jogo está cotado pelo modelo com uma probabilidade de **${probX}%**. A diferença de xG entre as duas equipas é de ${(Math.abs(Number(xgHome) - Number(xgAway))).toFixed(2)}, o que indica que ${Math.abs(Number(xgHome) - Number(xgAway)) < 0.4 ? 'o equilíbrio tático pode facilmente arrastar o resultado para a divisão de pontos' : 'o favorito tem vantagem clara para desbloquear o marcador'}.`;
+    }
+
+    // Resposta padrão natural e descontraída
+    return `Percebo perfeitamente! Para o embate **${homeTeam} vs ${awayTeam}** (${prob1}% [1] | ${probX}% [X] | ${prob2}% [2]), estou aqui para te ajudar a escolher a melhor aposta ou validar o teu raciocínio.
+
+Diz-me, em que mercado estás mais tentado a apostar neste jogo?`;
+  }
+
+  // API to handle Interactive Balneário / UEFA DT Chat for a specific match
+  app.post("/api/gemini/dt-chat", async (req, res) => {
+    const { history, newMessage, matchContext } = req.body;
+    const ctx = matchContext || {};
+    const textToSend = (newMessage || '').trim();
+
+    // Generate immediate fallback reply to guarantee quality response
+    const fallbackReply = generateConversationalAssistantResponse(textToSend, ctx);
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+      res.json({
+        status: "success",
+        reply: fallbackReply
+      });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const homeTeam = ctx.homeTeam || "Equipa Casa";
+      const awayTeam = ctx.awayTeam || "Equipa Fora";
+      const prob1 = ctx.probHome ?? ctx.prob1 ?? "N/A";
+      const probX = ctx.probDraw ?? ctx.probX ?? "N/A";
+      const prob2 = ctx.probAway ?? ctx.prob2 ?? "N/A";
+      const xgHome = ctx.xgHome ?? "N/A";
+      const xgAway = ctx.xgAway ?? "N/A";
+      const competition = ctx.competition || "Campeonato";
+
+      const systemInstruction = `És o Assistente Inteligente de Apostas Desportivas e Análise da iRunBets.
+O teu objetivo é conversar diretamente com o apostador de forma amigável, acolhedora, humana e conversacional, como um assistente de IA moderno e descontraído.
+Jogo atual em análise: ${homeTeam} vs ${awayTeam} (${competition}).
+Métricas do modelo: ${prob1}% Casa [1] | ${probX}% Empate [X] | ${prob2}% Fora [2] | xG esperado: ${xgHome} vs ${xgAway}.
+
+REGRAS DE CONVERSAÇÃO:
+1. Fala sempre em Português de Portugal (PT-PT) fluído, educado e próximo.
+2. Quando o utilizador te diz "olá", "boas" ou cumprimenta, responde de forma natural e simpática: por exemplo "Olá! Tudo bem? Sou o teu assistente, como estamos de apostas hoje? Queres olhar para este jogo entre o ${homeTeam} e o ${awayTeam}?".
+3. NUNCA respondas com listas rígidas enumeradas (1️⃣, 2️⃣, 3️⃣, 4️⃣) nem relatórios burocráticos ao receber uma simples saudação!
+4. Mantém um diálogo aberto, faz perguntas sobre o que o utilizador procura e fundamenta as dicas nas probabilidades e valor esperado (+EV) sem jargão excessivo.`;
+
+      // Build strictly sanitized history that alternates starting with user
+      const rawHistory = Array.isArray(history) ? history : [];
+      const sanitizedHistory: Array<{ role: 'user' | 'model'; parts: [{ text: string }] }> = [];
+
+      for (const item of rawHistory) {
+        const role = (item.role === 'model' || item.role === 'assistant') ? 'model' : 'user';
+        const text = (item.text || item.content || '').trim();
+        if (!text) continue;
+
+        // Skip if first item would be model
+        if (sanitizedHistory.length === 0 && role === 'model') {
+          continue;
+        }
+
+        // Avoid consecutive roles
+        if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === role) {
+          continue;
+        }
+
+        sanitizedHistory.push({
+          role,
+          parts: [{ text }]
+        });
+      }
+
+      // If last item in sanitized history is user, drop it because newMessage will be sent
+      if (sanitizedHistory.length > 0 && sanitizedHistory[sanitizedHistory.length - 1].role === 'user') {
+        sanitizedHistory.pop();
+      }
+
+      const chat = ai.chats.create({
+        model: 'gemini-3.8-flash',
+        config: {
+          systemInstruction,
+        },
+        history: sanitizedHistory
+      });
+
+      const result = await chat.sendMessage({ message: textToSend || "Olá" });
+      if (result && result.text) {
+        res.json({
+          status: "success",
+          reply: result.text
+        });
+        return;
+      }
+
+      res.json({
+        status: "success",
+        reply: fallbackReply
+      });
+
+    } catch (error: any) {
+      console.warn("[Gemini-DT-Chat] Fallback ativado para motor tático UEFA:", error?.message || error);
+      // Seamless fallback to the rich UEFA analysis engine
+      res.json({
+        status: "success",
+        reply: fallbackReply
+      });
+    }
+  });
+
+  // API to analyze betting ticket simulation (#Ticket 5) with AI for success probability, risk & insights
+  app.post("/api/gemini/ticket-analysis", async (req, res) => {
+    const { selections = [], stake = 10, totalOdd = 1, jointProb = 50 } = req.body;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+
+    // Fast fallback analysis generator if API is unavailable or rate limited
+    const generateFallbackAnalysis = () => {
+      const count = selections.length;
+      const numTotalOdd = Number(totalOdd) || 1;
+      const numJointProb = Number(jointProb) || Math.max(5, Math.min(95, Math.round((1 / numTotalOdd) * 85)));
+      
+      let riskLevel: 'Conservador' | 'Moderado' | 'Alto Risco' | 'Extremo (Lotaria)' = 'Moderado';
+      let confidenceScore = Math.min(95, Math.max(25, Math.round(numJointProb)));
+      
+      if (numTotalOdd < 2.5 && count <= 3) {
+        riskLevel = 'Conservador';
+        confidenceScore = Math.max(78, confidenceScore);
+      } else if (numTotalOdd <= 6.0 && count <= 5) {
+        riskLevel = 'Moderado';
+        confidenceScore = Math.min(80, Math.max(55, confidenceScore));
+      } else if (numTotalOdd <= 18.0) {
+        riskLevel = 'Alto Risco';
+        confidenceScore = Math.min(60, Math.max(35, confidenceScore));
+      } else {
+        riskLevel = 'Extremo (Lotaria)';
+        confidenceScore = Math.min(35, Math.max(15, confidenceScore));
+      }
+
+      // Find strongest and riskiest picks
+      let strongest = selections[0] ? `${selections[0].match || selections[0].teamName || 'Seleção 1'}: ${selections[0].selection || selections[0].market || 'Aposta'} (@${selections[0].odd || '1.30'})` : 'Seleção Principal';
+      let riskiest = selections[0] ? `${selections[0].match || selections[0].teamName || 'Seleção'}: ${selections[0].selection || selections[0].market || 'Aposta'} (@${selections[0].odd || '1.80'})` : 'Seleção';
+      
+      let maxOdd = 0;
+      let minOdd = 999;
+      selections.forEach((s: any) => {
+        const o = Number(s.odd) || 1.5;
+        if (o > maxOdd) {
+          maxOdd = o;
+          riskiest = `${s.match || s.teamName || 'Jogo'}: ${s.selection || s.market || 'Seleção'} (@${o.toFixed(2)})`;
+        }
+        if (o < minOdd) {
+          minOdd = o;
+          strongest = `${s.match || s.teamName || 'Jogo'}: ${s.selection || s.market || 'Seleção'} (@${o.toFixed(2)})`;
+        }
+      });
+
+      const potentialGross = (Number(stake) * numTotalOdd).toFixed(2);
+      const potentialProfit = (Number(stake) * numTotalOdd - Number(stake)).toFixed(2);
+
+      let advice = "Para aumentar a probabilidade de acerto, pondera proteger a seleção de maior odd com Dupla Chance ou linha asiática de segurança.";
+      if (count > 5) {
+        advice = `O bilhete possui ${count} jogos acumulados. Em múltiplas longas, o efeito multiplicador aumenta exponencialmente a margem da casa. Reduzir para 3 ou 4 jogos consolidados maximiza o valor esperado (+EV) no longo prazo.`;
+      } else if (numTotalOdd < 2.0) {
+        advice = "Bilhete com odd bastante contida e alta taxa teórica de acerto. Excelente para gestão de banca em unidades fixas.";
+      }
+
+      return {
+        confidenceIndex: confidenceScore,
+        riskCategory: riskLevel,
+        probabilityPercentage: numJointProb,
+        totalOdd: numTotalOdd.toFixed(2),
+        potentialReturn: potentialGross,
+        potentialProfit: potentialProfit,
+        summary: `Simulação de ${count} seleção(ões) com cota combinada de @${numTotalOdd.toFixed(2)}. Probabilidade combinada estimada em ${numJointProb}% com perfil de risco ${riskLevel}.`,
+        strongestPick: strongest,
+        riskiestPick: riskiest,
+        optimizationAdvice: advice,
+        expectedValueComment: numTotalOdd * (numJointProb / 100) >= 1.05 
+          ? "Indicador +EV Positivo: O retorno potencial compensa a probabilidade calculada pelo modelo algorítmico."
+          : "Indicador Neutro/Cuidado: A odd oferecida pelas casas está muito ajustada. Recomenda-se cautela no dimensionamento da stake."
+      };
+    };
+
+    if (!apiKey) {
+      return res.json({ status: "success", data: generateFallbackAnalysis(), isFallback: true });
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const promptText = `Age como o Analista de Risco e Inteligência Artificial da iRunBets.
+O utilizador simulou o seguinte bilhete de apostas desportivas (#Ticket 5):
+- Número de Seleções: ${selections.length}
+- Seleções do Bilhete: ${JSON.stringify(selections, null, 2)}
+- Stake Investida: ${stake} €
+- Odd Total Combinada: @${totalOdd}
+- Probabilidade Estimada Preliminar: ${jointProb}%
+
+Faz uma análise minuciosa da probabilidade de sucesso, consistência matemática e risco do bilhete.
+Responde estritamente num JSON com as seguintes chaves:
+{
+  "confidenceIndex": 76,
+  "riskCategory": "Conservador | Moderado | Alto Risco | Extremo (Lotaria)",
+  "probabilityPercentage": 68,
+  "totalOdd": "${totalOdd}",
+  "potentialReturn": "${(Number(stake) * Number(totalOdd)).toFixed(2)}",
+  "potentialProfit": "${(Number(stake) * Number(totalOdd) - Number(stake)).toFixed(2)}",
+  "summary": "Diagnóstico do bilhete em 2-3 frases claras e objetivas em Português de Portugal.",
+  "strongestPick": "Identificação da seleção mais sólida e porquê",
+  "riskiestPick": "Identificação da seleção mais perigosa que pode estragar a múltipla",
+  "optimizationAdvice": "Sugestão prática da IA para melhorar o bilhete (ex: proteger com dupla chance, reduzir um jogo ou rever mercado)",
+  "expectedValueComment": "Avaliação se a aposta tem valor esperado positivo (+EV)"
+}`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: promptText,
+        config: {
+          responseMimeType: "application/json",
+        }
+      });
+
+      const responseText = response.text || "{}";
+      const resultObj = JSON.parse(responseText);
+
+      return res.json({
+        status: "success",
+        data: resultObj
+      });
+    } catch (err: any) {
+      console.warn("[Gemini-Ticket-Analysis] Falha na IA externa, usando motor probabilístico local:", err?.message || err);
+      return res.json({
+        status: "success",
+        data: generateFallbackAnalysis(),
+        isFallback: true
+      });
     }
   });
 

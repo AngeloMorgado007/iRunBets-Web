@@ -120,6 +120,11 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Collection: Cached Data (Proxy cache for leagues, standings, team profiles)
+    match /cached_data/{docId} {
+      allow read, write: if true;
+    }
+
     // Default fallback rule for any newly created collections
     match /{document=**} {
       allow read, write: if true;

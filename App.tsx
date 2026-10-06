@@ -44,6 +44,16 @@ function App() {
   }, []);
   // Modal states & view controls
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+
+  useEffect(() => {
+    const handleOpenAuth = () => setIsAuthOpen(true);
+    window.addEventListener('irunbets_open_auth', handleOpenAuth);
+    window.addEventListener('open-auth-modal', handleOpenAuth);
+    return () => {
+      window.removeEventListener('irunbets_open_auth', handleOpenAuth);
+      window.removeEventListener('open-auth-modal', handleOpenAuth);
+    };
+  }, []);
   const [isBackofficeOpen, setIsBackofficeOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -414,9 +424,16 @@ function App() {
     };
     fetchPages();
 
+    // Listen to custom event to open auth modal anywhere in the app (e.g. from prediction table)
+    const handleOpenAuthModal = () => {
+      setIsAuthOpen(true);
+    };
+    window.addEventListener('open-auth-modal', handleOpenAuthModal);
+
     window.addEventListener('irunbets_custom_pages_updated', fetchPages);
     window.addEventListener('storage', fetchPages);
     return () => {
+      window.removeEventListener('open-auth-modal', handleOpenAuthModal);
       window.removeEventListener('irunbets_custom_pages_updated', fetchPages);
       window.removeEventListener('storage', fetchPages);
     };
@@ -491,7 +508,7 @@ function App() {
         };
       };
 
-      if (hash === 'prognosticos-futebol' || hash === 'prognosticos') {
+      if (hash === 'prognosticos-futebol' || hash === 'prognosticos' || hash === 'apostas-do-dia' || hash === 'bilhetes') {
         const page = matchPage('prognosticos-futebol', 'Prognósticos de Futebol', 'Análises de futebol e lista de palpites IA com janela pop-up de previsão');
         setSelectedCustomPage(page);
         setIsBackofficeOpen(false);
@@ -507,18 +524,18 @@ function App() {
           window.scrollTo({ top: 0, behavior: 'instant' });
         }
         lastProcessedHashRef.current = hash;
-      } else if (hash === 'dashboard-tipster' || hash === 'tipster') {
-        const page = matchPage('dashboard-tipster', 'Dashboard Tipster', 'Painel do Tipster para registar canais de redes sociais e selecionar casas de apostas parceiras');
+      } else if (hash === 'mentor') {
+        const page = matchPage('vip-dashboard', 'Dashboard', 'Registo de Apostas Desportivas, Gestão de Banca e IA de Análise de Jogos');
+        localStorage.setItem('irunbets_vip_active_tab', 'analise-ia');
+        localStorage.setItem('irunbets_vip_ia_subtab', 'comportamental');
         setSelectedCustomPage(page);
         setIsBackofficeOpen(false);
         if (lastProcessedHashRef.current !== hash) {
           window.scrollTo({ top: 0, behavior: 'instant' });
         }
         lastProcessedHashRef.current = hash;
-      } else if (hash === 'mentor') {
-        const page = matchPage('vip-dashboard', 'Dashboard', 'Registo de Apostas Desportivas, Gestão de Banca e IA de Análise de Jogos');
-        localStorage.setItem('irunbets_vip_active_tab', 'analise-ia');
-        localStorage.setItem('irunbets_vip_ia_subtab', 'comportamental');
+      } else if (hash === 'dados-estatisticos' || hash === 'estatisticas' || hash === 'apis-excel') {
+        const page = matchPage('dados-estatisticos', 'Dados Estatísticos', 'Modelos de Poisson, Exportação Excel e Feeds de API');
         setSelectedCustomPage(page);
         setIsBackofficeOpen(false);
         if (lastProcessedHashRef.current !== hash) {
@@ -673,6 +690,8 @@ function App() {
           onBackToHome={() => navigateToCustomPage(null)} 
           userSubscriptionStatus={userSubscriptionStatus}
           onSubscriptionUpdated={handleAuthSuccess}
+          isAdmin={isAdmin}
+          currentUser={currentUser}
         />
       ) : (
         <main>
@@ -741,97 +760,6 @@ function App() {
           
           {/* Funcionalidade 3: Notificações Push */}
           <PushSimulator />
-
-          {/* SECÇÃO COMUNIDADE DE TIPSTERS COM RANKING PÚBLICO */}
-          <section id="ranking-tipsters" className="py-20 bg-[#0C0C10]/60 relative border-y border-zinc-900">
-            <div className="absolute top-0 right-1/4 w-[350px] h-[350px] bg-purple-600/5 rounded-full blur-[140px] pointer-events-none"></div>
-            <div className="max-w-7xl mx-auto px-6">
-              <div className="text-center max-w-2xl mx-auto mb-14 space-y-4">
-                <span className="text-[10px] font-black uppercase tracking-wider text-fuchsia-500 bg-fuchsia-500/10 px-3 py-1 rounded-md font-mono border border-fuchsia-500/10">
-                  👥 COMUNIDADE EXCLUSIVA iRUNBETS
-                </span>
-                <h2 className="text-2xl sm:text-4xl font-extrabold text-white uppercase tracking-tight font-display">
-                  {language === 'pt' ? 'RANKING DE TIPSTERS MAIS LUCRATIVOS' : 'TOP LUCRATIVE TIPSTERS LEADERBOARD'}
-                </h2>
-                <div className="h-1 w-20 bg-fuchsia-500 rounded-full mx-auto"></div>
-                <p className="text-xs sm:text-sm text-zinc-400 font-light max-w-xl mx-auto leading-relaxed">
-                  {language === 'pt'
-                    ? 'A comunidade de prognósticos desportivos número um da Ibéria. Verifique as margens de acerto de cada registo em tempo real, siga os líderes e tenha acesso aos canais vips mais rentáveis.'
-                    : 'The most profitable verified sports tipsters across the region. Review historic win averages, follow your favorites and access premium locks.'}
-                </p>
-              </div>
-
-              {/* Leaderboard Cards */}
-              {homepageTipsters.length === 0 ? (
-                <div className="py-16 text-center text-xs text-zinc-400 font-bold bg-zinc-950/25 border border-dashed border-zinc-850 rounded-3xl max-w-xl mx-auto uppercase tracking-wider font-mono">
-                  {language === 'pt' 
-                    ? 'brevemente aqui encontras os teus tipster' 
-                    : 'soon you will find your tipsters here'}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {homepageTipsters.map((tps, idx) => (
-                    <div key={tps.id} className="p-6 rounded-3xl bg-zinc-950/40 border border-[#27272a] hover:border-zinc-750 transition-all flex flex-col justify-between relative overflow-hidden group font-sans">
-                      <div className="absolute top-3 right-3 text-[10px] font-mono font-black text-fuchsia-400 bg-fuchsia-500/10 px-2 py-0.5 rounded-md border border-fuchsia-500/10 uppercase">
-                        🏆 TOP {idx + 1}
-                      </div>
-
-                      <div className="space-y-4 text-left">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-850 flex items-center justify-center text-3xl group-hover:scale-105 transition-all">
-                            {tps.avatar || '👤'}
-                          </div>
-                          <div className="text-left">
-                            <h3 className="text-xs font-bold text-white group-hover:text-fuchsia-400 transition-all">{tps.name}</h3>
-                            <span className="text-[9px] text-zinc-500 uppercase tracking-widest font-mono block">Tipster Oficial</span>
-                          </div>
-                        </div>
-
-                        <p className="text-[11px] text-zinc-400 leading-relaxed font-light min-h-[36px] text-left">
-                          {tps.email ? `Contacto: ${tps.email}` : 'Especialista em prognósticos desportivos de Poisson na iRunBets.'}
-                        </p>
-
-                        <div className="grid grid-cols-2 gap-2 text-center pt-2">
-                          <div className="bg-zinc-950 p-2 rounded-xl border border-zinc-900">
-                            <span className="text-[7.5px] font-bold text-zinc-550 uppercase tracking-widest font-mono block">Lucro Líquido</span>
-                            <strong className="text-xs font-mono text-emerald-400">+{Number(tps.netProfit || 0).toFixed(2)}€</strong>
-                          </div>
-                          <div className="bg-zinc-950 p-2 rounded-xl border border-zinc-900">
-                            <span className="text-[7.5px] font-bold text-zinc-550 uppercase tracking-widest font-mono block">Yield Geral</span>
-                            <strong className="text-xs font-mono text-purple-400">+{Number(tps.yieldPercent || 0).toFixed(1)}%</strong>
-                          </div>
-                        </div>
-
-                        <div className="flex justify-between items-center text-[9px] text-zinc-550 font-mono px-0.5">
-                          <span>EFICÁCIA DE ACERTOS:</span>
-                          <span className="text-zinc-450">{tps.wins || 0}W - {tps.losses || 0}L</span>
-                        </div>
-                      </div>
-
-                      <div className="mt-5 pt-3.5 border-t border-zinc-900/40">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            localStorage.setItem('irunbets_vip_clube_tab_trigger', 'dashboard');
-                            localStorage.setItem('irunbets_vip_active_tab', 'rede-tipsters');
-                            localStorage.setItem('irunbets_vip_target_tipster_on_load', tps.id);
-                            const vipPage = customPages.find(p => p.slug === 'clube-vip');
-                            if (vipPage) {
-                              setSelectedCustomPage(vipPage);
-                              window.scrollTo({ top: 0, behavior: 'instant' });
-                            }
-                          }}
-                          className="w-full py-2 bg-fuchsia-500/10 hover:bg-fuchsia-500 hover:text-black hover:border-fuchsia-400 border border-fuchsia-500/20 text-[9.5px] text-fuchsia-400 font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5"
-                        >
-                          📂 Ver Prognósticos & Stats
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
           
           {/* MURAL DE PROGNÓSTICOS DE MARKETING - iRUNBETS FEED DE MULTI-CANAIS */}
           <section id="marketing-mural" className="py-16 bg-[#0B0B0E] relative border-b border-zinc-900">

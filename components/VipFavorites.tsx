@@ -755,7 +755,7 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
                           </td>
                           <td className="py-1.5 font-semibold text-zinc-200 group-hover:text-cyan-400 transition-colors">
                             <div className="flex items-center gap-2">
-                              {team.crestUrl ? (
+                              {team.crestUrl && team.crestUrl.trim() !== '' ? (
                                 <img src={team.crestUrl} alt={team.teamName} className="w-5 h-5 flex-shrink-0 object-contain" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
                               ) : (
                                 <Shield size={12} className="text-zinc-600 flex-shrink-0" />
@@ -902,7 +902,7 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
                       }}
                     >
                       <div className="flex items-center gap-3">
-                        {fav.crestUrl ? (
+                        {fav.crestUrl && fav.crestUrl.trim() !== '' ? (
                           <img src={fav.crestUrl} alt={fav.name} className="w-5 h-5 object-contain" onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }} />
                         ) : (
                           <Shield size={14} className="text-zinc-500" />
@@ -1023,7 +1023,7 @@ export const VipFavorites: React.FC<VipFavoritesProps> = ({ currentUser, languag
             {/* Modal Header */}
             <div className="p-4 sm:p-5 border-b border-zinc-900 flex items-center justify-between bg-zinc-950/90 backdrop-blur sticky top-0 z-20">
               <div className="flex items-center gap-3">
-                {selectedTeam.crestUrl ? (
+                {selectedTeam.crestUrl && selectedTeam.crestUrl.trim() !== '' ? (
                   <img src={selectedTeam.crestUrl} alt={selectedTeam.teamName} className="w-9 h-9 object-contain" />
                 ) : (
                   <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center">

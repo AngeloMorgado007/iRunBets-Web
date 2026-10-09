@@ -234,7 +234,7 @@ const LatestNews: React.FC<LatestNewsProps> = ({ onOpenAuth, refreshCounterTrigg
                       <span className="font-semibold text-sky-400 uppercase tracking-wider">{art.author.replace(/@.*/, '')}</span>
                     </div>
 
-                    {art.imageUrl && (
+                    {art.imageUrl && art.imageUrl.trim() !== '' && (
                       <div className="mb-4 rounded-xl overflow-hidden border border-zinc-800/80 bg-zinc-950 max-h-52">
                         <img 
                           src={art.imageUrl} 

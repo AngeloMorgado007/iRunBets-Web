@@ -268,6 +268,9 @@ const Navbar: React.FC<NavbarProps> = ({
             >
               <span className="text-base">📊</span>
               <span className="uppercase text-xs tracking-wider font-display">Dashboard</span>
+              {!currentUser && !isAdmin && (
+                <span className="text-[10px] text-amber-400 font-mono ml-0.5" title="Exclusivo para utilizadores registados">🔒</span>
+              )}
             </a>
 
             {/* Dados Estatísticos Link */}

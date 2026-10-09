@@ -2762,15 +2762,11 @@ export const getPopupConfigFromFirebase = async (): Promise<PopupConfig> => {
       localStorage.setItem('irunbets_promotional_popup_config', JSON.stringify(data));
       return data;
     } else {
-      // Initialize with default safely
-      await setDoc(docRef, DEFAULT_POPUP).catch((e) => {
-        console.warn('Could not auto-create promotional_popup doc:', e);
-      });
       localStorage.setItem('irunbets_promotional_popup_config', JSON.stringify(DEFAULT_POPUP));
       return DEFAULT_POPUP;
     }
-  } catch (err) {
-    console.error('Error fetching promotional popup config:', err);
+  } catch (err: any) {
+    console.warn('Using local promotional popup config:', err?.message || err);
     return fallback;
   }
 };

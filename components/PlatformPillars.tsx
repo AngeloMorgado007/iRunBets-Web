@@ -267,12 +267,14 @@ const PlatformPillars: React.FC = () => {
                 {/* Photo component Container */}
                 <div className="h-56 relative overflow-hidden bg-zinc-900">
                   <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-transparent z-10 opacity-70"></div>
-                  <img 
-                    src={item.images} 
-                    alt={displayTitle} 
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover transition-transform duration-[2.5s] ease-out group-hover:scale-108 brightness-[0.85] group-hover:brightness-100"
-                  />
+                  {item.images && item.images.trim() !== '' ? (
+                    <img 
+                      src={item.images} 
+                      alt={displayTitle} 
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover transition-transform duration-[2.5s] ease-out group-hover:scale-108 brightness-[0.85] group-hover:brightness-100"
+                    />
+                  ) : null}
                   
                   {/* Visual Corner Tag */}
                   <div className="absolute bottom-3 left-4 z-20 flex items-center gap-1.5 bg-[#0D0D11]/90 border border-zinc-800/80 px-2.5 py-1 rounded-lg">
@@ -324,12 +326,14 @@ const PlatformPillars: React.FC = () => {
               {/* Cover Image */}
               <div className="h-64 sm:h-80 md:h-96 relative overflow-hidden bg-zinc-950">
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0E0E12] via-[#0E0E12]/35 to-transparent z-10"></div>
-                <img 
-                  src={selectedPillar.images} 
-                  alt={title}
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover brightness-[0.7]"
-                />
+                {selectedPillar.images && selectedPillar.images.trim() !== '' ? (
+                  <img 
+                    src={selectedPillar.images} 
+                    alt={title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover brightness-[0.7]"
+                  />
+                ) : null}
                 
                 {/* Close Button top-right */}
                 <button

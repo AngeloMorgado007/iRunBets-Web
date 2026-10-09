@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { labelsMap, getVipLabels } from '../services/vipLabels';
 import { Share2, Globe, Send, Mail, Copy, Check, MessageCircle, QrCode, X, Image, Printer } from 'lucide-react';
-import { sendMessageToGemini } from '../services/geminiService';
+import { sendMessageToGemini, sendMentorChatMessage } from '../services/geminiService';
 import { useLanguage, translateCampaignTitle, translateCampaignDescription } from '../services/LanguageContext';
 import {
   onAuthStatusChange,
@@ -1201,10 +1201,84 @@ const VipDashboard: React.FC<VipDashboardProps> = ({
   const [mentorMessages, setMentorMessages] = useState<Array<{ role: 'user' | 'model'; text: string }>>([
     {
       role: 'model',
-      text: 'Olá! Sou o seu Mentor Analítico iRunBets Pro alimentado pelo Google Gemini. Analisei a sua banca ativa de controlo e estou pronto para ajudá-lo com prognósticos de futebol, probabilidade pura, controlo de ansiedade ou estratégias de tipsters. O que gostaria de analisar ou discutir hoje?'
+      text: 'Olá! Sou o teu IA iRunBets Pro. Analisei a tua carteira de apostas e estou pronto para conversar contigo sobre a gestão de banca, fraquezas de Reds, apostas múltiplas vs simples ou mercados onde és mais forte. Fala comigo ou escreve a tua pergunta!'
     }
   ]);
   const [loadingMentorAi, setLoadingMentorAi] = useState<boolean>(false);
+  const [isMentorListening, setIsMentorListening] = useState<boolean>(false);
+  const [mentorSpeakingIdx, setMentorSpeakingIdx] = useState<number | null>(null);
+
+  const startMentorVoiceInput = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert(language === 'pt' 
+        ? 'O seu navegador não suporta reconhecimento de voz direto. Pode digitar a mensagem no campo de texto!' 
+        : 'Speech recognition is not supported in this browser. Please type your message.');
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = language === 'pt' ? 'pt-PT' : language === 'fr' ? 'fr-FR' : language === 'it' ? 'it-IT' : language === 'de' ? 'de-DE' : 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      setIsMentorListening(true);
+
+      recognition.onresult = (event: any) => {
+        const speechToText = event.results?.[0]?.[0]?.transcript;
+        if (speechToText) {
+          setMentorInput(prev => (prev ? `${prev} ${speechToText}` : speechToText));
+        }
+        setIsMentorListening(false);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event);
+        setIsMentorListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsMentorListening(false);
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.warn('Failed to start speech recognition:', err);
+      setIsMentorListening(false);
+    }
+  };
+
+  const speakMentorMessage = (text: string, idx: number) => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+
+    if (mentorSpeakingIdx === idx) {
+      window.speechSynthesis.cancel();
+      setMentorSpeakingIdx(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const cleanText = text
+      .replace(/[#*_~`]/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/👉|🟢|🔴|🟡|⚠️|🚨|💡|🧠|📊|🎯|💰|⚽/g, '');
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = language === 'pt' ? 'pt-PT' : 'en-US';
+    utterance.rate = 1.05;
+
+    utterance.onend = () => {
+      setMentorSpeakingIdx(null);
+    };
+    utterance.onerror = () => {
+      setMentorSpeakingIdx(null);
+    };
+
+    setMentorSpeakingIdx(idx);
+    window.speechSynthesis.speak(utterance);
+  };
 
   // --- TIPSTER AUDIT STATES ---
   const [tipsterName, setTipsterName] = useState<string>('');
@@ -5053,15 +5127,16 @@ Por favor, escreve uma auditoria comportamental e financeira de alta estripe e p
     }
   };
 
-  const handleSendMentorMessage = async () => {
-    if (!mentorInput.trim() || loadingMentorAi) return;
+  const handleSendMentorMessage = async (textOverride?: string) => {
+    const rawText = textOverride !== undefined ? textOverride : mentorInput;
+    if (!rawText.trim() || loadingMentorAi) return;
 
     // Check Gemini analytical balance limit
     if (!checkAndIncrementUsage('gemini')) {
       return;
     }
 
-    const userText = mentorInput.trim();
+    const userText = rawText.trim();
     setMentorInput('');
 
     const newHistory = [...mentorMessages, { role: 'user' as const, text: userText }];
@@ -5072,25 +5147,133 @@ Por favor, escreve uma auditoria comportamental e financeira de alta estripe e p
       const totalBetsCount = bets.length;
       const ganhaCount = bets.filter(b => b.status === 'Ganha').length;
       const perdidaCount = bets.filter(b => b.status === 'Perdida').length;
+      const pendenteCount = bets.filter(b => b.status === 'Pendente').length;
       const netProfit = bets.reduce((acc, b) => {
         if (b.status === 'Ganha') return acc + (b.stake * (b.odd - 1));
         if (b.status === 'Perdida') return acc - b.stake;
         return acc;
       }, 0);
-      const cleanRoi = totalBetsCount > 0 ? Math.round((netProfit / startingBankroll) * 100) : 0;
+      const cleanRoi = startingBankroll > 0 ? Math.round((netProfit / startingBankroll) * 100) : 0;
+      const totalStaked = bets.reduce((acc, b) => acc + b.stake, 0);
+      const avgStake = totalBetsCount > 0 ? (totalStaked / totalBetsCount) : 10;
+      const currentBankroll = startingBankroll + netProfit;
 
-      const systemContextPrompt = `
-[DADOS DE BANCA DO UTILIZADOR PARA O TEU ALINHAMENTO ATUAL]:
-- Banca Inicial De Controlo: ${startingBankroll} EUR
-- Total de Apostas Registadas: ${totalBetsCount} (${ganhaCount} Ganhas, ${perdidaCount} Perdidas)
-- Lucro Líquido: ${netProfit.toFixed(2)} EUR
-- ROI Atual: ${cleanRoi}%
+      // Streaks calculation
+      let currentStreak = 0;
+      let currentStreakType: 'green' | 'red' | 'none' = 'none';
+      if (totalBetsCount > 0) {
+        const sortedBets = [...bets].sort((a,b) => b.date.localeCompare(a.date));
+        const firstStatus = sortedBets[0].status;
+        if (firstStatus === 'Ganha') {
+          currentStreakType = 'green';
+          for (const b of sortedBets) {
+            if (b.status === 'Ganha') currentStreak++;
+            else break;
+          }
+        } else if (firstStatus === 'Perdida') {
+          currentStreakType = 'red';
+          for (const b of sortedBets) {
+            if (b.status === 'Perdida') currentStreak++;
+            else break;
+          }
+        }
+      }
 
-O utilizador escreveu: "${userText}"
-Instrução: Estás a falar num chat interativo direto com o apostador. Responde ao utilizador de forma útil, curada, com autoridade científica desportiva e excelente empatia intelectual, focando em matemática, e sanidade financeira de banca desportiva. Escreve em Português de Portugal.
-`;
+      // Markets calculation
+      const goalBets = bets.filter(b => 
+        b.marketType.toLowerCase().includes('golo') || 
+        b.marketType.toLowerCase().includes('over') || 
+        b.marketType.toLowerCase().includes('under') || 
+        b.marketType.toLowerCase().includes('btts') || 
+        b.marketType.toLowerCase().includes('marcam')
+      );
+      const goalsWon = goalBets.filter(b => b.status === 'Ganha').length;
+      const goalsLost = goalBets.filter(b => b.status === 'Perdida').length;
+      const goalsWinRate = (goalsWon + goalsLost > 0) ? Math.round((goalsWon / (goalsWon + goalsLost)) * 100) : 0;
 
-      const response = await sendMessageToGemini(mentorMessages, systemContextPrompt);
+      const winnerBets = bets.filter(b => 
+        b.marketType.toLowerCase().includes('1x2') || 
+        b.marketType.toLowerCase().includes('vencedor') || 
+        b.marketType.toLowerCase().includes('tr') ||
+        b.marketCategory?.toLowerCase().includes('1x2')
+      );
+      const winnerWon = winnerBets.filter(b => b.status === 'Ganha').length;
+      const winnerLost = winnerBets.filter(b => b.status === 'Perdida').length;
+      const winnerWinRate = (winnerWon + winnerLost > 0) ? Math.round((winnerWon / (winnerWon + winnerLost)) * 100) : 0;
+
+      // Multiple bets vs Single bets
+      const multipleBets = bets.filter(b => 
+        b.marketCategory === 'Múltipla' || 
+        b.marketType.toLowerCase().includes('múltipla') || 
+        b.marketType.toLowerCase().includes('multipla') || 
+        b.game.toLowerCase().includes('múltipla') || 
+        b.game.toLowerCase().includes('multipla') ||
+        b.game.includes(' + ')
+      );
+      const multiplesWon = multipleBets.filter(b => b.status === 'Ganha').length;
+      const multiplesLost = multipleBets.filter(b => b.status === 'Perdida').length;
+      const multiplesWinRate = (multiplesWon + multiplesLost > 0) ? Math.round((multiplesWon / (multiplesWon + multiplesLost)) * 100) : 0;
+
+      const singlesCount = Math.max(0, totalBetsCount - multipleBets.length);
+      const singlesWon = Math.max(0, ganhaCount - multiplesWon);
+      const singlesLost = Math.max(0, perdidaCount - multiplesLost);
+      const singlesWinRate = (singlesWon + singlesLost > 0) ? Math.round((singlesWon / (singlesWon + singlesLost)) * 100) : 0;
+
+      const impulsive = bets.filter(b => b.stake > (avgStake * 2.2) || b.stake > (startingBankroll * 0.08)).length;
+
+      // Calculate stubborn team if any
+      const teamLossMap: Record<string, number> = {};
+      bets.forEach(b => {
+        if (!teamLossMap[b.game]) teamLossMap[b.game] = 0;
+        if (b.status === 'Perdida') teamLossMap[b.game] += b.stake;
+        if (b.status === 'Ganha') teamLossMap[b.game] -= (b.stake * (b.odd - 1));
+      });
+      let calculatedWorstTeam = '';
+      let worstLoss = 0;
+      Object.entries(teamLossMap).forEach(([t, loss]) => {
+        if (loss > worstLoss && loss > 0) {
+          worstLoss = loss;
+          calculatedWorstTeam = t;
+        }
+      });
+
+      const statsContext = {
+        totalBets: totalBetsCount,
+        wonCount: ganhaCount,
+        lostCount: perdidaCount,
+        pendingCount: pendenteCount,
+        startingBankroll,
+        currentBankroll,
+        netProfit,
+        roi: cleanRoi,
+        avgStake,
+        totalStakedVolume: totalStaked,
+        currentStreak,
+        currentStreakType,
+        riskScore: Math.min(100, Math.max(10, Math.round((perdidaCount / (totalBetsCount || 1)) * 60 + (impulsive * 15)))),
+        impulsiveBetsCount: impulsive,
+        goalsWinRate,
+        goalsBetsCount: goalBets.length,
+        winner1X2WinRate: winnerWinRate,
+        winner1X2BetsCount: winnerBets.length,
+        multiplesCount: multipleBets.length,
+        multiplesWon,
+        multiplesLost,
+        multiplesWinRate,
+        singlesCount,
+        singlesWon,
+        singlesLost,
+        singlesWinRate,
+        stubbornTeam: calculatedWorstTeam
+      };
+
+      const response = await sendMentorChatMessage(
+        newHistory.map(m => ({ role: m.role, text: m.text })),
+        userText,
+        userMood,
+        statsContext
+      );
+
       setMentorMessages(prev => [...prev, { role: 'model' as const, text: response }]);
     } catch (e) {
       console.error(e);
@@ -5130,6 +5313,44 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
       return <p key={i} className="text-xs sm:text-sm text-zinc-350 leading-relaxed font-light mt-1.5">{line}</p>;
     });
   };
+
+  if (!currentUser && !isAdmin) {
+    return (
+      <div className="p-8 sm:p-12 text-center rounded-3xl bg-[#0E0E13]/90 border border-zinc-800 max-w-2xl mx-auto my-12 space-y-6 relative overflow-hidden backdrop-blur-md shadow-2xl">
+        <div className="w-16 h-16 bg-orange-500/10 rounded-2xl flex items-center justify-center mx-auto border border-orange-500/20 text-orange-400">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 10.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H5.25c-.621 0-1.125.504-1.125 1.125v7.125c0 .621.504 1.125 1.125 1.125Z" />
+          </svg>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-xl sm:text-2xl font-black text-white font-display uppercase tracking-tight">
+            {language === 'pt' ? '🔒 Área Exclusiva para Utilizadores Registados' : '🔒 Registered Users Exclusive Area'}
+          </h3>
+          <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed max-w-md mx-auto">
+            {language === 'pt' 
+              ? 'Para aceder à sua banca, registar apostas e consultar a IA iRunBets Pro, precisa primeiro de criar uma conta gratuita ou iniciar sessão.'
+              : 'To manage your bankroll, record bets and talk to iRunBets Pro AI, you must first create a free account or sign in.'}
+          </p>
+        </div>
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('irunbets_open_auth'))}
+            className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-black font-black text-xs uppercase tracking-wider rounded-xl transition-all shadow-lg shadow-orange-500/20 cursor-pointer font-display"
+          >
+            ✨ {language === 'pt' ? 'Criar Conta Gratuita / Entrar' : 'Create Free Account / Sign In'}
+          </button>
+          <button
+            type="button"
+            onClick={onBackToHome}
+            className="px-5 py-3 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-semibold text-xs uppercase tracking-wider rounded-xl border border-zinc-850 transition-all cursor-pointer"
+          >
+            {language === 'pt' ? 'Voltar ao Início' : 'Back to Home'}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fade-in duration-500 relative">
@@ -7206,7 +7427,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                   }`}
                 >
                   <span>✨</span>
-                  <span>{language === 'pt' ? 'Chat com Gemini' : 'Chat with Gemini'}</span>
+                  <span>{language === 'pt' ? 'Chat com IA iRunBets' : 'Chat with iRunBets AI'}</span>
                 </button>
               </div>
             </div>
@@ -9050,7 +9271,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         </span>
                       </div>
                       <div className="p-3 bg-[#8B5CF6]/5 border border-[#8B5CF6]/15 rounded-lg font-mono">
-                        <span className="text-[10px] text-[#A78BFA] uppercase block">⚡ IA Gemini Pro</span>
+                        <span className="text-[10px] text-[#A78BFA] uppercase block">⚡ IA iRunBets Pro</span>
                         <span className="text-xs font-bold text-white block mt-0.5">{language === 'pt' ? 'Analista Integrado' : 'Integrated Analyst'}</span>
                       </div>
                     </div>
@@ -9077,14 +9298,14 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
 
                       <p className="text-xs text-zinc-400 font-light leading-relaxed">
                         {language === 'pt' 
-                          ? 'O chatbot interativo com Inteligência Artificial Gemini (Mentor de Banca e Risco em Tempo Real) está reservado apenas a partir do plano "Subscrição do Site".'
+                          ? 'O chat interativo com IA iRunBets Pro (Gestão de Banca e Risco em Tempo Real) está reservado apenas a partir do plano "Subscrição do Site".'
                           : 'The interactive chatbot powered by Google Gemini AI (Live Bankroll and Risk advisor) is strictly reserved starting from the "Site Subscription" tier.'}
                       </p>
                       
                       <div className="p-4 bg-zinc-950/60 border border-zinc-850/60 rounded-xl text-left space-y-2">
                         <span className="text-[10px] uppercase font-bold text-zinc-500 font-mono tracking-wider block">O que está incluído na Subscrição de Site?</span>
                         <ul className="text-[10px] text-zinc-350 space-y-1">
-                          <li className="flex items-center gap-1.5">✓ {language === 'pt' ? 'Chat direto ilimitado com Inteligência Artificial Gemini Pro' : 'Direct unlimited chat with Gemini Pro AI'}</li>
+                          <li className="flex items-center gap-1.5">✓ {language === 'pt' ? 'Chat direto ilimitado com IA iRunBets Pro' : 'Direct unlimited chat with Gemini Pro AI'}</li>
                           <li className="flex items-center gap-1.5">✓ {language === 'pt' ? 'Planeador e gestor cognitivo integrado de desvios' : 'Integrated advice on bankroll deviations and risk logs'}</li>
                           <li className="flex items-center gap-1.5">✓ {language === 'pt' ? 'IA iRunBets híbrida premium completa e sem bloqueios' : 'Full premium hybrid iRunBets AI without limits'}</li>
                         </ul>
@@ -9114,7 +9335,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">🏆</span>
                           <div>
-                            <span className="block text-[10px] font-black text-purple-400 uppercase font-mono tracking-wider">Acesso iRunBets Mentor Aberto (Mundial)</span>
+                            <span className="block text-[10px] font-black text-purple-400 uppercase font-mono tracking-wider">Acesso IA iRunBets Aberto (Mundial)</span>
                             <span className="block text-[9.5px] text-zinc-400 font-light leading-snug">Disponível sem limites para todos os membros registados para o campeonato!</span>
                           </div>
                         </div>
@@ -9136,7 +9357,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         <div className="flex items-center gap-2.5">
                           <span className="text-lg">✨</span>
                           <div>
-                            <span className="block text-[10px] font-black text-amber-400 uppercase font-mono tracking-wider">Convidado: Limite Gemini Ativo</span>
+                            <span className="block text-[10px] font-black text-amber-400 uppercase font-mono tracking-wider">Convidado: Limite IA Ativo</span>
                             <span className="block text-[9.5px] text-zinc-400 font-light leading-snug">
                               Tem {Math.max(0, 20 - usageStats.geminiMonthCount)} / 20 análises mensais disponíveis ({Math.max(0, 5 - usageStats.geminiWeekCount)} / 5 esta semana).
                             </span>
@@ -9156,7 +9377,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         </div>
                         <div>
                           <h4 className="text-xs font-black text-white uppercase tracking-widest font-mono">
-                            {language === 'pt' ? 'Chat c/ Mentor iRunBets Pro' : 'Chat with Gemini Pro Mentor'}
+                            {language === 'pt' ? 'Chat c/ IA iRunBets Pro' : 'Chat with iRunBets Pro AI'}
                           </h4>
                           <p className="text-[9px] text-zinc-400 font-light mt-0.5">
                             {language === 'pt' ? 'Alinhamento direto e cognitivo com base na sua banca real' : 'Cognitive advisor based on your factual stats'}
@@ -9164,7 +9385,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         </div>
                       </div>
                       <div className="px-2.5 py-1 text-[9px] font-bold text-[#8B5CF6] uppercase tracking-wider bg-[#8B5CF6]/15 rounded-full font-mono border border-[#8B5CF6]/20">
-                        GEMINI-3.5-FLASH
+                        IA iRunBets
                       </div>
                   </div>
 
@@ -9256,7 +9477,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                         type="text"
                         value={mentorInput}
                         onChange={(e) => setMentorInput(e.target.value)}
-                        placeholder={language === 'pt' ? 'Envie uma mensagem para o Mentor Gemini Pro...' : 'Send a message to Gemini Pro Mentor...'}
+                        placeholder={language === 'pt' ? 'Conversa com a IA iRunBets...' : 'Send a message to iRunBets AI...'}
                         className="flex-1 text-xs bg-zinc-950 border border-zinc-900 hover:border-zinc-800 focus:border-[#8B5CF6] rounded-xl px-4 py-3 text-white focus:outline-none transition-all placeholder-zinc-500 font-light"
                       />
                       <button
@@ -9593,7 +9814,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                     <span className="text-3xl leading-none">🧠</span>
                     <div>
                       <h4 className="text-sm font-black text-white uppercase font-display tracking-widest">
-                        {language === 'pt' ? 'Falar com o Mentor iRunBets Pro' :
+                        {language === 'pt' ? 'Conversar com a IA iRunBets Pro' :
                          language === 'fr' ? 'Parler avec le Mentor iRunBets Pro' :
                          language === 'it' ? 'Parla con il Mentore iRunBets Pro' :
                          language === 'de' ? 'Sprechen Sie mit dem iRunBets Pro Mentor' :
@@ -9695,7 +9916,7 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-[#EF233C] animate-ping"></span>
                         <span className="text-[10px] uppercase font-bold text-zinc-400 font-mono tracking-widest">
-                          {language === 'pt' ? 'Relatório iRunBets Mentor emitido com sucesso' :
+                          {language === 'pt' ? 'Relatório iRunBets emitido com sucesso' :
                            language === 'fr' ? 'Rapport iRunBets Mentor généré avec succès' :
                            language === 'it' ? 'Report dell\'iRunBets Mentor generato con successo' :
                            language === 'de' ? 'iRunBets Mentor-Bericht erfolgreich generiert' :
@@ -9707,6 +9928,198 @@ Instrução: Estás a falar num chat interativo direto com o apostador. Responde
                       </div>
                     </div>
                   )}
+
+                  {/* Interactive Conversational Mentor Chat Console ("Falar & Interagir com o Mentor IA") */}
+                  <div className="mt-8 pt-6 border-t border-zinc-850/80 space-y-4 font-sans">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <div className="relative">
+                          <span className="text-2xl">💬</span>
+                          <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h5 className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                              {language === 'pt' ? 'Conversar com a IA iRunBets' :
+                               language === 'fr' ? 'Parler avec l\'IA iRunBets' :
+                               language === 'it' ? 'Parla con l\'IA iRunBets' :
+                               language === 'de' ? 'Mit der iRunBets KI sprechen' :
+                               'Chat with iRunBets AI'}
+                            </h5>
+                            <span className="px-2 py-0.5 text-[8.5px] font-black uppercase rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
+                              IA iRunBets
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-zinc-400 font-light mt-0.5 font-sans">
+                            {language === 'pt' 
+                              ? 'Conversa por voz ou digita para debateres as tuas apostas, múltiplas vs simples, reds vs greens e pontos fortes.'
+                              : 'Speak or type to discuss your bets, multiples vs singles, reds vs greens, and personal strengths.'}
+                          </p>
+                        </div>
+                      </div>
+
+                      {mentorMessages.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setMentorMessages([
+                              {
+                                role: 'model',
+                                text: 'Olá! Sou o teu IA iRunBets Pro. Analisei a tua carteira de apostas e estou pronto para conversar contigo sobre a gestão de banca, fraquezas de Reds, apostas múltiplas vs simples ou mercados onde és mais forte. Fala comigo ou escreve a tua pergunta!'
+                              }
+                            ]);
+                            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                              window.speechSynthesis.cancel();
+                            }
+                            setMentorSpeakingIdx(null);
+                          }}
+                          className="text-[9.5px] text-zinc-500 hover:text-zinc-300 transition-colors uppercase font-mono flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                        >
+                          <span>🔄</span> {language === 'pt' ? 'Limpar Conversa' : 'Clear Chat'}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Chat Message Box */}
+                    <div className="bg-zinc-950/70 border border-zinc-850/80 rounded-xl p-4 max-h-[380px] overflow-y-auto space-y-3.5 scrollbar-thin">
+                      {mentorMessages.map((msg, idx) => (
+                        <div 
+                          key={idx} 
+                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}
+                        >
+                          <div 
+                            className={`max-w-[90%] sm:max-w-[85%] rounded-2xl text-xs leading-relaxed p-3.5 sm:p-4 relative ${
+                              msg.role === 'user'
+                                ? 'bg-gradient-to-tr from-[#6366F1] to-[#4F46E5] text-white rounded-br-none shadow-md font-sans'
+                                : 'bg-zinc-900/90 border border-zinc-850 text-zinc-200 rounded-bl-none shadow-sm'
+                            }`}
+                          >
+                            {msg.role === 'model' ? (
+                              <div>
+                                {renderFormattedReport(msg.text)}
+                                <div className="mt-2.5 pt-2 border-t border-zinc-850/60 flex items-center justify-between gap-2">
+                                  <span className="text-[9px] font-mono text-zinc-500">IA iRunBets</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => speakMentorMessage(msg.text, idx)}
+                                    className="inline-flex items-center gap-1.5 px-2 py-1 text-[9px] font-mono uppercase rounded bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white transition-colors cursor-pointer"
+                                    title={mentorSpeakingIdx === idx ? 'Parar leitura de voz' : 'Ouvir resposta por voz'}
+                                  >
+                                    <span>{mentorSpeakingIdx === idx ? '⏹️ Parar Áudio' : '🔊 Ouvir Resposta'}</span>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="whitespace-pre-wrap">{msg.text}</p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {loadingMentorAi && (
+                        <div className="flex justify-start">
+                          <div className="bg-zinc-900 border border-zinc-850 py-3 px-4 rounded-2xl rounded-bl-none flex items-center gap-2.5 text-zinc-400 shadow-sm">
+                            <div className="flex gap-1 items-center">
+                              <div className="w-1.5 h-1.5 bg-[#EF233C] rounded-full animate-bounce"></div>
+                              <div className="w-1.5 h-1.5 bg-[#EF233C] rounded-full animate-bounce delay-75"></div>
+                              <div className="w-1.5 h-1.5 bg-[#EF233C] rounded-full animate-bounce delay-150"></div>
+                            </div>
+                            <span className="text-[10px] font-mono text-zinc-300 uppercase animate-pulse">
+                              {language === 'pt' ? 'iRunBets...' : 'iRunBets...'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Quick Suggested Interactive Questions */}
+                    <div className="space-y-1.5 pt-1">
+                      <span className="text-[9.5px] uppercase font-mono font-bold text-zinc-400 block tracking-wider">
+                        {language === 'pt' ? 'Perguntas Rápidas à IA iRunBets:' : 'Quick Questions to the Mentor:'}
+                      </span>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          {
+                            label: '🎯 Onde sou mais forte: 1X2 ou Golos?',
+                            prompt: 'Em que mercados mostro maior taxa de acerto entre 1X2 e Golos? Onde sou mais forte e onde devo evitar apostar?'
+                          },
+                          {
+                            label: '📊 Múltiplas vs Simples (Reds vs Greens)',
+                            prompt: 'Faz uma análise matemática às minhas apostas múltiplas na questão dos reds versus greens. Vale a pena continuar a fazer acumuladores?'
+                          },
+                          {
+                            label: '🛑 Como travar sequências de Reds e Tilt?',
+                            prompt: 'Estou a lidar com sequências de Reds sucessivos. Dá-me conselhos rigorosos de psicologia desportiva para não cair no tilt e proteger a banca.'
+                          },
+                          {
+                            label: '💰 Qual deve ser a minha stake hoje?',
+                            prompt: 'Com base no meu saldo e na minha banca de controlo, qual deve ser a minha stake recomendada para hoje para prevenir ficar mais pobre?'
+                          },
+                          {
+                            label: '⚽ Como a iRunBets me ajuda a filtrar jogos?',
+                            prompt: 'Como é que as métricas e a análise da iRunBets me ajudam a validar apostas e a filtrar palpites sem valor?'
+                          }
+                        ].map((q, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSendMentorMessage(q.prompt)}
+                            disabled={loadingMentorAi}
+                            className="px-2.5 py-1.5 text-[10px] bg-zinc-950 hover:bg-zinc-900 border border-zinc-850 hover:border-zinc-750 text-zinc-300 hover:text-white rounded-lg transition-colors cursor-pointer text-left"
+                          >
+                            {q.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Input form with Microphone & Send button */}
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleSendMentorMessage();
+                      }}
+                      className="flex gap-2 items-center pt-2"
+                    >
+                      <button
+                        type="button"
+                        onClick={startMentorVoiceInput}
+                        disabled={loadingMentorAi}
+                        title={isMentorListening ? 'A escutar... Fale agora!' : 'Falar por voz com a IA iRunBets'}
+                        className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                          isMentorListening 
+                            ? 'bg-red-500 text-white border-red-400 animate-pulse shadow-lg shadow-red-500/30' 
+                            : 'bg-zinc-950 border-zinc-850 text-zinc-400 hover:text-white hover:border-zinc-700'
+                        }`}
+                      >
+                        <span className="text-sm">{isMentorListening ? '🔴' : '🎙️'}</span>
+                      </button>
+
+                      <input
+                        type="text"
+                        value={mentorInput}
+                        onChange={(e) => setMentorInput(e.target.value)}
+                        placeholder={
+                          isMentorListening 
+                            ? (language === 'pt' ? 'A escutar a tua voz... Podes falar!' : 'Listening... Speak now!') 
+                            : (language === 'pt' ? 'Conversa com a IA iRunBets (ex: "Onde sou mais fraco?", "Como gerir a banca hoje?")...' : 'Speak or type to the Mentor...')
+                        }
+                        className="flex-1 text-xs bg-zinc-950 border border-zinc-850 focus:border-[#EF233C] rounded-xl px-4 py-3 text-white focus:outline-none transition-all placeholder-zinc-500 font-light"
+                      />
+
+                      <button
+                        type="submit"
+                        disabled={!mentorInput.trim() || loadingMentorAi}
+                        className="px-5 py-3 bg-gradient-to-r from-red-500 to-[#EF233C] hover:from-red-600 hover:to-[#CF132C] disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md cursor-pointer flex items-center justify-center gap-1 shrink-0"
+                      >
+                        {loadingMentorAi ? (
+                          <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        ) : (
+                          <span>{language === 'pt' ? 'Falar' : 'Send'}</span>
+                        )}
+                      </button>
+                    </form>
+                  </div>
 
                 </div>
 

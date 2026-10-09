@@ -24,3 +24,30 @@ export const sendMessageToGemini = async (history: {role: string, text: string}[
     return "Lamento, mas ocorreu um erro a processar os dados matemáticos da partida neste momento.";
   }
 };
+
+export const sendMentorChatMessage = async (
+  history: { role: string; text: string }[],
+  newMessage: string,
+  userMood: string,
+  statsContext: any
+): Promise<string> => {
+  try {
+    const res = await fetch("/api/gemini/mentor-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ history, newMessage, userMood, statsContext }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      return errData?.message || "Desculpa, ocorreu um erro ao contactar a IA iRunBets.";
+    }
+
+    const data = await res.json();
+    return data.reply || "Lamento, não obtive resposta da IA iRunBets.";
+  } catch (error) {
+    console.error("iRunBets AI Chat Proxy Error:", error);
+    return "Lamento, ocorreu uma falha temporária de comunicação com a IA iRunBets.";
+  }
+};
+

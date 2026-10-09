@@ -1170,14 +1170,14 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
                     <div className="flex items-center gap-2">
                       <span className="text-xl">⚡</span>
                       <h3 className="text-sm sm:text-base font-black uppercase tracking-tight text-white flex items-center gap-2">
-                        <span>Fluxo do AI_Engine.py</span>
+                        <span>Elevados Padrões de Probabilidade & Tendências</span>
                         <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-[10px] font-mono font-bold">
                           5 Módulos Operacionais
                         </span>
                       </h3>
                     </div>
                     <p className="text-xs text-zinc-400">
-                      Pipeline algorítmico integrado: Poisson, Clima Open-Meteo, Regressão à Média (5+), Jornada Dupla e Co-ocorrência.
+                      Pipeline integrado: calibração de elevados padrões de probabilidade, tendências históricas, contexto climatérico e rendimento físico.
                     </p>
                   </div>
 

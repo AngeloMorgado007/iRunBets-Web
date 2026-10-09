@@ -251,8 +251,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess }) => 
         {/* Info alerts for preview iframe */}
         {isIframe && !oauthErrorDetails && (
           <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[11px] rounded-xl font-light leading-relaxed">
-            <span className="font-bold block mb-0.5">ℹ️ Dica para testes no AI Studio</span>
-            Na pré-visualização em iframe, os popups do Google podem ser condicionados pelo navegador. Se tiver erro, use o botão de acesso rápido direto ou abra a aplicação num novo separador.
+            <span className="font-bold block mb-0.5">ℹ️ Dica para acesso</span>
+            Na pré-visualização, os popups de autenticação podem ser condicionados pelo navegador. Se tiver restrição, utilize o login por email direto.
           </div>
         )}
 

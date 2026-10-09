@@ -438,12 +438,14 @@ export const DadosEstatisticosPage: React.FC<DadosEstatisticosPageProps> = ({ on
                 className="group relative rounded-2xl overflow-hidden border border-zinc-800 bg-[#0E0F16] hover:border-cyan-500/50 transition-all duration-300 shadow-xl cursor-pointer flex flex-col"
               >
                 <div className="relative h-52 w-full overflow-hidden bg-zinc-950">
-                  <img 
-                    src={img.url} 
-                    alt={img.title}
-                    referrerPolicy="no-referrer"
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
-                  />
+                  {img.url && img.url.trim() !== '' ? (
+                    <img 
+                      src={img.url} 
+                      alt={img.title}
+                      referrerPolicy="no-referrer"
+                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 opacity-90 group-hover:opacity-100"
+                    />
+                  ) : null}
                   <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[10px] font-bold text-cyan-300 font-mono border border-white/10 uppercase tracking-wider">
                     {img.tag}
                   </div>
@@ -482,12 +484,14 @@ export const DadosEstatisticosPage: React.FC<DadosEstatisticosPageProps> = ({ on
               >
                 ✕ Fechar
               </button>
-              <img 
-                src={selectedImageModal} 
-                alt="Zoom Análise"
-                referrerPolicy="no-referrer"
-                className="max-h-[82vh] w-auto object-contain rounded-xl"
-              />
+              {selectedImageModal && selectedImageModal.trim() !== '' ? (
+                <img 
+                  src={selectedImageModal} 
+                  alt="Zoom Análise"
+                  referrerPolicy="no-referrer"
+                  className="max-h-[82vh] w-auto object-contain rounded-xl"
+                />
+              ) : null}
             </div>
           </div>
         )}

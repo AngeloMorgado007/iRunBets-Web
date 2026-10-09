@@ -368,7 +368,7 @@ export const TopBannersSlider: React.FC<TopBannersSliderProps> = ({ onActionClic
           </div>
 
           {/* Optional Image Preview Column if image was uploaded */}
-          {currentBanner.imageUrl && (
+          {currentBanner.imageUrl && currentBanner.imageUrl.trim() !== '' && (
             <div className="lg:col-span-5 flex justify-center items-center">
               <div className="relative rounded-2xl overflow-hidden border border-zinc-700/80 shadow-2xl bg-zinc-950/90 max-h-[320px] sm:max-h-[380px] w-full group/img">
                 <img
@@ -568,7 +568,7 @@ export const TopBannersSlider: React.FC<TopBannersSliderProps> = ({ onActionClic
                     )}
                   </div>
 
-                  {editingBanner.imageUrl && (
+                  {editingBanner.imageUrl && editingBanner.imageUrl.trim() !== '' && (
                     <div className="mt-2 rounded-xl overflow-hidden border border-zinc-800 max-h-28 max-w-xs">
                       <img src={editingBanner.imageUrl} alt="Preview" className="w-full h-auto object-cover max-h-28" />
                     </div>

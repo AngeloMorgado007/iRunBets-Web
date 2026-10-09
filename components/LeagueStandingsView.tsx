@@ -622,7 +622,7 @@ export const LeagueStandingsView: React.FC<LeagueStandingsViewProps> = ({
                     </td>
                     <td className="py-3 px-4 font-bold text-white group-hover:text-cyan-300 transition-colors">
                       <div className="flex items-center gap-2.5">
-                        {team.crest ? (
+                        {team.crest && team.crest.trim() !== '' ? (
                           <img 
                             src={team.crest} 
                             alt={team.name} 

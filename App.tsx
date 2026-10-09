@@ -692,6 +692,7 @@ function App() {
           onSubscriptionUpdated={handleAuthSuccess}
           isAdmin={isAdmin}
           currentUser={currentUser}
+          onOpenAuth={() => setIsAuthOpen(true)}
         />
       ) : (
         <main>
@@ -953,12 +954,18 @@ function App() {
 
                         {/* Image Frame */}
                         <div className="relative aspect-video rounded-2xl overflow-hidden border border-zinc-900 bg-black shadow-inner flex items-center justify-center">
-                          <img
-                            src={item.imageUrl}
-                            alt={item.title}
-                            referrerPolicy="no-referrer"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
-                          />
+                          {item.imageUrl && item.imageUrl.trim() !== '' ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.title}
+                              referrerPolicy="no-referrer"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-all duration-700"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-zinc-950 text-zinc-600 font-mono text-xs">
+                              Sem Imagem
+                            </div>
+                          )}
                           {/* Premium Overlay */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/10 to-transparent flex flex-col justify-end p-4">
                             <span className="text-[9px] text-amber-400/85 font-mono uppercase tracking-widest font-black [text-shadow:0_0_8px_rgba(245,158,11,0.6)]">
@@ -1063,12 +1070,14 @@ function App() {
 
                   {/* Image Area */}
                   <div className="relative rounded-2xl overflow-hidden border border-zinc-900 bg-black flex items-center justify-center max-h-[70vh] shadow-inner">
-                    <img
-                      src={selectedMultipleImage.imageUrl}
-                      alt={selectedMultipleImage.title}
-                      referrerPolicy="no-referrer"
-                      className="w-full h-auto object-contain max-h-[55vh] rounded-xl"
-                    />
+                    {selectedMultipleImage.imageUrl && selectedMultipleImage.imageUrl.trim() !== '' ? (
+                      <img
+                        src={selectedMultipleImage.imageUrl}
+                        alt={selectedMultipleImage.title}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-auto object-contain max-h-[55vh] rounded-xl"
+                      />
+                    ) : null}
                   </div>
 
                   {/* Footer buttons / actions */}

@@ -384,7 +384,6 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
   const [loadingRaioX, setLoadingRaioX] = useState<boolean>(false);
 
   const [copiedToast, setCopiedToast] = useState(false);
-  const [copiedPromptKey, setCopiedPromptKey] = useState<string | null>(null);
 
   // Balneário UEFA DT Chat State
   interface DtChatMessage {
@@ -486,6 +485,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
       const res = await fetch("/api/gemini/dt-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: AbortSignal.timeout(8500),
         body: JSON.stringify({
           history: previousHistory.map(m => ({ role: m.role, text: m.text })),
           newMessage: textToSend,
@@ -553,14 +553,6 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
     } finally {
       setIsDtChatThinking(false);
     }
-  };
-
-  const handleCopyPromptText = (text: string, key: string) => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-    }
-    setCopiedPromptKey(key);
-    setTimeout(() => setCopiedPromptKey(null), 3000);
   };
 
   // Sync auth state
@@ -1270,11 +1262,11 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
     }
 
     const modules = metrics.engineModules;
-    const text = `⚽ iRunBets IA - ANÁLISE QUANTITATIVA\n` +
+    const text = `⚽ iRunBets IA - ELEVADOS PADRÕES DE PROBABILIDADE E TENDÊNCIAS\n` +
       `🏆 ${jogo.liga}\n` +
       `⚔️ ${jogo.confronto || `${jogo.clube_casa} vs ${jogo.clube_fora}`}\n` +
       `📅 ${jogo.data} às ${jogo.hora}\n\n` +
-      `⚡ FLUXO DO AI_ENGINE.PY (5 MÓDULOS):\n` +
+      `⚡ PADRÕES DE PROBABILIDADE & TENDÊNCIAS (5 MÓDULOS):\n` +
       `1️⃣ POISSON: xG ${modules?.modulo1_poisson?.xgHome} vs ${modules?.modulo1_poisson?.xgAway} (Total: ${modules?.modulo1_poisson?.totalXg}) | Over 2.5: ${modules?.modulo1_poisson?.overUnder25?.over}% | BTTS: ${modules?.modulo1_poisson?.btts?.yes}%\n` +
       `2️⃣ CLIMA & FÍSICO: ${modules?.modulo2_clima?.temperature} • Vento ${modules?.modulo2_clima?.windKmH}km/h • Relvado ${modules?.modulo2_clima?.pitchDimension} (${modules?.modulo2_clima?.pitchType})\n` +
       `3️⃣ FATOR DE REGRESSÃO: ${modules?.modulo3_fatorAngelo?.hasStreak5Plus ? `Alerta de Regressão Ativo (${modules?.modulo3_fatorAngelo?.teamWithStreak} ${modules?.modulo3_fatorAngelo?.streakCount} vitórias seguidas)` : 'Série Estável'}\n` +
@@ -3415,7 +3407,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                         Métricas Quantitativas & Previsões IA Protegidas
                       </h3>
                       <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
-                        As probabilidades matemáticas Poisson 1X2, estimativas de cantos e cartões, cálculo de valor esperado (+EV), purificador IA e justificações táticas são exclusivas para utilizadores registados e subscritores.
+                        As probabilidades calibradas 1X2 com elevados padrões de probabilidade e tendências, estimativas de cantos e cartões, cálculo de valor esperado (+EV), purificador IA e justificações táticas são exclusivas para utilizadores registados e subscritores.
                       </p>
                     </div>
                     <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -3621,7 +3613,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                     <div className="bg-zinc-950/80 border border-zinc-850 rounded-2xl p-4 sm:p-5 space-y-3">
                       <div className="flex items-center justify-between text-xs font-mono">
                         <span className="font-bold text-zinc-300 uppercase tracking-wider">
-                          📊 Probabilidades 1X2 (Poisson Calibrado)
+                          📊 Probabilidades 1X2 (Elevados Padrões de Probabilidade & Tendências)
                         </span>
                         <span className="text-orange-400 font-bold">Soma: 100%</span>
                       </div>
@@ -3720,7 +3712,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                       </div>
                     </div>
 
-                    {/* FLUXO DO AI_ENGINE.PY (5 MÓDULOS DE ANÁLISE QUANTITATIVA) */}
+                    {/* ELEVADOS PADRÕES DE PROBABILIDADE & TENDÊNCIAS (5 MÓDULOS DE ANÁLISE) */}
                     {selectedMatch.metrics.engineModules && (
                       <div className="bg-zinc-950/90 border border-cyan-500/30 rounded-2xl p-5 sm:p-6 space-y-4 relative overflow-hidden shadow-xl">
                         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-zinc-800 pb-3">
@@ -3728,13 +3720,13 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                             <span className="text-xl">⚡</span>
                             <div>
                               <h4 className="text-sm sm:text-base font-black uppercase tracking-wider text-white flex items-center gap-2">
-                                <span>Fluxo do AI_Engine.py</span>
+                                <span>Elevados Padrões de Probabilidade & Tendências</span>
                                 <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-bold">
                                   5 Módulos Ativos
                                 </span>
                               </h4>
                               <p className="text-xs sm:text-sm text-zinc-300 font-mono">
-                                Calibração contínua: Poisson, Clima Open-Meteo, Regressão à Média (5+), Fadiga 72h e Co-ocorrência.
+                                Calibração contínua: elevados padrões matemáticos de probabilidade, tendências históricas, fatores climatéricos e fadiga competitiva.
                               </p>
                             </div>
                           </div>
@@ -3749,7 +3741,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                           <div className="p-3.5 rounded-xl bg-[#0e1219] border border-zinc-800/90 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="text-xs sm:text-sm font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                                <span>📊</span> [1] Poisson & xG
+                                <span>📊</span> [1] Volume Ofensivo & Probabilidade
                               </span>
                               <span className="text-[10px] sm:text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 font-bold">
                                 {selectedMatch.metrics.engineModules.modulo1_poisson.status}
@@ -4342,7 +4334,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                     {/* Explanatory Analysis Text */}
                     <div className="bg-zinc-950/90 border border-zinc-850 rounded-2xl p-5 sm:p-6 space-y-2.5">
                       <h4 className="text-sm sm:text-base font-mono font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
-                        <span>📝 Justificação Tática & Matemática da Análise:</span>
+                        <span>📝 Justificação Tática & Análise de Tendências:</span>
                       </h4>
                       <p className="text-sm sm:text-base text-zinc-200 leading-relaxed font-sans">
                         {selectedMatch.metrics.textoAnalise}
@@ -4350,114 +4342,10 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                     </div>
 
                     {/* ========================================================================= */}
-                    {/* 🧠 IAiRB • DIRETOR TÉCNICO & DIRETOR DESPORTIVO UEFA (GOOGLE AI STUDIO)  */}
+                    {/* 💬 BALNEÁRIO TÉCNICO IAiRB • CHAT INTERATIVO UEFA EM TEMPO REAL          */}
                     {/* ========================================================================= */}
-                    <div className="bg-gradient-to-b from-[#0e1017] via-[#12141e] to-[#0a0c12] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-7 space-y-6 shadow-2xl relative overflow-hidden">
-                      {/* Ambient background badge */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-500/30 pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/50 flex items-center justify-center text-xl shadow-inner">
-                            🧠
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
-                                <span>IAiRB • Diretor Técnico & Diretor Desportivo UEFA</span>
-                              </h3>
-                              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-black uppercase border border-amber-500/40">
-                                iRunBets IA
-                              </span>
-                            </div>
-                            <p className="text-xs text-zinc-400 font-mono mt-0.5">
-                              Engenharia de Prompts para Google AI Studio & Análise Multidisciplinar
-                            </p>
-                          </div>
-                        </div>
-
-                        <a
-                          href="https://aistudio.google.com/"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-3.5 py-2 bg-gradient-to-r from-amber-600 via-orange-600 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-white font-mono text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 shadow-md active:scale-95 border border-amber-400/40"
-                        >
-                          <span>🚀</span>
-                          <span>Abrir Google AI Studio</span>
-                          <span className="text-[10px] opacity-80">↗</span>
-                        </a>
-                      </div>
-
-                      {/* Prompt 1 & Prompt 2 - Grid */}
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                        {/* PASSO 1: IAiRB.py */}
-                        <div className="bg-zinc-950/90 border border-amber-500/30 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 shadow-lg">
-                          <div className="space-y-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-mono text-xs font-black uppercase border border-amber-500/30">
-                                1️⃣ Passo 1: Criar / Atualizar IAiRB.py
-                              </span>
-                              <span className="text-[11px] font-mono text-zinc-400">
-                                Diretor Técnico UEFA
-                              </span>
-                            </div>
-                            <p className="text-xs text-zinc-300 leading-relaxed font-sans">
-                              Define os 3 pilares curriculares UEFA: <strong>Psicologia (RH)</strong>, <strong>Preparação Física e Cargas</strong> e <strong>Setor Defensivo e Guarda-Redes</strong> no método <code className="text-amber-300 bg-black/50 px-1 py-0.5 rounded font-mono text-[11px]">gerar_parecer_completo(...)</code>.
-                            </p>
-                            <div className="bg-black/80 border border-zinc-800 rounded-xl p-3.5 max-h-48 overflow-y-auto scrollbar-thin text-zinc-300 font-mono text-[11px] leading-relaxed select-all">
-                              {`"Quero que cries ou atualizes o ficheiro IAiRB.py para o meu projeto de inteligência desportiva iRunBets. Este módulo deve funcionar como um Diretor Técnico e Diretor Desportivo (com base nos curricula dos cursos de treinadores UEFA). Ele deve conter uma classe chamada IAiRBAnalyst com métodos que avaliam três grandes pilares com base nos dados brutos do ai_engine.py:\n\nDinâmica de Balneário / Psicologia (RH): Analisar o peso do favoritismo e o nível de pressão anímica sobre o grupo (favorito vs underdog).\n\nPreparação Física e Cargas: Avaliar o desvio padrão e a volatilidade de rendimento projetando o cansaço tardio.\n\nSetor Defensivo e Guarda-Redes: Analisar a exposição do último reduto com base no volume ofensivo e xG do adversário.\n\nO método principal deve chamar-se gerar_parecer_completo(...) e devolver uma string estruturada, coesa e com um tom estritamente profissional de treinador para ser guardada na base de dados."`}
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleCopyPromptText(
-                              `Quero que cries ou atualizes o ficheiro IAiRB.py para o meu projeto de inteligência desportiva iRunBets. Este módulo deve funcionar como um Diretor Técnico e Diretor Desportivo (com base nos curricula dos cursos de treinadores UEFA). Ele deve conter uma classe chamada IAiRBAnalyst com métodos que avaliam três grandes pilares com base nos dados brutos do ai_engine.py:\n\nDinâmica de Balneário / Psicologia (RH): Analisar o peso do favoritismo e o nível de pressão anímica sobre o grupo (favorito vs underdog).\n\nPreparação Física e Cargas: Avaliar o desvio padrão e a volatilidade de rendimento projetando o cansaço tardio.\n\nSetor Defensivo e Guarda-Redes: Analisar a exposição do último reduto com base no volume ofensivo e xG do adversário.\n\nO método principal deve chamar-se gerar_parecer_completo(...) e devolver uma string estruturada, coesa e com um tom estritamente profissional de treinador para ser guardada na base de dados.`,
-                              'prompt1'
-                            )}
-                            className="w-full py-2.5 px-4 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 hover:border-amber-400 text-amber-300 hover:text-white font-mono text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow"
-                          >
-                            <span>{copiedPromptKey === 'prompt1' ? '✅' : '📋'}</span>
-                            <span>{copiedPromptKey === 'prompt1' ? 'Prompt 1 Copiado com Sucesso!' : 'Copiar Prompt 1 (IAiRB.py)'}</span>
-                          </button>
-                        </div>
-
-                        {/* PASSO 2: ai_engine.py */}
-                        <div className="bg-zinc-950/90 border border-orange-500/30 rounded-2xl p-4 sm:p-5 flex flex-col justify-between space-y-4 shadow-lg">
-                          <div className="space-y-2.5">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="px-2.5 py-1 rounded-lg bg-orange-500/20 text-orange-300 font-mono text-xs font-black uppercase border border-orange-500/30">
-                                2️⃣ Passo 2: Atualizar ai_engine.py
-                              </span>
-                              <span className="text-[11px] font-mono text-zinc-400">
-                                Integração Supabase
-                              </span>
-                            </div>
-                            <p className="text-xs text-zinc-300 leading-relaxed font-sans">
-                              Importa <code className="text-orange-300 bg-black/50 px-1 py-0.5 rounded font-mono text-[11px]">IAiRBAnalyst</code>, gera o parecer no ciclo de jogos agendados e substitui a coluna <code className="text-orange-300 bg-black/50 px-1 py-0.5 rounded font-mono text-[11px]">justificacao_matematica</code> mantendo Poisson e meteorologia.
-                            </p>
-                            <div className="bg-black/80 border border-zinc-800 rounded-xl p-3.5 max-h-48 overflow-y-auto scrollbar-thin text-zinc-300 font-mono text-[11px] leading-relaxed select-all">
-                              {`"Quero atualizar o meu script ai_engine.py para integrar o novo módulo IAiRB.py que acabamos de criar.\n\nPreciso que:\n\nImportes a classe IAiRBAnalyst do módulo IAiRB.\n\nInicialices a classe dentro da função principal executar_motor_ia().\n\nNo ciclo que processa cada jogo agendado (após calcular o Poisson, xG, desvio padrão e probabilidades), chames o método ia_irb.gerar_parecer_completo(...) passando as variáveis calculadas.\n\nSubstituas a string gerada anteriormente na coluna justificacao_matematica do dicionário enviado para o Supabase pelo parecer técnico multidisciplinar gerado pela IAiRB.\n\nMantém intacta toda a restante lógica matemática de Poisson, meteorologia, dimensões de campo e geração de boletins de co-ocorrência."`}
-                            </div>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleCopyPromptText(
-                              `Quero atualizar o meu script ai_engine.py para integrar o novo módulo IAiRB.py que acabamos de criar.\n\nPreciso que:\n\nImportes a classe IAiRBAnalyst do módulo IAiRB.\n\nInicialices a classe dentro da função principal executar_motor_ia().\n\nNo ciclo que processa cada jogo agendado (após calcular o Poisson, xG, desvio padrão e probabilidades), chames o método ia_irb.gerar_parecer_completo(...) passando as variáveis calculadas.\n\nSubstituas a string gerada anteriormente na coluna justificacao_matematica do dicionário enviado para o Supabase pelo parecer técnico multidisciplinar gerado pela IAiRB.\n\nMantém intacta toda a restante lógica matemática de Poisson, meteorologia, dimensões de campo e geração de boletins de co-ocorrência.`,
-                              'prompt2'
-                            )}
-                            className="w-full py-2.5 px-4 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400/50 hover:border-orange-400 text-orange-300 hover:text-white font-mono text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow"
-                          >
-                            <span>{copiedPromptKey === 'prompt2' ? '✅' : '📋'}</span>
-                            <span>{copiedPromptKey === 'prompt2' ? 'Prompt 2 Copiado com Sucesso!' : 'Copiar Prompt 2 (ai_engine.py)'}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* ========================================================================= */}
-                      {/* 💬 BALNEÁRIO TÉCNICO IAiRB • CHAT INTERATIVO UEFA EM TEMPO REAL          */}
-                      {/* ========================================================================= */}
-                      <div className="bg-[#0b0c12] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
-                        {/* Header do Balneário */}
+                    <div className="bg-[#0b0c12] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
+                      {/* Header do Balneário */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/30 border border-amber-400/50 flex items-center justify-center text-xl shadow-inner">
@@ -4528,7 +4416,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                               },
                               {
                                 label: '🧠 Efeito de Sofrer Golo Cedo',
-                                question: `O que acontece no balneário e no modelo matemático se o ${selectedMatch.jogo.clube_casa} sofrer um golo madrugador nos primeiros 15 minutos? Como deve a equipa reagir anímica e taticamente?`
+                                question: `O que acontece no balneário e nas tendências do jogo se o ${selectedMatch.jogo.clube_casa} sofrer um golo madrugador nos primeiros 15 minutos? Como deve a equipa reagir anímica e taticamente?`
                               },
                               {
                                 label: '⚡ Cansaço Tardio aos 70\'+',
@@ -4588,16 +4476,20 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                           })}
 
                           {isDtChatThinking && (
-                            <div className="flex flex-col items-start space-y-1 animate-pulse">
+                            <div className="flex flex-col items-start space-y-1">
                               <div className="flex items-center gap-2 px-1">
                                 <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400">
                                   👔 Diretor Técnico UEFA
                                 </span>
-                                <span className="text-[10px] font-mono text-zinc-600">a analisar...</span>
+                                <span className="text-[10px] font-mono text-zinc-500">a responder...</span>
                               </div>
-                              <div className="bg-zinc-900/90 border border-amber-500/40 rounded-2xl rounded-tl-sm p-3.5 flex items-center gap-2 text-xs font-mono text-amber-300">
-                                <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-                                <span>A cruzar dados de xG, Poisson e matriz de balneário...</span>
+                              <div className="bg-zinc-900/95 border border-zinc-750 rounded-2xl rounded-tl-sm p-3.5 flex items-center gap-2 text-xs font-mono text-zinc-300">
+                                <div className="flex items-center gap-1.5 py-0.5">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse [animation-delay:200ms]" />
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse [animation-delay:400ms]" />
+                                </div>
+                                <span className="text-[11px] text-zinc-400 font-sans">A processar resposta...</span>
                               </div>
                             </div>
                           )}
@@ -4639,7 +4531,6 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                           </div>
                         </form>
                       </div>
-                    </div>
                   </>
                 )}
               </div>
@@ -4837,7 +4728,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
             {/* Description */}
             <div className="space-y-3.5 text-xs text-zinc-300 leading-relaxed font-light">
               <p>
-                Os dados analíticos, métricas quantitativas de Poisson, probabilidades e estimativas de cantos/cartões da <strong className="text-white">iRunBets</strong> são ativos de propriedade intelectual protegidos por 4 camadas de segurança.
+                Os dados analíticos, métricas quantitativas de probabilidade e tendências, probabilidades e estimativas de cantos/cartões da <strong className="text-white">iRunBets</strong> são ativos de propriedade intelectual protegidos por 4 camadas de segurança.
               </p>
               
               <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-850 space-y-2.5">

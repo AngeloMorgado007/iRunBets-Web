@@ -227,14 +227,27 @@ export function getCalibratedMatchMetrics(jogo: JogoDoDia) {
     : superIaProb;
 
   // Analysis text for SuperIA
-  const rawTexto = (jogo && (jogo as any).analise_texto) ? (jogo as any).analise_texto : '';
+  const rawTexto = (jogo && (jogo as any).analise_texto) ? String((jogo as any).analise_texto) : '';
   const favorito = probCasa > probFora ? (jogo.clube_casa || 'Equipa Casa') : (jogo.clube_fora || 'Equipa Fora');
-  let textoAnalise = rawTexto && rawTexto.trim() !== '' && rawTexto !== 'Análise detalhada a ser processada pelo algoritmo.'
-    ? rawTexto
-    : '';
+  
+  const isInvalidOrLeakedText = !rawTexto || 
+    rawTexto.trim() === '' || 
+    rawTexto === 'Análise detalhada a ser processada pelo algoritmo.' ||
+    rawTexto.includes('.py') ||
+    rawTexto.includes('IAiRB') ||
+    rawTexto.includes('Google AI Studio') ||
+    rawTexto.includes('Passo 1') ||
+    rawTexto.includes('Passo 2') ||
+    rawTexto.includes('Engenharia de Prompts') ||
+    rawTexto.includes('Quero que cries') ||
+    rawTexto.includes('Poisson') ||
+    rawTexto.includes('[Erro') ||
+    rawTexto.includes('Chave de API');
+
+  let textoAnalise = isInvalidOrLeakedText ? '' : rawTexto;
 
   const modulo1_poisson = {
-    title: 'Módulo 1: Poisson & xG',
+    title: 'Módulo 1: Volume Ofensivo & Probabilidade',
     xgHome,
     xgAway,
     totalXg,
@@ -322,7 +335,7 @@ export function getCalibratedMatchMetrics(jogo: JogoDoDia) {
   const modulo5_coOcorrencia = {
     title: 'Módulo 5: Co-Ocorrência',
     supportedScope: 'Múltiplas de 4 a 13 equipas',
-    summary: `Conexão direta ao motor de co-ocorrência histórica da SuperIA: audita se as equipas do boletim já venceram juntas e localiza o elo mais fraco da combinada.`,
+    summary: `Conexão direta ao motor analítico de co-ocorrência histórica: audita a consistência conjunta das equipas e localiza o elo mais vulnerável da combinada.`,
     status: 'CONECTADO'
   };
 
@@ -338,12 +351,12 @@ export function getCalibratedMatchMetrics(jogo: JogoDoDia) {
       riskPart += ` • Alerta de Fadiga: ${fatiguedTeam} em jornada dupla (<72h).`;
     }
 
-    textoAnalise = `📊 ANÁLISE QUANTITATIVA SUPERIA (POISSON & ELO):
-O modelo preditivo de Poisson da SuperIA projeta um volume ofensivo de ${xgHome} xG para o ${home} contra ${xgAway} xG para o ${away} (total de ${totalXg} golos esperados no encontro). 
+    textoAnalise = `📊 ANÁLISE PROFISSIONAL IRUNBETS (ELEVADOS PADRÕES DE PROBABILIDADE E TENDÊNCIAS):
+Com base em elevados padrões matemáticos de probabilidade e tendências de rendimento, projeta-se um volume ofensivo de ${xgHome} xG para o ${home} contra ${xgAway} xG para o ${away} (total de ${totalXg} golos esperados no encontro). 
 
-Probabilidades calibradas: ${probCasa}% para vitória do ${home}, ${probEmpate}% para Empate e ${probFora}% para o ${away}. No mercado de golos, o Over 2.5 regista ${over25Prob}% e Ambas Marcam (BTTS) ${bttsYesProb}%. Projeção quantitativa adicional: ${cantosVal} cantos e ${cartoesVal} cartões.${riskPart}
+Probabilidades calibradas: ${probCasa}% para vitória do ${home}, ${probEmpate}% para Empate e ${probFora}% para o ${away}. No mercado de golos, o Over 2.5 regista ${over25Prob}% e Ambas Marcam (BTTS) ${bttsYesProb}%. Projeção analítica adicional: ${cantosVal} cantos e ${cartoesVal} cartões.${riskPart}
 
-💎 SELEÇÃO PURIFICADA SUPERIA:
+💎 SELEÇÃO PURIFICADA IRUNBETS:
 Recomendada a entrada no mercado '${seloIa}' com margem estatística de ${evVal} (+EV) e índice de confiança de ${confianca}%.`;
   }
 

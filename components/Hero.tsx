@@ -503,7 +503,7 @@ const Hero: React.FC = () => {
 
         {/* Custom Image / Mockup Display */}
         <div className="w-full flex flex-col items-center justify-center gap-8 mt-4">
-          {config.homepageCustomImageUrl && (
+          {config.homepageCustomImageUrl && config.homepageCustomImageUrl.trim() !== '' && (
             <div className="w-full max-w-2xl relative group animate-fade-in-up mt-4">
               {/* Glow backing */}
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-sky-500/30 to-orange-500/30 opacity-30 blur-lg group-hover:opacity-40 transition-opacity duration-500"></div>

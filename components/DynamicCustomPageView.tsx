@@ -17,6 +17,7 @@ interface DynamicCustomPageViewProps {
   onSubscriptionUpdated?: () => void;
   isAdmin?: boolean;
   currentUser?: any;
+  onOpenAuth?: () => void;
 }
 
 const tabLabels = {
@@ -382,7 +383,8 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
   userSubscriptionStatus = 'Gratuito', 
   onSubscriptionUpdated,
   isAdmin: propIsAdmin = false,
-  currentUser: propCurrentUser = null
+  currentUser: propCurrentUser = null,
+  onOpenAuth
 }) => {
   const { language } = useLanguage();
   const [clubeVipTab, setClubeVipTab] = useState<'info' | 'dashboard'>(() => {
@@ -398,6 +400,14 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
   const [activePlans, setActivePlans] = useState<PricingPlan[]>(getCustomizablePlans());
   const [checkoutPlanId, setCheckoutPlanId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(propCurrentUser);
+
+  useEffect(() => {
+    setCurrentUser(propCurrentUser);
+  }, [propCurrentUser]);
+
+  useEffect(() => {
+    setIsAdmin(propIsAdmin);
+  }, [propIsAdmin]);
   const [fidelityDiscount, setFidelityDiscount] = useState(true);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
 
@@ -912,7 +922,162 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
     return <DadosEstatisticosPage onBackToHome={onBackToHome} />;
   }
 
-  if (page.slug === 'vip-dashboard' || page.slug === 'dashboard' || page.slug === 'clube-vip') {
+  if (page.slug === 'vip-dashboard' || page.slug === 'dashboard') {
+    const isUserRegistered = Boolean(currentUser || isAdmin);
+
+    if (!isUserRegistered) {
+      return (
+        <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 pt-32 pb-24 relative selection:bg-orange-500/20">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#00f2fe]/5 rounded-full blur-[160px] pointer-events-none opacity-40"></div>
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-orange-600/5 rounded-full blur-[160px] pointer-events-none opacity-40"></div>
+
+          <div className="max-w-4xl mx-auto px-6 relative z-10 font-sans">
+            {/* Navigation Breadcrumb */}
+            <button
+              onClick={onBackToHome}
+              className="group inline-flex items-center gap-2 px-4 py-2 border border-zinc-850 hover:border-zinc-800 bg-[#121216]/50 hover:bg-[#121216]/90 rounded-xl text-xs font-semibold text-zinc-400 hover:text-white transition-all cursor-pointer mb-8"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+              </svg>
+              <span>{translateText('Voltar ao Início', language)}</span>
+            </button>
+
+            {/* Exclusive Registered User Access Gate */}
+            <div className="p-8 sm:p-12 text-center rounded-3xl bg-[#0E0E13]/90 border border-zinc-800 max-w-3xl mx-auto my-4 space-y-8 relative overflow-hidden backdrop-blur-xl shadow-2xl shadow-black/80">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-80 bg-gradient-to-b from-[#00f2fe]/10 via-orange-500/5 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+
+              {/* Status Badge & Lock Icon */}
+              <div className="flex flex-col items-center justify-center space-y-4 relative z-10">
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 border border-orange-500/30 text-orange-400 text-[11px] font-mono font-bold tracking-wider uppercase">
+                  <span className="w-2 h-2 rounded-full bg-orange-500 animate-ping"></span>
+                  <span>
+                    {language === 'pt' ? '🔒 Área Reservada a Utilizadores Registados' :
+                     language === 'fr' ? '🔒 Zone Réservée aux Utilisateurs Inscrits' :
+                     language === 'it' ? '🔒 Area Riservata agli Utenti Registrati' :
+                     language === 'de' ? '🔒 Exklusiver Bereich für Registrierte Benutzer' :
+                     '🔒 Registered Users Exclusive Area'}
+                  </span>
+                </div>
+
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-[#00f2fe]/20 via-zinc-900 to-orange-500/20 border border-zinc-700/80 flex items-center justify-center shadow-xl shadow-cyan-500/5">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.75} stroke="currentColor" className="w-10 h-10 text-orange-400">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0V10.5m-2.25 10.5h13.5c.621 0 1.125-.504 1.125-1.125V11.25c0-.621-.504-1.125-1.125-1.125H5.25c-.621 0-1.125.504-1.125 1.125v7.125c0 .621.504 1.125 1.125 1.125Z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* Title & Subtitle */}
+              <div className="space-y-3 relative z-10 max-w-xl mx-auto">
+                <h2 className="text-2xl sm:text-3xl font-black text-white font-display tracking-tight uppercase">
+                  {language === 'pt' ? 'Dashboard iRunBets Pro' :
+                   language === 'fr' ? 'Tableau de Bord iRunBets Pro' :
+                   language === 'it' ? 'Dashboard iRunBets Pro' :
+                   language === 'de' ? 'iRunBets Pro Dashboard' :
+                   'iRunBets Pro Dashboard'}
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400 font-light leading-relaxed">
+                  {language === 'pt' 
+                    ? 'O acesso à Gestão de Banca, Registo de Apostas, Indicadores de Risco e IA iRunBets Pro é exclusivo para membros registados. Crie a sua conta gratuita ou inicie sessão para aceder ao seu painel pessoal imediatamente.' 
+                    : language === 'fr'
+                    ? 'L’accès à la gestion de bankroll, au journal de paris, aux indicateurs de risque et à l’IA iRunBets Pro est réservé aux membres inscrits. Créez votre compte gratuit ou connectez-vous dès maintenant.'
+                    : language === 'it'
+                    ? 'L’accesso alla gestione cassa, registro scommesse, indicatori di rischio e IA iRunBets Pro è riservato ai membri registrati. Crea il tuo account gratuito o accedi subito.'
+                    : language === 'de'
+                    ? 'Der Zugriff auf Bankroll-Management, Wett-Tagebuch, Risikoanalysen und iRunBets Pro KI ist registrierten Mitgliedern vorbehalten. Erstellen Sie Ihr kostenloses Konto oder melden Sie sich an.'
+                    : 'Access to Bankroll Management, Bet Journal, Risk Analytics and iRunBets Pro AI is exclusive to registered members. Create a free account or sign in to unlock your personal dashboard immediately.'}
+                </p>
+              </div>
+
+              {/* Feature Highlights Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-left relative z-10">
+                <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-850/80 space-y-1.5">
+                  <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wide">
+                    <span>📊</span>
+                    <span>{language === 'pt' ? 'Gestão de Banca & ROI' : 'Bankroll & Real ROI'}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 font-light leading-snug">
+                    {language === 'pt' 
+                      ? 'Registo de apostas simples e múltiplas com cálculo dinâmico de ROI, lucro líquido e controlo rigoroso de ruína.' 
+                      : 'Detailed journal for single and multiple bets with real-time ROI and tilt prevention.'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-850/80 space-y-1.5">
+                  <div className="flex items-center gap-2 text-[#00f2fe] font-bold text-xs uppercase tracking-wide">
+                    <span>🧠</span>
+                    <span>{language === 'pt' ? 'IA iRunBets Pro' : 'iRunBets Pro AI'}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 font-light leading-snug">
+                    {language === 'pt' 
+                      ? 'Auditoria comportamental da carteira, análise de fraquezas de Reds vs Greens e disciplina emocional.' 
+                      : 'Behavioral wallet audit, weakness breakdown (Reds vs Greens) and emotional discipline.'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-850/80 space-y-1.5">
+                  <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wide">
+                    <span>⚡</span>
+                    <span>{language === 'pt' ? 'Controlo de Risco & Ruína' : 'Risk & Ruin Control'}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 font-light leading-snug">
+                    {language === 'pt' 
+                      ? 'Semáforo de disciplina, alertas de volatilidade de stake e sugestão matemática de apostas.' 
+                      : 'Discipline traffic light, stake volatility alerts and mathematical stake suggestions.'}
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-zinc-950/60 border border-zinc-850/80 space-y-1.5">
+                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wide">
+                    <span>⭐</span>
+                    <span>{language === 'pt' ? 'Radar de Favoritas & Ligas' : 'Favorites Radar'}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 font-light leading-snug">
+                    {language === 'pt' 
+                      ? 'Acompanhamento de clubes favoritos, alertas de chicotadas psicológicas e valor estatístico.' 
+                      : 'Track favorite teams, leadership shifts and mathematical value statistics.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3 relative z-10">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onOpenAuth) {
+                      onOpenAuth();
+                    } else {
+                      window.dispatchEvent(new CustomEvent('irunbets_open_auth'));
+                    }
+                  }}
+                  className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-orange-500 via-amber-500 to-orange-500 hover:from-orange-600 hover:to-amber-600 text-black font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl transition-all shadow-xl shadow-orange-500/20 cursor-pointer flex items-center justify-center gap-2 font-display"
+                >
+                  <span>✨</span>
+                  <span>{language === 'pt' ? 'Criar Conta Gratuita / Iniciar Sessão' : 'Create Free Account / Sign In'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onBackToHome}
+                  className="w-full sm:w-auto px-6 py-4 bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl border border-zinc-800 transition-all cursor-pointer"
+                >
+                  {translateText('Voltar ao Início', language)}
+                </button>
+              </div>
+
+              {/* Reassurance note */}
+              <p className="text-[11px] text-zinc-500 font-mono tracking-wide relative z-10">
+                {language === 'pt' 
+                  ? '💡 O registo na iRunBets é 100% gratuito e demora menos de 30 segundos.' 
+                  : '💡 iRunBets registration is 100% free and takes less than 30 seconds.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-[#0A0A0C] text-zinc-100 pt-32 pb-24 relative selection:bg-orange-500/20">
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#00f2fe]/5 rounded-full blur-[160px] pointer-events-none opacity-40"></div>
@@ -1367,28 +1532,30 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
                               {displayBlockTitle}
                             </h3>
                           )}
-                          <div className="bg-[#121216]/40 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl inline-block w-full">
-                            {block.link ? (
-                              <a href={block.link} target="_blank" rel="noopener noreferrer" className="block relative group cursor-pointer">
-                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                                  <span className="px-4 py-2 bg-zinc-950/80 text-white font-bold text-xs uppercase tracking-widest rounded-xl border border-white/10">Aceder ao Destino</span>
-                                </div>
+                          {displayBlockContent && displayBlockContent.trim() !== '' && (
+                            <div className="bg-[#121216]/40 border border-zinc-900 rounded-2xl overflow-hidden shadow-2xl inline-block w-full">
+                              {block.link ? (
+                                <a href={block.link} target="_blank" rel="noopener noreferrer" className="block relative group cursor-pointer">
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                                    <span className="px-4 py-2 bg-zinc-950/80 text-white font-bold text-xs uppercase tracking-widest rounded-xl border border-white/10">Aceder ao Destino</span>
+                                  </div>
+                                  <img
+                                    src={displayBlockContent}
+                                    alt={displayBlockCaption || 'Imagens iRunBets'}
+                                    referrerPolicy="no-referrer"
+                                    className="w-full h-auto max-h-[480px] object-cover"
+                                  />
+                                </a>
+                              ) : (
                                 <img
                                   src={displayBlockContent}
                                   alt={displayBlockCaption || 'Imagens iRunBets'}
                                   referrerPolicy="no-referrer"
                                   className="w-full h-auto max-h-[480px] object-cover"
                                 />
-                              </a>
-                            ) : (
-                              <img
-                                src={displayBlockContent}
-                                alt={displayBlockCaption || 'Imagens iRunBets'}
-                                referrerPolicy="no-referrer"
-                                className="w-full h-auto max-h-[480px] object-cover"
-                              />
-                            )}
-                          </div>
+                              )}
+                            </div>
+                          )}
                           {displayBlockCaption && (
                             <p className="text-zinc-500 font-mono text-xs italic font-light pl-2">
                               • {displayBlockCaption}
@@ -1460,20 +1627,22 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
                               {displayBlockTitle}
                             </h3>
                           )}
-                          <div className="aspect-video w-full rounded-2xl overflow-hidden border border-zinc-850 shadow-2xl bg-zinc-950">
-                            {displayBlockContent.includes('youtube.com/embed/') ? (
-                              <iframe
-                                src={displayBlockContent}
-                                title={displayBlockTitle || "Prognósticos iRunBets"}
-                                frameBorder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                allowFullScreen
-                                className="w-full h-full"
-                              ></iframe>
-                            ) : (
-                              <video src={displayBlockContent} controls className="w-full h-full object-contain" />
-                            )}
-                          </div>
+                          {displayBlockContent && displayBlockContent.trim() !== '' && (
+                            <div className="aspect-video w-full rounded-2xl overflow-hidden border border-zinc-850 shadow-2xl bg-zinc-950">
+                              {displayBlockContent.includes('youtube.com/embed/') ? (
+                                <iframe
+                                  src={displayBlockContent}
+                                  title={displayBlockTitle || "Prognósticos iRunBets"}
+                                  frameBorder="0"
+                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                  allowFullScreen
+                                  className="w-full h-full"
+                                ></iframe>
+                              ) : (
+                                <video src={displayBlockContent} controls className="w-full h-full object-contain" />
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
 
@@ -2603,7 +2772,7 @@ const DynamicCustomPageView: React.FC<DynamicCustomPageViewProps> = ({
 
               <div className="flex items-center gap-4 border-b border-zinc-900 pb-4">
                 <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-2xl flex items-center justify-center text-xl">
-                  ������
+                  🚨
                 </div>
                 <div>
                   <h3 className="text-base font-black text-white uppercase tracking-tight">Anular Subscrição {cancellingPlanName}</h3>

@@ -1250,7 +1250,7 @@ Retorna estritamente um código JSON simples composto por essas chaves, sem form
       };
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: [imagePart, { text: promptText }],
         config: {
           responseMimeType: "application/json",
@@ -1300,7 +1300,7 @@ Responde às questões dos utilizadores em português (Portugal), de forma clara
 Se te perguntarem sobre previsões diretas, enfatiza a análise probabilística e a gestão matemática da banca.`;
 
       const chat = ai.chats.create({
-        model: 'gemini-3.5-flash',
+        model: 'gemini-2.5-flash',
         config: {
           systemInstruction: chatInstruction,
           tools: [{ googleSearch: {} }],
@@ -1395,7 +1395,7 @@ Deves retornar estritamente um código JSON simples composto por essas chaves ex
 }`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-2.5-flash",
         contents: contents,
         config: {
           responseMimeType: "application/json",
@@ -1698,14 +1698,19 @@ REGRAS DE CONVERSAÇÃO:
       }
 
       const chat = ai.chats.create({
-        model: 'gemini-3.8-flash',
+        model: 'gemini-2.5-flash',
         config: {
           systemInstruction,
         },
         history: sanitizedHistory
       });
 
-      const result = await chat.sendMessage({ message: textToSend || "Olá" });
+      const sendPromise = chat.sendMessage({ message: textToSend || "Olá" });
+      const timeoutPromise = new Promise<{ text?: string }>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout Gemini API")), 7000)
+      );
+
+      const result = await Promise.race([sendPromise, timeoutPromise]);
       if (result && result.text) {
         res.json({
           status: "success",
@@ -1722,6 +1727,248 @@ REGRAS DE CONVERSAÇÃO:
     } catch (error: any) {
       console.warn("[Gemini-DT-Chat] Fallback ativado para motor tático UEFA:", error?.message || error);
       // Seamless fallback to the rich UEFA analysis engine
+      res.json({
+        status: "success",
+        reply: fallbackReply
+      });
+    }
+  });
+
+  // Helper function to generate friendly, conversational analytical reply for the iRunBets AI
+  function generateMentorConversationalReply(text: string, userMood: string, stats: any): string {
+    const raw = (text || '').trim();
+    const lower = raw.toLowerCase();
+    const totalBets = Number(stats?.totalBets) || 0;
+    const wonCount = Number(stats?.wonCount) || 0;
+    const lostCount = Number(stats?.lostCount) || 0;
+    const pendingCount = Number(stats?.pendingCount) || 0;
+    const winRate = (wonCount + lostCount > 0) ? Math.round((wonCount / (wonCount + lostCount)) * 100) : 0;
+    const avgStake = Number(stats?.avgStake) || 10;
+    const bankroll = Number(stats?.startingBankroll) || 100;
+    const currentBankroll = Number(stats?.currentBankroll) || bankroll;
+    const netProfit = Number(stats?.netProfit) || 0;
+    const roi = Number(stats?.roi) || 0;
+    const impulsive = Number(stats?.impulsiveBetsCount) || 0;
+    const streak = Number(stats?.currentStreak) || 0;
+    const streakType = stats?.currentStreakType || 'none';
+    const multCount = Number(stats?.multiplesCount) || 0;
+    const multWon = Number(stats?.multiplesWon) || 0;
+    const multLost = Number(stats?.multiplesLost) || 0;
+    const multWinRate = Number(stats?.multiplesWinRate) || (multWon + multLost > 0 ? Math.round((multWon / (multWon + multLost)) * 100) : 0);
+    const singCount = Number(stats?.singlesCount) || Math.max(0, totalBets - multCount);
+    const singWon = Number(stats?.singlesWon) || Math.max(0, wonCount - multWon);
+    const singLost = Number(stats?.singlesLost) || Math.max(0, lostCount - multLost);
+    const singWinRate = Number(stats?.singlesWinRate) || (singWon + singLost > 0 ? Math.round((singWon / (singWon + singLost)) * 100) : 0);
+    const goalsWinRate = Number(stats?.goalsWinRate) || 0;
+    const goalsCount = Number(stats?.goalsBetsCount) || 0;
+    const winnerWinRate = Number(stats?.winner1X2WinRate) || 0;
+    const winnerCount = Number(stats?.winner1X2BetsCount) || 0;
+    const stubbornTeam = stats?.stubbornTeam || '';
+    const safeStake = (bankroll * 0.02).toFixed(2);
+    const maxStake = (bankroll * 0.05).toFixed(2);
+
+    // 1. Simple greetings - keep it conversational and responsive, NEVER dumping a full speech
+    const isGreeting = /^(ola|olá|oi|boas|bom dia|boa tarde|boa noite|alo|alô|hey|hello|tudo bem)/i.test(lower) && lower.length < 25;
+    if (isGreeting) {
+      return `Olá! Tudo bem contigo? Estou aqui pronto para conversar contigo. Em que te posso ser útil hoje? Queres analisar a tua banca, ver onde tens tido mais greens ou rever algum palpite? Diz-me o que tens em mente!`;
+    }
+
+    // 2. Erros, desabafos, pedir ajuda direta ("estou a errar muito", "ajuda", "a perder", "como melhorar")
+    if (lower.includes('errar') || lower.includes('erro') || lower.includes('erros') || lower.includes('ajud') || lower.includes('perder') || lower.includes('falhar') || lower.includes('mau') || lower.includes('pessimo') || lower.includes('socorro')) {
+      return `Calma, meu amigo! Pára tudo e respira fundo. Errar faz parte do percurso de qualquer apostador, mas o segredo para não ires ao tapete é identificar logo o que está a falhar antes de queimares a banca.
+
+Vamos fazer um diagnóstico rápido juntos:
+1. Estás a fazer muitas apostas múltiplas? (Se sim, é quase certo que o problema está aí: bilhetes longos multiplicam a margem da casa contra ti).
+2. Que percentagem da tua banca estás a colocar por aposta? A regra de ouro é nunca passar dos 2% a 5% (com ${bankroll.toFixed(2)}€ de banca, a tua stake segura deve ser de cerca de ${safeStake}€).
+3. Estás a tentar recuperar perdas logo a seguir a um Red? Isso é o famoso "tilt" e é o caminho mais rápido para a ruína.
+
+Conta-me: em que jogos ou mercados tens apostado mais nos últimos dias? Vamos ajustar a tua estratégia passo a passo!`;
+    }
+
+    // 3. Múltiplas vs Simples / Acumuladores
+    if (lower.includes('multipla') || lower.includes('múltipla') || lower.includes('combinada') || lower.includes('acumulador')) {
+      return `Olha, vou ser muito sincero contigo: as apostas múltiplas são a maior mina de ouro das casas de apostas e o maior ralo para a banca dos apostadores.
+
+Nos teus registos, tens ${multCount} múltiplas (${multWon} greens e ${multLost} reds, ou seja ${multWinRate}% de acerto), enquanto nas simples estás com ${singWinRate}%.
+
+Repara na diferença: numa múltipla, basta um golo aos 93 minutos, um penálti duvidoso ou uma expulsão para deitar três ou quatro palpites certos para o lixo. O meu conselho direto: coloca pelo menos 80% do teu volume em apostas simples naquilo que realmente estudas. As múltiplas deixa-as só para brincadeira com trocos de 1 euro!`;
+    }
+
+    // 4. Força / Fraqueza / Mercados / Onde ganho mais (1X2 vs Golos)
+    if (lower.includes('forte') || lower.includes('fraco') || lower.includes('melhor') || lower.includes('pior') || lower.includes('onde sou') || lower.includes('onde') || lower.includes('green') || lower.includes('ponto') || lower.includes('área') || lower.includes('area') || lower.includes('mercado') || lower.includes('acerto')) {
+      const isWinnerStronger = winnerWinRate >= goalsWinRate;
+      return `Analisando os teus dados, salta logo à vista onde tens mais frieza:
+
+No mercado 1X2 (vencedor do jogo) estás com ${winnerWinRate}% de greens, enquanto no mercado de Golos (Overs/BTTS) estás com ${goalsWinRate}%.
+
+${isWinnerStronger 
+  ? `Tu tens muito mais olho clínico para perceber quem vai sair vencedor da partida do que para o fluxo de golos. O mercado de golos costuma ter muita variância. Foca-te no 1X2 simples e protege a tua banca!` 
+  : `A tua leitura tem sido mais certeira no mercado de golos (${goalsWinRate}%). Continua focado aí e tem muito cuidado com o 1X2 quando as equipas estiverem muito equilibradas!`
+}
+${stubbornTeam ? `\n\nOutro detalhe: notei que tens insistido em palpites envolvendo o ${stubbornTeam}. Cuidado para não apostares com o coração, a bola não tem clube!` : ''}`;
+    }
+
+    // 5. Reds, Tilt, Azar, Frustração
+    if (lower.includes('red') || lower.includes('tilt') || lower.includes('azar') || lower.includes('frustrad') || lower.includes('chateado') || lower.includes('raiva')) {
+      return `Calma, meu amigo! Sei perfeitamente a frustração que é ver um bilhete cair nos descontos ou apanhar uma sequência de reds. O cérebro quer logo apostar no jogo a seguir para recuperar, mas isso é a armadilha do "tilt".
+
+O lema da iRunBets é mesmo este: a sorte não dura sempre, mas o azar também não. O futebol é jogado por seres humanos que têm dias maus, quebras anímicas e erros.
+
+O melhor palpite que podes fazer hoje é fechar a aplicação, ir arejar a cabeça e não meter mais nenhum cêntimo hoje. Amanhã a cabeça está fria e analisamos os jogos com juízo. Combinado?`;
+    }
+
+    // 6. Banca, Stake, Limites
+    if (lower.includes('banca') || lower.includes('stake') || lower.includes('gestão') || lower.includes('quanto apostar') || lower.includes('valor') || lower.includes('limite') || lower.includes('saldo')) {
+      return `Falando de gestão de banca de forma prática: com a tua banca atual de ${bankroll.toFixed(2)}€, a tua aposta normal de segurança deve ser de ${safeStake}€ (2%).
+
+Se apanhares aquele jogo de enorme valor que estudaste a fundo, no máximo dos máximos podes ir a 5% (${maxStake}€). Nunca passes disso por impulso! ${impulsive > 0 ? `Já tens ${impulsive} apostas onde abusaste da stake, tem cuidado!` : ''}
+
+Lembra-te: o objetivo da iRunBets não é fazer ninguém milionário do dia para a noite, mas sim garantir que não perdes o teu dinheiro por falta de disciplina. Protege cada euro como se fosse ouro!`;
+    }
+
+    // 7. Estatísticas e Análise dos Jogos
+    if (lower.includes('jogo') || lower.includes('analis') || lower.includes('filtro') || lower.includes('odd') || lower.includes('estatistic')) {
+      return `Para analisar qualquer jogo com inteligência, aqui na iRunBets seguimos três passos fundamentais:
+1. Forma real recente e média de golos em casa e fora, não apenas o nome da camisola.
+2. Estado anímico e balneário: equipas em crise de treinador ou salários em atraso costumam fraquejar.
+3. Valor da odd (+EV): se a probabilidade real for inferior à odd que a casa paga, o melhor palpite é ficar de fora.
+
+Saber quando NÃO apostar é muitas vezes a aposta mais lucrativa do dia!`;
+    }
+
+    // 8. Resposta conversacional natural contextual
+    return `Compreendo perfeitamente o teu ponto. Diz-me: queres que olhemos para algum jogo específico de hoje, ou queres rever a tua estratégia de banca (${bankroll.toFixed(2)}€ de saldo, ${totalBets} apostas feitas) para estancar perdas e manter a disciplina? Estou aqui para te apoiar!`;
+  }
+
+  // API to handle Interactive Mentor Chat with Behavioral Data & Voice Interaction
+  app.post("/api/gemini/mentor-chat", async (req, res) => {
+    const { history = [], newMessage = '', userMood = 'focado', statsContext = {} } = req.body;
+    const textToSend = (newMessage || '').trim();
+
+    // Fast fallback reply guaranteeing immediate, bulletproof response
+    const fallbackReply = generateMentorConversationalReply(textToSend, userMood, statsContext);
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+    if (!apiKey) {
+      res.json({
+        status: "success",
+        reply: fallbackReply
+      });
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const stats = statsContext || {};
+      const totalBets = Number(stats.totalBets) || 0;
+      const wonCount = Number(stats.wonCount) || 0;
+      const lostCount = Number(stats.lostCount) || 0;
+      const pendingCount = Number(stats.pendingCount) || 0;
+      const winRate = (wonCount + lostCount > 0) ? Math.round((wonCount / (wonCount + lostCount)) * 100) : 0;
+      const bankroll = Number(stats.startingBankroll) || 100;
+      const currentBankroll = Number(stats.currentBankroll) || bankroll;
+      const avgStake = Number(stats.avgStake) || 10;
+      const netProfit = Number(stats.netProfit) || 0;
+      const roi = Number(stats.roi) || 0;
+      const multCount = Number(stats.multiplesCount) || 0;
+      const multWon = Number(stats.multiplesWon) || 0;
+      const multLost = Number(stats.multiplesLost) || 0;
+      const multWinRate = Number(stats.multiplesWinRate) || 0;
+      const singCount = Number(stats.singlesCount) || 0;
+      const singWinRate = Number(stats.singlesWinRate) || 0;
+      const winnerWinRate = Number(stats.winner1X2WinRate) || 0;
+      const goalsWinRate = Number(stats.goalsWinRate) || 0;
+      const impulsive = Number(stats.impulsiveBetsCount) || 0;
+      const streak = Number(stats.currentStreak) || 0;
+      const streakType = stats.currentStreakType || 'none';
+      const stubbornTeam = stats.stubbornTeam || '';
+
+      const systemInstruction = `És a "IA iRunBets", uma inteligência artificial moderna, inteligente e altamente conversacional da plataforma iRunBets, especializada em apostas desportivas, gestão matemática de banca e psicologia do apostador.
+
+IDENTIDADE E REGRAS ESTRITAS DE CONVERSAÇÃO:
+1. Age e conversa como uma IA real, empática, inteligente e dinâmica — NUNCA sejas um robô com respostas decoradas ou mensagens repetidas.
+2. Responde DIRETAMENTE ao que o utilizador acabou de dizer ou perguntar!
+   - Se o utilizador apenas disser "Olá", "Oi", "Boas" ou cumprimentar: responde de forma breve, calorosa e acolhedora em 1 a 2 frases amigáveis, perguntando em que podes ajudar. NÃO despejes relatórios longos nem estatísticas desnecessárias quando alguém só disse olá!
+   - Se o utilizador disser "estou a errar muito", "preciso de ajuda", "perdi", "não consigo acertar": acolhe a frustração, explica com empatia e clareza porque é que a maioria erra (múltiplas excessivas, falta de gestão de stake, tentar recuperar perdas logo a seguir ao red) e faz perguntas concretas para diagnosticar o erro dele.
+   - Se o utilizador perguntar por múltiplas vs simples, compara os números dele (${multCount} múltiplas com ${multWinRate}% acerto vs simples com ${singWinRate}%) e explica o risco matemático.
+   - Se o utilizador perguntar onde é mais forte, aponta se ele é melhor no 1X2 (${winnerWinRate}%) ou nos Golos (${goalsWinRate}%).
+   - Se perguntar de banca ou stake, recomenda a regra de segurança dos 2% a 5% da banca dele (${bankroll.toFixed(2)}€).
+3. LINGUAGEM: Fala em Português de Portugal, natural, falado e fluído, tratando o utilizador por "tu". Usa frases claras que soem muito bem quando lidas em voz alta pelo sintetizador de áudio.
+4. FORMATAÇÃO: NÃO uses títulos rígidos (#, ##, ###), NÃO faças relatórios corporativos artificiais. Mantém uma conversa natural, de dois amigos que percebem de futebol e matemática, mas com a inteligência e clareza de uma IA de topo.
+5. PROIBIÇÕES ABSOLUTAS: NUNCA menciones as palavras "Supabase", "Gemini", nem "Google". NUNCA te intitules de "Mentor" nem "Mentor Pro". O teu nome é apenas "IA iRunBets" ou "iRunBets". Ninguém deve saber que tecnologias externas existem.
+6. LEMA iRUNBETS: "A sorte não é contínua, mas o azar também não. O objetivo da iRunBets não é fazer ninguém rico, mas sim prevenir-te de ficares mais pobre e ensinares a gerir a tua mente desportiva."
+
+CONTEXTO DA CARTEIRA DO UTILIZADOR:
+- Banca Inicial / Atual: ${bankroll.toFixed(2)}€ / ${currentBankroll.toFixed(2)}€
+- Total de Apostas: ${totalBets} (${wonCount} greens, ${lostCount} reds, ${pendingCount} pendentes)
+- Lucro Líquido: ${netProfit.toFixed(2)}€ | ROI: ${roi}%
+- Stake Média: ${avgStake.toFixed(2)}€
+- Múltiplas: ${multCount} (${multWon} greens, ${multLost} reds, ${multWinRate}% taxa)
+- Simples: ${singCount} (${singWon} greens, ${singLost} reds, ${singWinRate}% taxa)
+- Mercado 1X2: ${winnerWinRate}% | Mercado Golos: ${goalsWinRate}%
+${stubbornTeam ? `- Equipa com mais perdas: ${stubbornTeam}` : ''}`;
+
+      // Prepare contents array for multi-turn conversation
+      const conversationContents: Array<{ role: 'user' | 'model'; parts: Array<{ text: string }> }> = [];
+      
+      for (const h of history) {
+        if (!h || !h.text) continue;
+        const role = h.role === 'model' ? 'model' : 'user';
+        conversationContents.push({
+          role,
+          parts: [{ text: String(h.text) }]
+        });
+      }
+
+      // If the latest message is already at the end of history, don't duplicate it; otherwise push it
+      if (conversationContents.length === 0 || conversationContents[conversationContents.length - 1].role !== 'user' || conversationContents[conversationContents.length - 1].parts[0].text !== textToSend) {
+        conversationContents.push({
+          role: 'user',
+          parts: [{ text: textToSend || "Olá" }]
+        });
+      }
+
+      // Ensure first message in contents is user
+      while (conversationContents.length > 0 && conversationContents[0].role !== 'user') {
+        conversationContents.shift();
+      }
+
+      const generatePromise = ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: conversationContents,
+        config: {
+          systemInstruction,
+        }
+      });
+
+      const timeoutPromise = new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout Gemini API")), 25000)
+      );
+
+      const result = await Promise.race([generatePromise, timeoutPromise]);
+      if (result && result.text) {
+        res.json({
+          status: "success",
+          reply: result.text
+        });
+        return;
+      }
+
+      res.json({
+        status: "success",
+        reply: fallbackReply
+      });
+
+    } catch (error: any) {
+      console.warn("[Gemini-Mentor-Chat] Fallback ativado para motor comportamental:", error?.message || error);
       res.json({
         status: "success",
         reply: fallbackReply

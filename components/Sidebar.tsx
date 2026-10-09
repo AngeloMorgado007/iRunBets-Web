@@ -391,13 +391,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <span className="text-sm select-none">📊</span>
-                <span>
+                <span className="flex-1">
                   {language === 'pt' ? 'Dashboard & Gestão de Banca' :
                    language === 'fr' ? 'Tableau de Bord & Bankroll' :
                    language === 'it' ? 'Dashboard & Gestione Cassa' :
                     language === 'de' ? 'Dashboard & Bankroll-Plan' :
                     'Dashboard & Bankroll'}
                 </span>
+                {!currentUser && !isAdmin && (
+                  <span className="text-[10px] text-amber-400 font-mono" title="Exclusivo para utilizadores registados">🔒</span>
+                )}
               </a>
 
               {/* Dados Estatísticos Link */}

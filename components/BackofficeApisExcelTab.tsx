@@ -1551,7 +1551,7 @@ Suporte iRunBets`
 
                 <div className="h-32 rounded-xl overflow-hidden bg-black/60 border border-zinc-850">
                   <img
-                    src={img.url}
+                    src={img.url && img.url.trim() !== '' ? img.url : 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1000&q=80'}
                     alt={img.title}
                     className="w-full h-full object-cover"
                     onError={(e) => {

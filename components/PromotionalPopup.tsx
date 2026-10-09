@@ -61,8 +61,8 @@ export const PromotionalPopup: React.FC<PromotionalPopupProps> = ({ language }) 
         // No previous dismissal, show it
         setIsOpen(true);
       }
-    } catch (err) {
-      console.error('Error loading promotional popup config:', err);
+    } catch (err: any) {
+      console.warn('Fallback to local promotional popup config:', err?.message || err);
     }
   };
 
@@ -220,7 +220,7 @@ export const PromotionalPopup: React.FC<PromotionalPopupProps> = ({ language }) 
           className={`relative w-full max-w-5xl overflow-hidden rounded-3xl border ${currentTheme.border} bg-gradient-to-b ${currentTheme.gradient} shadow-2xl shadow-black/95 flex flex-col`}
         >
           {/* Header Banner Image / Vector Graphic */}
-          {config.imageUrl ? (
+          {config.imageUrl && config.imageUrl.trim() !== '' ? (
             <div className="relative w-full h-52 sm:h-64 md:h-80 overflow-hidden shrink-0 border-b border-zinc-900/60">
               <img 
                 src={config.imageUrl} 

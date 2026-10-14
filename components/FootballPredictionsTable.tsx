@@ -22,6 +22,7 @@ import {
   saveUnlockedPredictionsToFirebase,
   onAuthStatusChange 
 } from '../services/firebase';
+import { resolveAccurateLeague } from '../services/leagueResolutionService';
 import { TeamDetailsModal } from './TeamDetailsModal';
 import { LeagueStandingsView } from './LeagueStandingsView';
 import ApostasDoDiaSubpage from './ApostasDoDiaSubpage';
@@ -840,7 +841,10 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
         // If empty, try cache
         const cached = localStorage.getItem('irunbets_supabase_jogos_do_dia');
         if (cached) {
-          setJogos(JSON.parse(cached));
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            setJogos(parsed.map(normalizeJogoRecord));
+          }
         }
       }
     } catch (err: any) {
@@ -848,7 +852,10 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
       // Try local cache
       const cached = localStorage.getItem('irunbets_supabase_jogos_do_dia');
       if (cached) {
-        setJogos(JSON.parse(cached));
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setJogos(parsed.map(normalizeJogoRecord));
+        }
       } else {
         setError('Não foi possível estabelecer ligação direta com a base de dados Supabase.');
       }
@@ -889,6 +896,11 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
           const merged: JogoDoDia = {
             ...existing,
             ...newRow,
+            liga: resolveAccurateLeague(
+              newRow.clube_casa || existing.clube_casa,
+              newRow.clube_fora || existing.clube_fora,
+              newRow.liga || existing.liga
+            ),
             estado: newRow.estado || existing.estado,
             minuto: newRow.minuto !== undefined && newRow.minuto !== null ? newRow.minuto : existing.minuto,
             golos_casa: resolvedGolosCasa,
@@ -1296,11 +1308,12 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
     { name: 'all', label: 'Todas as Ligas', flag: '🌍' },
     { name: 'Liga Portugal', label: 'Liga Portugal', flag: '🇵🇹' },
     { name: 'Premier League', label: 'Premier League', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+    { name: 'Championship', label: 'Championship', flag: '🇬🇧' },
     { name: 'Primera Division', label: 'La Liga', flag: '🇪🇸' },
     { name: 'Serie A', label: 'Serie A', flag: '🇮🇹' },
     { name: 'Bundesliga', label: 'Bundesliga', flag: '🇩🇪' },
     { name: 'Ligue 1', label: 'Ligue 1', flag: '🇫🇷' },
-    { name: 'Liga Profesional', label: 'Camp. Argentino', flag: '🇦🇷' },
+    { name: 'Eredivisie', label: 'Eredivisie', flag: '🇳🇱' },
     { name: 'Campeonato Brasileiro Série A', label: 'Brasileirão', flag: '🇧🇷' },
     { name: 'UEFA Champions League', label: 'Champions League', flag: '🏆' },
     { name: 'UEFA Europa League', label: 'Liga Europa', flag: '🟠' },

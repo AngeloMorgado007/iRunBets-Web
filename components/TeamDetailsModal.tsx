@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { JogoCalculado } from '../types';
 import { getOfficialStandingsForLeague, getOfficialLeagueStats } from '../services/officialStandingsData';
+import { findClubInfo } from '../services/leagueResolutionService';
 
 interface TeamDetailsModalProps {
   isOpen: boolean;
@@ -149,8 +150,14 @@ export const TeamDetailsModal: React.FC<TeamDetailsModalProps> = ({
       return dateA - dateB;
     });
 
-    return { pastGames: past, futureGames: future, teamLeague: detectedLeague || 'Liga Principal' };
-  }, [allGames, normTeam, selectedLeague]);
+    const clubInfo = findClubInfo(selectedTeam || '');
+    const resolvedDomestic = clubInfo?.domesticLeague;
+    const finalLeague = (selectedLeague && selectedLeague !== 'all') 
+      ? selectedLeague 
+      : (resolvedDomestic || detectedLeague || 'Liga Principal');
+
+    return { pastGames: past, futureGames: future, teamLeague: finalLeague };
+  }, [allGames, normTeam, selectedLeague, selectedTeam]);
 
   // TABELA CLASSIFICATIVA DO CAMPEONATO (Para a liga selecionada)
   const leagueStandings = useMemo(() => {

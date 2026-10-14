@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { matchClubNames, normalizeClubName } from './supabase';
+import { resolveAccurateLeague } from './leagueResolutionService';
 
 export const SUPABASE_URL = 'https://ksqevxtnuyzrfohkgvfw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ';
@@ -1762,6 +1763,7 @@ export async function fetchJogosDoDiaFromSupabase(
 
       return {
         ...row,
+        liga: resolveAccurateLeague(row.clube_casa, row.clube_fora, row.liga),
         isLive,
         liveMinute,
         liveScore
@@ -2042,7 +2044,8 @@ export async function buildFullTacticalAnalysis(
 ): Promise<FullTacticalAnalysis> {
   const home = 'clube_casa' in gameInput ? gameInput.clube_casa : gameInput.homeTeam;
   const away = 'clube_fora' in gameInput ? gameInput.clube_fora : gameInput.awayTeam;
-  const league = 'liga' in gameInput ? gameInput.liga : (gameInput.league || 'Liga Portugal');
+  const rawLeague = 'liga' in gameInput ? gameInput.liga : (gameInput.league || 'Liga Portugal');
+  const league = resolveAccurateLeague(home, away, rawLeague);
   const gameId = 'jogo_id' in gameInput ? gameInput.jogo_id : (gameInput.gameId || `custom_${Date.now()}`);
 
   // 1. Fetch or simulate Raio-X

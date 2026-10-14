@@ -7,6 +7,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { getOfficialStandingsForLeague } from "./services/officialStandingsData";
 import { getTeamFullProfile } from "./services/teamProfileService";
+import { resolveAccurateLeague } from "./services/leagueResolutionService";
 
 let serverDb: any = null;
 try {
@@ -229,7 +230,7 @@ async function startServer() {
                 data: dataStr,
                 hora: horaStr,
                 data_jogo: j.data_jogo,
-                liga: j.liga?.nome || 'Geral',
+                liga: resolveAccurateLeague(cCasa, cFora, j.liga?.nome || 'Geral'),
                 clube_casa: cCasa,
                 clube_fora: cFora,
                 confronto: cCasa && cFora ? `${cCasa} vs ${cFora}` : '',
@@ -263,10 +264,21 @@ async function startServer() {
         if (respFallback.ok) {
           const fallbackData = await respFallback.json();
           if (Array.isArray(fallbackData) && fallbackData.length > 0) {
-            data = fallbackData.filter((item: any) => !item.data || item.data >= MIN_SEASON_START);
+            data = fallbackData
+              .filter((item: any) => !item.data || item.data >= MIN_SEASON_START)
+              .map((item: any) => ({
+                ...item,
+                liga: resolveAccurateLeague(item.clube_casa, item.clube_fora, item.liga)
+              }));
           }
         }
       }
+
+      // Garantir categorização fidedigna e rigorosa de todas as ligas europeias e campeonatos
+      const finalData = (data || []).map((item: any) => ({
+        ...item,
+        liga: resolveAccurateLeague(item.clube_casa, item.clube_fora, item.liga)
+      }));
 
       // Headers de segurança anti-bot e anti-cache externo
       res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');
@@ -276,8 +288,8 @@ async function startServer() {
         status: "success",
         source: "irunbets_secure_ssr_proxy",
         protected: true,
-        count: Array.isArray(data) ? data.length : 0,
-        data: data || []
+        count: finalData.length,
+        data: finalData
       });
     } catch (err: any) {
       console.error("[SSR Proxy] Erro ao obter dados do Supabase:", err?.message || err);
@@ -1883,6 +1895,8 @@ Saber quando NÃO apostar é muitas vezes a aposta mais lucrativa do dia!`;
       const multLost = Number(stats.multiplesLost) || 0;
       const multWinRate = Number(stats.multiplesWinRate) || 0;
       const singCount = Number(stats.singlesCount) || 0;
+      const singWon = Number(stats.singlesWon) || 0;
+      const singLost = Number(stats.singlesLost) || 0;
       const singWinRate = Number(stats.singlesWinRate) || 0;
       const winnerWinRate = Number(stats.winner1X2WinRate) || 0;
       const goalsWinRate = Number(stats.goalsWinRate) || 0;

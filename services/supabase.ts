@@ -41,6 +41,8 @@ export interface JogoDoDia {
   data_jogo?: string | null;
   minuto?: number | string | null;
   resultado?: string | null;
+  treinador_casa?: string | null;
+  treinador_fora?: string | null;
 }
 
 export interface LiveMatchInfo {

@@ -26,6 +26,7 @@ import { resolveAccurateLeague } from '../services/leagueResolutionService';
 import { TeamDetailsModal } from './TeamDetailsModal';
 import { LeagueStandingsView } from './LeagueStandingsView';
 import ApostasDoDiaSubpage from './ApostasDoDiaSubpage';
+import UniscoreThreeColumnView from './UniscoreThreeColumnView';
 
 // Accent and diacritic stripper for search accuracy
 function normalizeSearchText(text: string): string {
@@ -357,6 +358,9 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
     teamName: undefined,
     leagueName: undefined
   });
+
+  // Layout Mode: Uniscore (3 Colunas) ou Tabela Geral (Excel)
+  const [tableLayoutMode, setTableLayoutMode] = useState<'uniscore' | 'excel'>('uniscore');
 
   // 3 Filtros Rápidos de Estado: 🔴 Ao Vivo (IN_PLAY), ✅ Terminados (FINISHED) e 📅 Agendados (SCHEDULED)
   const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'finished' | 'scheduled'>('all');
@@ -1568,8 +1572,95 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
         </div>
       </div>
 
-      {/* 3 Filtros Rápidos de Estado: 🔴 Ao Vivo (IN_PLAY), ✅ Terminados (FINISHED) e 📅 Agendados (SCHEDULED) */}
-      <div className="bg-[#12131a] border border-zinc-800 rounded-2xl p-3 sm:p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
+      {/* Seletor de Modo de Visualização: Layout Uniscore (3 Colunas) vs Tabela Geral (Excel) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-[#101320] border border-zinc-800 rounded-2xl shadow-xl">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setTableLayoutMode('uniscore')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-mono font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              tableLayoutMode === 'uniscore'
+                ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-black shadow-lg shadow-orange-500/20 scale-[1.02]'
+                : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800'
+            }`}
+          >
+            <span>⚡</span>
+            <span>Layout 3 Colunas (Uniscore)</span>
+            <span className={`text-[10px] px-1.5 py-0.2 rounded font-black ${
+              tableLayoutMode === 'uniscore' ? 'bg-black/25 text-black' : 'bg-amber-500/20 text-amber-300'
+            }`}>
+              Recomendado
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setTableLayoutMode('excel')}
+            className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-mono font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+              tableLayoutMode === 'excel'
+                ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-black shadow-lg shadow-cyan-500/20 scale-[1.02]'
+                : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800'
+            }`}
+          >
+            <span>📊</span>
+            <span>Tabela Geral (Excel)</span>
+          </button>
+        </div>
+
+        <div className="text-[11px] font-mono text-zinc-400 px-3 hidden sm:flex items-center gap-2">
+          <span>💡</span>
+          <span>
+            {tableLayoutMode === 'uniscore'
+              ? 'Estilo Uniscore: Ligas à esquerda, Jogos no centro, Probabilidades e Pop-up à direita.'
+              : 'Estilo Excel: Grelha horizontal detalhada com personalização de colunas e escala.'}
+          </span>
+        </div>
+      </div>
+
+      {tableLayoutMode === 'uniscore' ? (
+        <UniscoreThreeColumnView
+          jogos={jogos}
+          filteredJogos={filteredJogos}
+          selectedLeague={selectedLeague}
+          onSelectLeague={(league) => {
+            setSelectedLeague(league);
+            setLeagueViewTab('matches');
+          }}
+          topLeagues={topLeagues}
+          leaguesSummary={leaguesSummary}
+          selectedDateFilter={selectedDateFilter}
+          onSelectDateFilter={setSelectedDateFilter}
+          currentDateString={currentDateString}
+          yesterdayStr={yesterdayStr}
+          availableDates={availableDates}
+          statusFilter={statusFilter}
+          onSelectStatusFilter={setStatusFilter}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          onOpenMatchModal={(m) => setSelectedMatch(m)}
+          onSelectTeam={(teamName, leagueName) => setTeamModalState({ isOpen: true, teamName, leagueName })}
+          selectedMultiplaItems={selectedMultiplaItems}
+          onToggleMultiplaSelection={handleToggleMultiplaSelection}
+          unlockedIds={unlockedIds}
+          isUserRegistered={isUserRegistered}
+          showLiveOnly={showLiveOnly}
+          setShowLiveOnly={setShowLiveOnly}
+          liveGamesCount={liveGamesCount}
+          finishedGamesCount={finishedGamesCount}
+          scheduledGamesCount={scheduledGamesCount}
+          liveGamesMap={liveGamesMap}
+          onResetFilters={() => {
+            setSelectedLeague('all');
+            setSelectedDateFilter('all');
+            setSearchTerm('');
+            setStatusFilter('all');
+            setShowLiveOnly(false);
+          }}
+        />
+      ) : (
+        <>
+          {/* 3 Filtros Rápidos de Estado: 🔴 Ao Vivo (IN_PLAY), ✅ Terminados (FINISHED) e 📅 Agendados (SCHEDULED) */}
+          <div className="bg-[#12131a] border border-zinc-800 rounded-2xl p-3 sm:p-4 shadow-xl flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
           <span className="text-xs font-mono font-black uppercase text-zinc-300 tracking-wider">
@@ -3320,6 +3411,8 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
           </span>
         </div>
       </div>
+      </>
+      )}
       </>
       )}
 

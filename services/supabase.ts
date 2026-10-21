@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolveAccurateLeague } from './leagueResolutionService';
+import { resolveActualMatchScore } from './officialScoresData';
 
 export const SUPABASE_URL = 'https://ksqevxtnuyzrfohkgvfw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ';
@@ -53,6 +54,7 @@ export interface LiveMatchInfo {
   fase: '1.ª Parte' | 'Intervalo' | '2.ª Parte' | 'Descontos' | 'Terminado' | 'Agendado';
   golosCasa: number;
   golosFora: number;
+  hasOfficialScore?: boolean;
   cantosCasa: number;
   cantosFora: number;
   totalCantosLive: number;
@@ -639,6 +641,23 @@ export function normalizeJogoRecord(raw: any): JogoDoDia {
   const clubeCasa = raw.clube_casa || raw.equipa_casa?.nome || raw.home_team || raw.homeTeam || '';
   const clubeFora = raw.clube_fora || raw.equipa_fora?.nome || raw.away_team || raw.awayTeam || '';
 
+  // Se a BD não tem golos reportados, consultar o registo oficial histórico verificado
+  if (gCasa == null || gFora == null) {
+    const verified = resolveActualMatchScore({
+      data: dataStr,
+      clube_casa: clubeCasa,
+      clube_fora: clubeFora,
+      resultado: rawResultado,
+      estado: raw.estado || raw.status || raw.state,
+      prob_casa: raw.prob_casa,
+      prob_fora: raw.prob_fora
+    });
+    if (verified.hasScore) {
+      gCasa = verified.homeScore;
+      gFora = verified.awayScore;
+    }
+  }
+
   let rawEstado = (raw.estado || raw.status || raw.state || '').toString().trim();
   // Se o estado for uma data/timestamp ISO (ex: "2026-09-14 23:00:00Z" ou "2026-09-14T23:00:00Z")
   // ou contiver dígitos de data/hora como "2026-...", significa que a partida está AGENDADA (SCHEDULED) para essa data/hora!
@@ -822,11 +841,17 @@ export function getMatchLiveInfo(
     golosFora = simulatedOverrides.scoreAway;
   }
 
-  // Se o jogo está terminado e a base de dados ainda não tem golos reportados pelo spy,
-  // nunca inventar dados fictícios: assume 0 caso não esteja disponível
-  if (isFinished) {
-    if (golosCasa < 0) golosCasa = 0;
-    if (golosFora < 0) golosFora = 0;
+  // Se a base de dados ainda não tem golos reportados, consultar o registo oficial histórico
+  let hasOfficialScore = false;
+  if (golosCasa < 0 || golosFora < 0) {
+    const verified = resolveActualMatchScore(jogo);
+    if (verified.hasScore) {
+      golosCasa = verified.homeScore!;
+      golosFora = verified.awayScore!;
+      hasOfficialScore = true;
+    }
+  } else {
+    hasOfficialScore = true;
   }
 
   if (!isLive) {
@@ -836,8 +861,9 @@ export function getMatchLiveInfo(
       minuto: isFinished ? 'FT' : '0\'',
       minutoNum: isFinished ? 90 : 0,
       fase,
-      golosCasa: Math.max(0, golosCasa),
-      golosFora: Math.max(0, golosFora),
+      golosCasa: isFinished && golosCasa >= 0 ? golosCasa : 0,
+      golosFora: isFinished && golosFora >= 0 ? golosFora : 0,
+      hasOfficialScore: isFinished && hasOfficialScore,
       cantosCasa: 0,
       cantosFora: 0,
       totalCantosLive: 0,

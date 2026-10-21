@@ -5,6 +5,7 @@ import {
   LiveMatchInfo,
   normalizeClubName 
 } from '../services/supabase';
+import { resolveActualMatchScore } from '../services/auditPerformanceService';
 
 export interface UniscoreThreeColumnViewProps {
   jogos: JogoDoDia[];
@@ -32,6 +33,7 @@ export interface UniscoreThreeColumnViewProps {
   onToggleMultiplaSelection: (e: React.MouseEvent, jogo: JogoDoDia, metrics: any) => void;
   unlockedIds: string[];
   isUserRegistered: boolean;
+  isAdmin?: boolean;
   showLiveOnly: boolean;
   setShowLiveOnly: (show: boolean) => void;
   liveGamesCount: number;
@@ -80,6 +82,7 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
   onToggleMultiplaSelection,
   unlockedIds,
   isUserRegistered,
+  isAdmin = false,
   showLiveOnly,
   setShowLiveOnly,
   liveGamesCount,
@@ -132,7 +135,7 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
     return liveGamesMap.get(matchKey);
   }, [activeMatch, liveGamesMap]);
 
-  // Group filtered games by League for Uniscore middle column
+  // Group filtered games by League for middle column
   const groupedMatches = useMemo(() => {
     const groups: { league: string; flag: string; matches: JogoDoDia[] }[] = [];
     const map = new Map<string, JogoDoDia[]>();
@@ -206,7 +209,7 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
         </button>
       </div>
 
-      {/* Main 3-Column Layout Grid (Uniscore Style) */}
+      {/* Main 3-Column Layout Grid (iRunBets Pro Multi-Painel) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
         
         {/* ========================================================================= */}
@@ -437,19 +440,25 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                     : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850'
                 }`}
               >
-                🗓️ Todas
+                {isAdmin ? '🗓️ Todas' : '🗓️ Próximos'}
               </button>
-              <button
-                type="button"
-                onClick={() => onSelectDateFilter(selectedDateFilter === yesterdayStr ? 'all' : yesterdayStr)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap ${
-                  selectedDateFilter === yesterdayStr
-                    ? 'bg-amber-600 text-white shadow-sm font-black'
-                    : 'text-amber-400/90 hover:text-amber-300 hover:bg-zinc-850'
-                }`}
-              >
-                ⏪ Ontem
-              </button>
+
+              {/* Botão de Ontem visível estritamente para Admin */}
+              {isAdmin && (
+                <button
+                  type="button"
+                  onClick={() => onSelectDateFilter(selectedDateFilter === yesterdayStr ? 'all' : yesterdayStr)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap ${
+                    selectedDateFilter === yesterdayStr
+                      ? 'bg-amber-600 text-white shadow-sm font-black'
+                      : 'text-amber-400/90 hover:text-amber-300 hover:bg-zinc-850'
+                  }`}
+                  title="Painel Admin: Ver jogos de ontem com histórico e probabilidades completas"
+                >
+                  ⏪ Ontem
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={() => onSelectDateFilter(selectedDateFilter === currentDateString ? 'all' : currentDateString)}
@@ -461,6 +470,20 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
               >
                 ⭐ Hoje ({currentDateString})
               </button>
+
+              {/* Seletor Livre de Qualquer Data para o Administrador */}
+              {isAdmin && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-zinc-900 border border-amber-500/50 text-[11px] font-mono text-amber-300 whitespace-nowrap shrink-0">
+                  <span className="text-amber-400 font-bold">👑 Data:</span>
+                  <input
+                    type="date"
+                    value={selectedDateFilter !== 'all' && selectedDateFilter !== currentDateString && selectedDateFilter !== yesterdayStr ? selectedDateFilter : ''}
+                    onChange={(e) => onSelectDateFilter(e.target.value || 'all')}
+                    className="bg-black/90 border border-zinc-750 text-white text-[11px] font-mono rounded px-1.5 py-0.5 focus:outline-none focus:border-amber-400 cursor-pointer"
+                    title="Administrador: Selecionar qualquer data histórica ou futura para auditar probabilidades"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Search Input for Clubs */}
@@ -551,8 +574,12 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                         (jogo.data && jogo.data < currentDateString)
                       );
 
-                      const finalGolosCasa = liveInfo?.golosCasa ?? (typeof jogo.golos_casa === 'number' ? jogo.golos_casa : 0);
-                      const finalGolosFora = liveInfo?.golosFora ?? (typeof jogo.golos_fora === 'number' ? jogo.golos_fora : 0);
+                      const { homeScore: dbGolosCasa, awayScore: dbGolosFora, hasScore: hasDbScore } = resolveActualMatchScore(jogo);
+                      const hasLiveScore = Boolean(liveInfo && liveInfo.isLive && typeof liveInfo.golosCasa === 'number' && typeof liveInfo.golosFora === 'number');
+
+                      const finalGolosCasa = hasDbScore ? dbGolosCasa : (hasLiveScore ? liveInfo!.golosCasa : (liveInfo?.hasOfficialScore ? liveInfo.golosCasa : null));
+                      const finalGolosFora = hasDbScore ? dbGolosFora : (hasLiveScore ? liveInfo!.golosFora : (liveInfo?.hasOfficialScore ? liveInfo.golosFora : null));
+                      const hasValidScore = finalGolosCasa !== null && finalGolosFora !== null;
 
                       const isSelectedInSidebar = activeMatch && (
                         (activeMatch.jogo_id && activeMatch.jogo_id === jogo.jogo_id) ||
@@ -644,13 +671,13 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                               {/* Home Team */}
                               <div className="flex items-center justify-between">
                                 <span className={`text-xs sm:text-sm font-bold truncate ${
-                                  isMatchFinished && finalGolosCasa > finalGolosFora ? 'text-emerald-400 font-black' : 'text-zinc-100'
+                                  isMatchFinished && hasValidScore && finalGolosCasa! > finalGolosFora! ? 'text-emerald-400 font-black' : 'text-zinc-100'
                                 }`}>
                                   {jogo.clube_casa}
                                 </span>
                                 {(liveInfo?.isLive || isMatchFinished) && (
                                   <span className="font-mono font-black text-sm px-2 text-white">
-                                    {finalGolosCasa}
+                                    {hasValidScore ? finalGolosCasa : (isMatchFinished ? '-' : '')}
                                   </span>
                                 )}
                               </div>
@@ -658,13 +685,13 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                               {/* Away Team */}
                               <div className="flex items-center justify-between">
                                 <span className={`text-xs sm:text-sm font-bold truncate ${
-                                  isMatchFinished && finalGolosFora > finalGolosCasa ? 'text-emerald-400 font-black' : 'text-zinc-100'
+                                  isMatchFinished && hasValidScore && finalGolosFora! > finalGolosCasa! ? 'text-emerald-400 font-black' : 'text-zinc-100'
                                 }`}>
                                   {jogo.clube_fora}
                                 </span>
                                 {(liveInfo?.isLive || isMatchFinished) && (
                                   <span className="font-mono font-black text-sm px-2 text-white">
-                                    {finalGolosFora}
+                                    {hasValidScore ? finalGolosFora : (isMatchFinished ? '-' : '')}
                                   </span>
                                 )}
                               </div>
@@ -673,31 +700,41 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
 
                           {/* Row 3: 1X2 Odds & IA Tip Badge */}
                           <div className="mt-2 pt-2 border-t border-zinc-800/60 flex flex-wrap items-center justify-between gap-2">
-                            {/* 1X2 Odds Chips */}
-                            <div className="flex items-center gap-1 font-mono text-[11px]">
-                              <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-300">
-                                <span className="text-[9px] text-zinc-500 mr-1">1</span>
-                                <strong className="text-cyan-300">{metrics.odd1}</strong>
-                              </span>
-                              <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-300">
-                                <span className="text-[9px] text-zinc-500 mr-1">X</span>
-                                <strong className="text-zinc-200">{metrics.oddX}</strong>
-                              </span>
-                              <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-300">
-                                <span className="text-[9px] text-zinc-500 mr-1">2</span>
-                                <strong className="text-amber-300">{metrics.odd2}</strong>
-                              </span>
-                            </div>
+                            {(isMatchFinished || (jogo.data && jogo.data < currentDateString)) && !isAdmin ? (
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-md bg-zinc-900 text-zinc-500 border border-zinc-800">
+                                  🔒 Previsão &amp; Probabilidades Arquivadas
+                                </span>
+                              </div>
+                            ) : (
+                              <>
+                                {/* 1X2 Odds Chips */}
+                                <div className="flex items-center gap-1 font-mono text-[11px]">
+                                  <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-300">
+                                    <span className="text-[9px] text-zinc-500 mr-1">1</span>
+                                    <strong className="text-cyan-300">{metrics.odd1}</strong>
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-300">
+                                    <span className="text-[9px] text-zinc-500 mr-1">X</span>
+                                    <strong className="text-zinc-200">{metrics.oddX}</strong>
+                                  </span>
+                                  <span className="px-2 py-0.5 rounded bg-zinc-900/90 border border-zinc-800 text-zinc-300">
+                                    <span className="text-[9px] text-zinc-500 mr-1">2</span>
+                                    <strong className="text-amber-300">{metrics.odd2}</strong>
+                                  </span>
+                                </div>
 
-                            {/* IA Prediction Badge */}
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-md bg-purple-950/70 text-purple-300 border border-purple-500/40 truncate max-w-[200px]">
-                                🤖 {metrics.seloIa}
-                              </span>
-                              <span className="text-[10px] font-mono font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
-                                {metrics.evVal}
-                              </span>
-                            </div>
+                                {/* IA Prediction Badge */}
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-[10px] font-mono font-black px-2 py-0.5 rounded-md bg-purple-950/70 text-purple-300 border border-purple-500/40 truncate max-w-[200px]">
+                                    🤖 {metrics.seloIa}
+                                  </span>
+                                  <span className="text-[10px] font-mono font-extrabold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                                    {metrics.evVal}
+                                  </span>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       );
@@ -736,21 +773,43 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                     <span className="text-cyan-400">{activeMatch.clube_fora}</span>
                   </h3>
                   
-                  {activeLiveInfo?.isLive ? (
-                    <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-600 text-white font-mono font-black text-xs shadow-md animate-pulse">
-                      <span>🔴 EM DIRETO • {activeLiveInfo.minuto}</span>
-                      <span>({activeLiveInfo.golosCasa} - {activeLiveInfo.golosFora})</span>
-                    </div>
-                  ) : activeMatch.estado === 'FINISHED' || activeMatch.data && activeMatch.data < currentDateString ? (
-                    <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/40">
-                      <span>✅ TERMINADO</span>
-                      <span>({activeLiveInfo?.golosCasa ?? activeMatch.golos_casa ?? 0} - {activeLiveInfo?.golosFora ?? activeMatch.golos_fora ?? 0})</span>
-                    </div>
-                  ) : (
-                    <div className="mt-1 text-[11px] font-mono text-zinc-400">
-                      Probabilidades &amp; Estimativas em Tempo Real
-                    </div>
-                  )}
+                  {(() => {
+                    const isSelectedMatchFinished = Boolean(
+                      activeLiveInfo?.isFinished ||
+                      activeLiveInfo?.fase === 'Terminado' ||
+                      (activeMatch.estado && ['FINISHED', 'FT', 'TERMINADO', 'FINAL', 'ENCERRADO'].includes(activeMatch.estado.toUpperCase())) ||
+                      (activeMatch.data && activeMatch.data < currentDateString)
+                    );
+
+                    const { homeScore: activeDbCasa, awayScore: activeDbFora, hasScore: activeHasDbScore } = resolveActualMatchScore(activeMatch);
+                    const hasActiveLiveScore = Boolean(activeLiveInfo && activeLiveInfo.isLive && typeof activeLiveInfo.golosCasa === 'number' && typeof activeLiveInfo.golosFora === 'number');
+
+                    const activeGolosCasa = activeHasDbScore ? activeDbCasa : (hasActiveLiveScore ? activeLiveInfo!.golosCasa : (activeLiveInfo?.hasOfficialScore ? activeLiveInfo.golosCasa : null));
+                    const activeGolosFora = activeHasDbScore ? activeDbFora : (hasActiveLiveScore ? activeLiveInfo!.golosFora : (activeLiveInfo?.hasOfficialScore ? activeLiveInfo.golosFora : null));
+                    const hasActiveValidScore = activeGolosCasa !== null && activeGolosFora !== null;
+
+                    if (activeLiveInfo?.isLive) {
+                      return (
+                        <div className="mt-1 inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-red-600 text-white font-mono font-black text-xs shadow-md animate-pulse">
+                          <span>🔴 EM DIRETO • {activeLiveInfo.minuto}</span>
+                          <span>({activeLiveInfo.golosCasa} - {activeLiveInfo.golosFora})</span>
+                        </div>
+                      );
+                    } else if (isSelectedMatchFinished) {
+                      return (
+                        <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/40">
+                          <span>✅ TERMINADO</span>
+                          <span>{hasActiveValidScore ? `(${activeGolosCasa} - ${activeGolosFora})` : '(Aguardando Confirmação)'}</span>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="mt-1 text-[11px] font-mono text-zinc-400">
+                          Probabilidades &amp; Estimativas em Tempo Real
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               </div>
 
@@ -775,15 +834,43 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                 </p>
               </div>
 
-              {/* 1X2 Probabilities Meters (Uniscore Style) */}
-              <div className="bg-[#141829] border border-zinc-800 rounded-xl p-3.5 space-y-3">
-                <div className="flex items-center justify-between text-xs font-mono font-bold text-zinc-300">
-                  <span className="flex items-center gap-1.5 text-white">
-                    <span>📊</span>
-                    <span>Probabilidades 1X2 (SuperIA)</span>
-                  </span>
-                  <span className="text-[10px] text-zinc-400">Odd de Mercado</span>
+              {/* Se a partida for de um dia anterior ou estiver terminada e o utilizador NÃO for Admin: ocultar previsões pré-jogo como na Flashscore */}
+              {Boolean(
+                (activeLiveInfo?.isFinished ||
+                 activeLiveInfo?.fase === 'Terminado' ||
+                 (activeMatch.estado && ['FINISHED', 'FT', 'TERMINADO', 'FINAL', 'ENCERRADO'].includes(activeMatch.estado.toUpperCase())) ||
+                 (activeMatch.data && activeMatch.data < currentDateString)) &&
+                !isAdmin
+              ) ? (
+                <div className="bg-[#141829] border border-zinc-800 rounded-xl p-5 text-center space-y-3 shadow-inner">
+                  <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-750 flex items-center justify-center mx-auto text-amber-400 text-xl shadow-lg">
+                    🔒
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-bold text-zinc-200 uppercase font-mono tracking-wider">
+                      Previsões Pré-Jogo Arquivadas
+                    </h4>
+                    <p className="text-[11px] text-zinc-400 font-mono leading-relaxed">
+                      As probabilidades estatísticas da SuperIA ficam disponíveis publicamente apenas para os jogos do próprio dia e partidas agendadas. O histórico de análises pré-jogo de datas anteriores é arquivado após a conclusão.
+                    </p>
+                  </div>
+                  <div className="pt-1">
+                    <span className="inline-block px-3 py-1 rounded-md bg-zinc-900 text-zinc-400 text-[10px] font-mono border border-zinc-800">
+                      👑 Acesso Completo ao Histórico Reservado a Administrador
+                    </span>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {/* 1X2 Probabilities Meters (iRunBets Pro Style) */}
+                  <div className="bg-[#141829] border border-zinc-800 rounded-xl p-3.5 space-y-3">
+                    <div className="flex items-center justify-between text-xs font-mono font-bold text-zinc-300">
+                      <span className="flex items-center gap-1.5 text-white">
+                        <span>📊</span>
+                        <span>Probabilidades 1X2 (SuperIA)</span>
+                      </span>
+                      <span className="text-[10px] text-zinc-400">Odd de Mercado</span>
+                    </div>
 
                 {/* 1: Casa */}
                 <div className="space-y-1">
@@ -914,6 +1001,8 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                     <span className="truncate max-w-[140px] text-cyan-300">{activeMatch.treinador_fora || 'Treinador Fora'}</span>
                   </div>
                 </div>
+              )}
+                </>
               )}
 
               {/* Bottom Multipla Button */}

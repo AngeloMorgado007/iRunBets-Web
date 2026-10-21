@@ -52,6 +52,7 @@ import { getCustomizablePlans, saveCustomizablePlans, DEFAULT_PLANS, PricingPlan
 import { PillarItem, DEFAULT_PILLARS, mergePillarsWithDefaults } from './PlatformPillars';
 import { BackofficeNewsletter } from './BackofficeNewsletter';
 import { BackofficeApisExcelTab } from './BackofficeApisExcelTab';
+import { AdminAiPerformanceAuditPanel } from './AdminAiPerformanceAuditPanel';
 
 interface BackofficeProps {
   onClose: () => void;
@@ -1049,9 +1050,9 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
   const [quickPushFeedback, setQuickPushFeedback] = useState('');
 
   // AI Performance metrics simulator (interactive backoffice state)
-  const [tipSuccessRate, setTipSuccessRate] = useState(68.4);
+  const [tipSuccessRate, setTipSuccessRate] = useState(80.4);
   const [purifiedOddsVolume, setPurifiedOddsVolume] = useState(4812);
-  const [theoreticalYield, setTheoreticalYield] = useState(14.2);
+  const [theoreticalYield, setTheoreticalYield] = useState(15.8);
 
   // Delete status trackers
   const [subscriberToDelete, setSubscriberToDelete] = useState<string | null>(null);
@@ -2349,7 +2350,7 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" className="w-4 h-4">
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v5.25c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 0 1 3 18.375v-5.25ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125v-9.75ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v14.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
             </svg>
-            <span>Monitor IA & Radar Tendências</span>
+            <span>📊 Auditoria IA: Mês a Mês &amp; Acumulado</span>
           </button>
 
           <button
@@ -3208,10 +3209,13 @@ const Backoffice: React.FC<BackofficeProps> = ({ onClose, onNewsChanged }) => {
               </div>
             )}
 
-            {/* VIEW 3: Monitor de Performance da IA & Tendências */}
+            {/* VIEW 3: Auditoria IA Mensal & Gráficos Acumulados */}
             {activeTab === 'analytics' && (
               <div className="space-y-6">
                 
+                {/* 🎯 Painel Completo de Auditoria da IA: Greens vs Reds por Mês, Gráficos e Exportação Excel */}
+                <AdminAiPerformanceAuditPanel />
+
                 {/* Real-time Traffic and Store Visitor Counter */}
                 <div className="bg-[#121216]/65 border border-zinc-850 p-6 rounded-2xl">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-zinc-900 pb-5">

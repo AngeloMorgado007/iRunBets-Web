@@ -27,6 +27,7 @@ import { TeamDetailsModal } from './TeamDetailsModal';
 import { LeagueStandingsView } from './LeagueStandingsView';
 import ApostasDoDiaSubpage from './ApostasDoDiaSubpage';
 import UniscoreThreeColumnView from './UniscoreThreeColumnView';
+import { resolveActualMatchScore } from '../services/auditPerformanceService';
 
 // Accent and diacritic stripper for search accuracy
 function normalizeSearchText(text: string): string {
@@ -359,8 +360,8 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
     leagueName: undefined
   });
 
-  // Layout Mode: Uniscore (3 Colunas) ou Tabela Geral (Excel)
-  const [tableLayoutMode, setTableLayoutMode] = useState<'uniscore' | 'excel'>('uniscore');
+  // Layout Mode: Multi-Painel (3 Colunas iRunBets Pro) ou Tabela Geral (Excel)
+  const [tableLayoutMode, setTableLayoutMode] = useState<'pro_columns' | 'excel'>('pro_columns');
 
   // 3 Filtros Rápidos de Estado: 🔴 Ao Vivo (IN_PLAY), ✅ Terminados (FINISHED) e 📅 Agendados (SCHEDULED)
   const [statusFilter, setStatusFilter] = useState<'all' | 'live' | 'finished' | 'scheduled'>('all');
@@ -376,6 +377,13 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
     authUser?.email?.toLowerCase() === '1982veramorgado@gmail.com'
   );
   const isUserRegistered = Boolean(authUser) || Boolean(userSubscriptionStatus && userSubscriptionStatus !== 'Gratuito') || isEffectiveAdmin;
+
+  // Proteção: Utilizadores não-admin NUNCA podem ter datas anteriores a hoje selecionadas
+  useEffect(() => {
+    if (!isEffectiveAdmin && selectedDateFilter !== 'all' && selectedDateFilter < currentDateString) {
+      setSelectedDateFilter(currentDateString);
+    }
+  }, [isEffectiveAdmin, selectedDateFilter, currentDateString]);
 
   // Selected game for the quantitative metrics modal pop-up (including Live info if in play)
   const [selectedMatch, setSelectedMatch] = useState<{
@@ -1121,15 +1129,20 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
         }
       }
 
-      // 1. Regra Estrita Solicitada: Na listagem geral da tabela, mostrar APENAS os resultados do dia anterior (ontem) e jogos futuros limitados a 5 dias.
-      // Os jogos com resultados passados das jornadas anteriores foram deslocados para a própria equipa (ver no pop-up ao clicar no clube).
+      // 1. Regra Estrita Solicitada: Não-admins NUNCA veem jogos de dias anteriores ao dia de hoje (currentDateString).
+      // Apenas o Administrador tem acesso e permissão para auditar datas anteriores e histórico completo.
+      if (!isEffectiveAdmin && j.data && j.data < currentDateString) {
+        return false;
+      }
+
+      // 2. Regra da Tabela Geral: Na listagem geral da tabela (sem pesquisa ativa), mostrar apenas os jogos recentes e futuros limitados a 5 dias.
       if (selectedDateFilter === 'all' && !hasSearch && statusFilter === 'all' && !showLiveOnly && !(selectedLeague !== 'all' && forceShowAllLeagueGames)) {
         if (j.data) {
-          // Deslocar jogos de jornadas anteriores a ontem para a ficha da equipa
-          if (j.data < yesterdayStr) {
+          // Para Admin, permitir ver até ontem na vista geral 'all'. Para não-admin, já foi filtrado acima.
+          if (isEffectiveAdmin && j.data < yesterdayStr) {
             return false;
           }
-          // Limitar jogos futuros estritamente a 5 dias
+          // Limitar jogos futuros estritamente a 5 dias na grelha geral
           if (j.data > maxFuture5DaysStr) {
             return false;
           }
@@ -1572,22 +1585,22 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
         </div>
       </div>
 
-      {/* Seletor de Modo de Visualização: Layout Uniscore (3 Colunas) vs Tabela Geral (Excel) */}
+      {/* Seletor de Modo de Visualização: Layout Multi-Painel (3 Colunas) vs Tabela Geral (Excel) */}
       <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 bg-[#101320] border border-zinc-800 rounded-2xl shadow-xl">
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setTableLayoutMode('uniscore')}
+            onClick={() => setTableLayoutMode('pro_columns')}
             className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-mono font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-              tableLayoutMode === 'uniscore'
+              tableLayoutMode === 'pro_columns'
                 ? 'bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 text-black shadow-lg shadow-orange-500/20 scale-[1.02]'
                 : 'bg-zinc-900/90 text-zinc-400 hover:text-white border border-zinc-800'
             }`}
           >
             <span>⚡</span>
-            <span>Layout 3 Colunas (Uniscore)</span>
+            <span>Layout 3 Colunas (iRunBets Pro)</span>
             <span className={`text-[10px] px-1.5 py-0.2 rounded font-black ${
-              tableLayoutMode === 'uniscore' ? 'bg-black/25 text-black' : 'bg-amber-500/20 text-amber-300'
+              tableLayoutMode === 'pro_columns' ? 'bg-black/25 text-black' : 'bg-amber-500/20 text-amber-300'
             }`}>
               Recomendado
             </span>
@@ -1610,14 +1623,14 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
         <div className="text-[11px] font-mono text-zinc-400 px-3 hidden sm:flex items-center gap-2">
           <span>💡</span>
           <span>
-            {tableLayoutMode === 'uniscore'
-              ? 'Estilo Uniscore: Ligas à esquerda, Jogos no centro, Probabilidades e Pop-up à direita.'
+            {tableLayoutMode === 'pro_columns'
+              ? 'Layout Profissional 3 Colunas: Ligas à esquerda, Jogos no centro, Probabilidades e Pop-up à direita.'
               : 'Estilo Excel: Grelha horizontal detalhada com personalização de colunas e escala.'}
           </span>
         </div>
       </div>
 
-      {tableLayoutMode === 'uniscore' ? (
+      {tableLayoutMode === 'pro_columns' ? (
         <UniscoreThreeColumnView
           jogos={jogos}
           filteredJogos={filteredJogos}
@@ -1643,6 +1656,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
           onToggleMultiplaSelection={handleToggleMultiplaSelection}
           unlockedIds={unlockedIds}
           isUserRegistered={isUserRegistered}
+          isAdmin={isEffectiveAdmin}
           showLiveOnly={showLiveOnly}
           setShowLiveOnly={setShowLiveOnly}
           liveGamesCount={liveGamesCount}
@@ -1777,23 +1791,25 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
             <span>🗓️ Todas Datas</span>
           </button>
 
-          {/* ⏪ Ontem (Resultados Finais Registados) */}
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedDateFilter(selectedDateFilter === yesterdayStr ? 'all' : yesterdayStr);
-              setStatusFilter('all');
-              setShowLiveOnly(false);
-            }}
-            className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
-              selectedDateFilter === yesterdayStr
-                ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white border-amber-400 shadow-lg shadow-amber-600/30 scale-[1.02]'
-                : 'bg-zinc-900/90 hover:bg-zinc-800 text-amber-300/90 border-amber-500/30'
-            }`}
-            title="Ver histórico de jogos de ontem com resultados finais e placares registados"
-          >
-            <span>⏪ Ontem</span>
-          </button>
+          {/* ⏪ Ontem (Apenas Administrador) */}
+          {isEffectiveAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDateFilter(selectedDateFilter === yesterdayStr ? 'all' : yesterdayStr);
+                setStatusFilter('all');
+                setShowLiveOnly(false);
+              }}
+              className={`px-3 py-2 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer border ${
+                selectedDateFilter === yesterdayStr
+                  ? 'bg-gradient-to-r from-amber-600 to-amber-700 text-white border-amber-400 shadow-lg shadow-amber-600/30 scale-[1.02]'
+                  : 'bg-zinc-900/90 hover:bg-zinc-800 text-amber-300/90 border-amber-500/30'
+              }`}
+              title="Painel Admin: Ver histórico de ontem com probabilidades e resultados completos"
+            >
+              <span>⏪ Ontem</span>
+            </button>
+          )}
 
           {/* ⭐ Hoje */}
           <button
@@ -1829,6 +1845,24 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
           >
             <span>⚡ Próximos 8 Dias</span>
           </button>
+
+          {/* 👑 Seletor Livre de Qualquer Data para o Administrador */}
+          {isEffectiveAdmin && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 border border-amber-500/50 text-xs font-mono text-amber-300 shadow-sm">
+              <span className="text-amber-400 font-bold">👑 Data Admin:</span>
+              <input
+                type="date"
+                value={selectedDateFilter !== 'all' && selectedDateFilter !== currentDateString && selectedDateFilter !== yesterdayStr ? selectedDateFilter : ''}
+                onChange={(e) => {
+                  setSelectedDateFilter(e.target.value || 'all');
+                  setStatusFilter('all');
+                  setShowLiveOnly(false);
+                }}
+                className="bg-black/80 border border-zinc-750 text-white text-xs font-mono rounded-lg px-2 py-0.5 focus:outline-none focus:border-amber-400 cursor-pointer"
+                title="Administrador: Selecione qualquer data histórica ou futura para auditar métricas e previsões"
+              />
+            </div>
+          )}
         </div>
       </div>
 
@@ -2798,13 +2832,17 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                     (jogo.data && jogo.data < currentDateString)
                   );
 
-                  // Golos finais garantidos para jogos terminados
-                  const finalGolosCasa = liveInfo?.golosCasa ?? (typeof jogo.golos_casa === 'number' ? jogo.golos_casa : 0);
-                  const finalGolosFora = liveInfo?.golosFora ?? (typeof jogo.golos_fora === 'number' ? jogo.golos_fora : 0);
-                  const finalWinner = finalGolosCasa > finalGolosFora ? '1' : finalGolosFora > finalGolosCasa ? '2' : 'X';
+                  // Golos finais garantidos e auditados sem inventar 0-0
+                  const { homeScore: dbGolosCasa, awayScore: dbGolosFora, hasScore: hasDbScore } = resolveActualMatchScore(jogo);
+                  const hasLiveScore = Boolean(liveInfo && liveInfo.isLive && typeof liveInfo.golosCasa === 'number' && typeof liveInfo.golosFora === 'number');
 
-                  // Em jogos terminados, o bloqueio/premium desaparece completamente
-                  const canViewPrediction = isUserRegistered || isUnlockedByAdmin || isMatchFinished;
+                  const finalGolosCasa = hasDbScore ? dbGolosCasa : (hasLiveScore ? liveInfo!.golosCasa : (liveInfo?.hasOfficialScore ? liveInfo.golosCasa : null));
+                  const finalGolosFora = hasDbScore ? dbGolosFora : (hasLiveScore ? liveInfo!.golosFora : (liveInfo?.hasOfficialScore ? liveInfo.golosFora : null));
+                  const hasValidScore = finalGolosCasa !== null && finalGolosFora !== null;
+                  const finalWinner = hasValidScore ? (finalGolosCasa! > finalGolosFora! ? '1' : finalGolosFora! > finalGolosCasa! ? '2' : 'X') : null;
+
+                  // Em jogos terminados, as previsões pré-jogo são reservadas a Admin (estilo Flashscore)
+                  const canViewPrediction = isEffectiveAdmin || (!isMatchFinished && (isUserRegistered || isUnlockedByAdmin));
 
                   return (
                     <tr
@@ -2970,7 +3008,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                                 <span>Terminado</span>
                               </span>
                               <span className="text-[10px] font-mono text-emerald-300 font-black">
-                                FT {finalGolosCasa} - {finalGolosFora}
+                                {hasValidScore ? `FT ${finalGolosCasa} - ${finalGolosFora}` : 'Encerrado'}
                               </span>
                             </div>
                           ) : (
@@ -3077,7 +3115,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                                   {jogo.clube_casa}
                                 </button>
                                 <span className="px-2.5 py-0.5 rounded-md bg-emerald-950 border-2 border-emerald-500/70 text-emerald-300 font-mono font-black text-xs sm:text-sm shadow-md shrink-0">
-                                  {finalGolosCasa} - {finalGolosFora}
+                                  {hasValidScore ? `${finalGolosCasa} - ${finalGolosFora}` : 'FT'}
                                 </span>
                                 <button
                                   type="button"
@@ -3098,7 +3136,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                               <div className="flex items-center justify-between text-[10px] font-mono">
                                 <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
                                   <span>🏁 Terminado</span>
-                                  <span>• Resultado Final: {finalGolosCasa}-{finalGolosFora}</span>
+                                  {hasValidScore && <span>• Resultado Final: {finalGolosCasa}-{finalGolosFora}</span>}
                                 </span>
                                 {jogo.data && (
                                   <span className="text-zinc-400 font-medium">{getDateLabel(jogo.data)}</span>
@@ -3218,21 +3256,27 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                         </>
                       )}
 
-                      {/* Selo Previsão IA - Em jogos terminados, premium desaparece e passa a mostrar o resultado final */}
+                      {/* Selo Previsão IA - Em jogos terminados, para não-admin esconde a previsão pré-jogo como na Flashscore */}
                       {visibleColumns.previsao && (
                         <td className={`${rowPadding} px-4 border-r border-zinc-800/80 text-center whitespace-nowrap`}>
                           <div className="inline-flex items-center justify-center gap-2">
                             {isMatchFinished ? (
                               <div className="flex flex-col items-center gap-1">
-                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-emerald-500/60 shadow-sm font-mono">
-                                  <span className="text-emerald-300 font-black text-xs">🤖 {metrics.seloIa}</span>
-                                  <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]">
-                                    {metrics.confianca}%
+                                {isEffectiveAdmin ? (
+                                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-900/90 border border-emerald-500/60 shadow-sm font-mono">
+                                    <span className="text-emerald-300 font-black text-xs">🤖 {metrics.seloIa}</span>
+                                    <span className="px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-[10px]">
+                                      {metrics.confianca}%
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-zinc-900 border border-zinc-750 text-zinc-400 text-[10px] font-mono font-bold">
+                                    🔒 Pré-jogo Arquivado
                                   </span>
-                                </div>
+                                )}
                                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-[10px] font-mono font-black uppercase">
                                   <span>🏁</span>
-                                  <span>Terminado • FT {finalGolosCasa}-{finalGolosFora}</span>
+                                  <span>Terminado {hasValidScore ? `• FT ${finalGolosCasa}-${finalGolosFora}` : ''}</span>
                                 </span>
                               </div>
                             ) : canViewPrediction ? (
@@ -3431,11 +3475,14 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
           (selectedMatch.jogo.data && selectedMatch.jogo.data < currentDateString)
         );
 
-        const modalFinalGolosCasa = selectedMatch.liveInfo?.golosCasa ?? (typeof selectedMatch.jogo.golos_casa === 'number' ? selectedMatch.jogo.golos_casa : 0);
-        const modalFinalGolosFora = selectedMatch.liveInfo?.golosFora ?? (typeof selectedMatch.jogo.golos_fora === 'number' ? selectedMatch.jogo.golos_fora : 0);
+        const { homeScore: modalDbCasa, awayScore: modalDbFora, hasScore: modalHasDb } = resolveActualMatchScore(selectedMatch.jogo);
+        const modalFinalGolosCasa = modalHasDb ? modalDbCasa! : (selectedMatch.liveInfo?.golosCasa ?? (typeof selectedMatch.jogo.golos_casa === 'number' ? selectedMatch.jogo.golos_casa : 0));
+        const modalFinalGolosFora = modalHasDb ? modalDbFora! : (selectedMatch.liveInfo?.golosFora ?? (typeof selectedMatch.jogo.golos_fora === 'number' ? selectedMatch.jogo.golos_fora : 0));
 
+        const isPastDay = Boolean(selectedMatch.jogo.data && selectedMatch.jogo.data < currentDateString);
+        const isPredictionArchivedForUser = isPastDay && !isEffectiveAdmin;
         const isModalUnlocked = unlockedIds.includes(modalMatchKey);
-        const canViewModalPrediction = isUserRegistered || isModalUnlocked || isModalMatchFinished;
+        const canViewModalPrediction = !isPredictionArchivedForUser && (isUserRegistered || isModalUnlocked || isModalMatchFinished);
 
         return (
           <div 
@@ -3500,7 +3547,29 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
 
               {/* Scrollable Modal Body */}
               <div className="overflow-y-auto space-y-6 py-5 pr-1 relative z-10 scrollbar-thin">
-                {!canViewModalPrediction ? (
+                {isPredictionArchivedForUser ? (
+                  <div className="bg-[#141829] border border-zinc-800 rounded-3xl p-6 sm:p-10 text-center space-y-5 my-2 shadow-2xl">
+                    <div className="w-16 h-16 mx-auto rounded-2xl bg-zinc-900 border border-zinc-750 flex items-center justify-center text-3xl shadow-lg text-amber-400">
+                      🔒
+                    </div>
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-400 font-black px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800">
+                        Histórico Arquivado
+                      </span>
+                      <h3 className="text-xl sm:text-2xl font-mono font-black text-white pt-2">
+                        Previsões Pré-Jogo Arquivadas
+                      </h3>
+                      <p className="text-xs sm:text-sm text-zinc-400 max-w-lg mx-auto leading-relaxed">
+                        De acordo com o protocolo das plataformas desportivas de referência, as probabilidades estatísticas e previsões da SuperIA ficam disponíveis publicamente apenas para as partidas do próprio dia e jogos agendados. O histórico de análises pré-jogo de datas anteriores é arquivado após a jornada.
+                      </p>
+                    </div>
+                    <div className="pt-2">
+                      <span className="inline-block px-4 py-1.5 rounded-lg bg-zinc-900 text-zinc-400 text-xs font-mono border border-zinc-800">
+                        👑 Auditoria e Acesso Integral ao Histórico Reservados a Administrador
+                      </span>
+                    </div>
+                  </div>
+                ) : !canViewModalPrediction ? (
                   <div className="bg-gradient-to-b from-zinc-900/95 via-[#0d0d12] to-black border border-amber-500/50 rounded-3xl p-6 sm:p-10 text-center space-y-5 my-2 shadow-2xl">
                     <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/10">
                       🔒

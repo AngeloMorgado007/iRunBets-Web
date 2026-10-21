@@ -257,8 +257,9 @@ export const GLOBAL_LEAGUES_TEAMS_MAP: Record<string, string[]> = {
   "UEFA Champions League": [
     "Real Madrid", "Manchester City", "Bayern München", "Bayern Munich", "Paris Saint-Germain", "PSG", "Inter Milan", "Inter", 
     "Arsenal", "Barcelona", "Borussia Dortmund", "Atlético Madrid", "Bayer Leverkusen", 
-    "Juventus", "AC Milan", "Milan", "Benfica", "SL Benfica", "SL.BENFICA", "FC Porto", "Porto", "Sporting CP", "Sporting", "SC Braga", "Vitória SC", 
-    "PSV Eindhoven", "Feyenoord", "Atalanta", "RB Leipzig", "Aston Villa", "Girona", "Celtic FC", "Celtic", "Rangers FC", "Lille OSC", "Brest"
+    "Juventus", "AC Milan", "Milan", "AS Roma", "Roma", "Benfica", "SL Benfica", "SL.BENFICA", "FC Porto", "Porto", 
+    "Sporting Clube de Portugal", "Sporting CP", "Sporting", "LASK Linz", "LASK", "SC Braga", "Vitória SC", 
+    "PSV Eindhoven", "Feyenoord", "Atalanta", "RB Leipzig", "Aston Villa", "Girona", "Celtic FC", "Celtic", "Rangers FC", "Lille OSC", "Brest", "Galatasaray SK", "Bodø/Glimt"
   ],
   "UEFA Europa League": [
     "SL Benfica", "SL.BENFICA", "Benfica", "Heart of Midlothian", "Hearts", "HEARTS", "Manchester United", "Man Utd", "Tottenham Hotspur", "Tottenham", 

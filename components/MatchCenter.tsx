@@ -118,60 +118,109 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
     );
   }, [isAdmin, currentUser, userSubscriptionStatus]);
 
-  // Initial Load of Games and Storage
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string>('');
+  const loadGamesRef = useRef<((isSilent?: boolean) => Promise<void>) | null>(null);
+
+  const handleManualRefresh = () => {
+    if (loadGamesRef.current) {
+      loadGamesRef.current(true);
+    }
+  };
+
+  // Initial Load & Auto-Refresh of Games and Storage
   useEffect(() => {
     setMarketingFreeIds(getFreeMarketingGameIds());
     setUserCheckedIds(getUserCheckedGameIds());
 
-    const loadGames = async () => {
-      setLoadingGames(true);
-      const data = await fetchJogosDoDiaFromSupabase(200);
-      const calibratedGames: MatchCenterGame[] = data.map(game => {
-        const calibrated = getCalibratedMatchMetrics(game as any);
-        return {
-          ...game,
-          odd_1: game.odd_1 != null ? Number(game.odd_1) : parseFloat(calibrated.odd1),
-          odd_x: game.odd_x != null ? Number(game.odd_x) : parseFloat(calibrated.oddX),
-          odd_2: game.odd_2 != null ? Number(game.odd_2) : parseFloat(calibrated.odd2),
-          // Directly adapted according to SuperIA calibrated Poisson / xG model
-          prob_casa: calibrated.probCasa,
-          prob_empate: calibrated.probEmpate,
-          prob_fora: calibrated.probFora,
-          valor_ev: calibrated.evVal,
-          confianca_percentagem: calibrated.confianca,
-          previsao_resumo: calibrated.seloIa,
-          analise_texto: (game.analise_texto && game.analise_texto !== 'Análise detalhada a ser processada pelo algoritmo.') ? game.analise_texto : calibrated.textoAnalise,
-          estimativa_cantos: game.estimativa_cantos != null ? game.estimativa_cantos : calibrated.cantosVal,
-          estimativa_cartoes: game.estimativa_cartoes != null ? game.estimativa_cartoes : calibrated.cartoesVal,
-        };
-      });
-      setGamesList(calibratedGames);
-      setLoadingGames(false);
-
-      // Automated Daily "Sinal Aberto" at 00:00:
-      // Guarantee that 3 games with SuperIA probability >= 75% are available in Sinal Aberto without login
-      try {
-        const top3Daily = getDailyTop75MatchesForSinalAberto(calibratedGames as any);
-        if (top3Daily.length > 0) {
-          const currentFree = getFreeMarketingGameIds();
-          const merged = Array.from(new Set([...currentFree, ...top3Daily]));
-          setMarketingFreeIds(merged);
-          localStorage.setItem('irunbets_free_marketing_games_v2', JSON.stringify(merged));
-        }
-      } catch (e) {
-        // ignore
+    const loadGames = async (isSilent = false) => {
+      if (!isSilent) {
+        setLoadingGames(true);
+      } else {
+        setIsRefreshing(true);
       }
 
-      // Default selection (don't scroll on initial mount)
-      if (calibratedGames.length > 0) {
-        handleSelectGame(calibratedGames[0], false);
-      } else {
-        // Fallback demo match
-        handleRunFreeDuel('Benfica', 'FC Porto', 'Liga Portugal Betclic', false);
+      try {
+        const data = await fetchJogosDoDiaFromSupabase(200);
+        const calibratedGames: MatchCenterGame[] = data.map(game => {
+          const calibrated = getCalibratedMatchMetrics(game as any);
+          return {
+            ...game,
+            odd_1: game.odd_1 != null ? Number(game.odd_1) : parseFloat(calibrated.odd1),
+            odd_x: game.odd_x != null ? Number(game.odd_x) : parseFloat(calibrated.oddX),
+            odd_2: game.odd_2 != null ? Number(game.odd_2) : parseFloat(calibrated.odd2),
+            prob_casa: calibrated.probCasa,
+            prob_empate: calibrated.probEmpate,
+            prob_fora: calibrated.probFora,
+            valor_ev: calibrated.evVal,
+            confianca_percentagem: calibrated.confianca,
+            previsao_resumo: calibrated.seloIa,
+            analise_texto: (game.analise_texto && game.analise_texto !== 'Análise detalhada a ser processada pelo algoritmo.') ? game.analise_texto : calibrated.textoAnalise,
+            estimativa_cantos: game.estimativa_cantos != null ? game.estimativa_cantos : calibrated.cantosVal,
+            estimativa_cartoes: game.estimativa_cartoes != null ? game.estimativa_cartoes : calibrated.cartoesVal,
+          };
+        });
+
+        setGamesList(calibratedGames);
+        const nowTime = new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        setLastRefreshedAt(nowTime);
+
+        // Update selectedGame and analysis silently if already viewing a match
+        if (isSilent) {
+          setSelectedGame(prev => {
+            if (!prev) return prev;
+            const fresh = calibratedGames.find(g => (g.jogo_id && g.jogo_id === prev.jogo_id) || (g.confronto && g.confronto === prev.confronto));
+            return fresh ? { ...prev, ...fresh } : prev;
+          });
+
+          setAnalysis(prevAnalysis => {
+            if (!prevAnalysis?.game) return prevAnalysis;
+            const fresh = calibratedGames.find(g => (g.jogo_id && g.jogo_id === prevAnalysis.game.jogo_id) || (g.confronto && g.confronto === prevAnalysis.game.confronto));
+            if (!fresh) return prevAnalysis;
+            return {
+              ...prevAnalysis,
+              game: {
+                ...prevAnalysis.game,
+                ...fresh
+              }
+            };
+          });
+        } else {
+          // Automated Daily "Sinal Aberto" at 00:00:
+          try {
+            const top3Daily = getDailyTop75MatchesForSinalAberto(calibratedGames as any);
+            if (top3Daily.length > 0) {
+              const currentFree = getFreeMarketingGameIds();
+              const merged = Array.from(new Set([...currentFree, ...top3Daily]));
+              setMarketingFreeIds(merged);
+              localStorage.setItem('irunbets_free_marketing_games_v2', JSON.stringify(merged));
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          // Default selection (don't scroll on initial mount)
+          if (calibratedGames.length > 0) {
+            handleSelectGame(calibratedGames[0], false);
+          } else {
+            handleRunFreeDuel('Benfica', 'FC Porto', 'Liga Portugal Betclic', false);
+          }
+        }
+      } catch (err) {
+        console.warn('Erro ao atualizar jogos:', err);
+      } finally {
+        if (!isSilent) setLoadingGames(false);
+        setIsRefreshing(false);
       }
     };
 
-    loadGames();
+    loadGamesRef.current = loadGames;
+    loadGames(false);
+
+    // Auto-refresh interval every 45 seconds for live matches & scores
+    const intervalId = setInterval(() => {
+      loadGames(true);
+    }, 45000);
 
     // Listeners for external storage updates
     const handleMarketingChange = (e: any) => {
@@ -185,6 +234,8 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
     window.addEventListener('irunbets_checked_games_updated', handleCheckedChange);
 
     return () => {
+      loadGamesRef.current = null;
+      clearInterval(intervalId);
       window.removeEventListener('irunbets_marketing_games_updated', handleMarketingChange);
       window.removeEventListener('irunbets_checked_games_updated', handleCheckedChange);
     };
@@ -768,23 +819,36 @@ export const MatchCenter: React.FC<MatchCenterProps> = ({
                 </button>
               </div>
 
-              {/* Search Box */}
-              <div className="w-full md:w-72 relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Pesquisar equipa ou liga..."
-                  className="w-full bg-[#0b0e14] border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00E676] transition-colors"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-2.5 text-zinc-500 hover:text-white text-xs cursor-pointer"
-                  >
-                    ✕
-                  </button>
-                )}
+              {/* Search Box & Live Refresh Button */}
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <div className="w-full md:w-64 relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Pesquisar equipa ou liga..."
+                    className="w-full bg-[#0b0e14] border border-zinc-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#00E676] transition-colors"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3 top-2.5 text-zinc-500 hover:text-white text-xs cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className="px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 bg-[#0b0e14] hover:bg-zinc-800 border border-zinc-800 text-zinc-300 hover:text-white shrink-0"
+                  title="Atualizar jogos e golos ao vivo agora"
+                >
+                  <span className={`inline-block ${isRefreshing ? 'animate-spin' : ''}`}>🔄</span>
+                  <span className="hidden sm:inline">{isRefreshing ? 'A atualizar...' : 'Atualizar'}</span>
+                </button>
               </div>
             </div>
 

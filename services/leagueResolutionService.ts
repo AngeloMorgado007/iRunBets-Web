@@ -310,6 +310,8 @@ export const CLUB_COUNTRY_MAP: Record<string, ClubInfo> = {
   "club brugge kv": { country: "BE", domesticLeague: "Jupiler Pro League" },
   "gent": { country: "BE", domesticLeague: "Jupiler Pro League" },
   "lask linz": { country: "AT", domesticLeague: "Bundesliga (Áustria)" },
+  "lask": { country: "AT", domesticLeague: "Bundesliga (Áustria)" },
+  "lasl linz": { country: "AT", domesticLeague: "Bundesliga (Áustria)" },
   "pae aek": { country: "GR", domesticLeague: "Super League (Grécia)" },
   "fk shakhtar donetsk": { country: "UA", domesticLeague: "Premier League (Ucrânia)" },
   "fenerbahce sk": { country: "TR", domesticLeague: "Süper Lig (Turquia)" },
@@ -329,11 +331,9 @@ export const CLUB_COUNTRY_MAP: Record<string, ClubInfo> = {
 const UEL_MATCHES = new Set<string>([
   "Real Betis Balompié vs FC Porto", "FC Porto vs Real Betis Balompié",
   "Aston Villa FC vs Fenerbahçe SK", "Fenerbahçe SK vs Aston Villa FC",
-  "AS Roma vs ŠK Slovan Bratislava", "ŠK Slovan Bratislava vs AS Roma",
   "SSC Napoli vs FK Bodø/Glimt", "FK Bodø/Glimt vs SSC Napoli",
   "Como 1907 vs Manchester United FC", "Manchester United FC vs Como 1907",
   "Lille OSC vs Galatasaray SK", "Galatasaray SK vs Lille OSC",
-  "Sporting Clube de Portugal vs LASK Linz", "LASK Linz vs Sporting Clube de Portugal",
   "Real Betis Balompié vs Feyenoord Rotterdam", "Feyenoord Rotterdam vs Real Betis Balompié",
   "Fenerbahçe SK vs SK Slavia Praha", "SK Slavia Praha vs Fenerbahçe SK",
   "FK Bodø/Glimt vs Borussia Dortmund", "Borussia Dortmund vs FK Bodø/Glimt"
@@ -393,6 +393,14 @@ export function resolveAccurateLeague(
 
   // CASE 1: Clubs are from DIFFERENT COUNTRIES -> European Competition
   if (homeInfo.country !== awayInfo.country) {
+    // If already labeled with a specific UEFA competition, respect it directly
+    if (currentLeague && currentLeague !== 'Geral') {
+      const clNorm = currentLeague.toLowerCase();
+      if (clNorm.includes("champions league")) return "UEFA Champions League";
+      if (clNorm.includes("conference league")) return "UEFA Europa Conference League";
+      if (clNorm.includes("europa league")) return "UEFA Europa League";
+    }
+
     const matchupKey = `${clubeCasa} vs ${clubeFora}`;
 
     if (UECL_MATCHES.has(matchupKey)) {
@@ -403,12 +411,7 @@ export function resolveAccurateLeague(
       return "UEFA Europa League";
     }
 
-    // If already labeled with a specific secondary UEFA competition, preserve it
-    if (currentLeague === "UEFA Europa League" || currentLeague === "UEFA Europa Conference League") {
-      return currentLeague;
-    }
-
-    // Default top-tier European tournament (Feyenoord vs Como 1907, Man City vs PSG, Roma vs Real Madrid, Lens vs Sporting, etc.)
+    // Default top-tier European tournament (Feyenoord vs Como 1907, Man City vs PSG, Roma vs Slovan, Lens vs Sporting, etc.)
     return "UEFA Champions League";
   }
 

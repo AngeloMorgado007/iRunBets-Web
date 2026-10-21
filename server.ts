@@ -8,6 +8,7 @@ import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { getOfficialStandingsForLeague } from "./services/officialStandingsData";
 import { getTeamFullProfile } from "./services/teamProfileService";
 import { resolveAccurateLeague } from "./services/leagueResolutionService";
+import { resolveActualMatchScore } from "./services/officialScoresData";
 
 let serverDb: any = null;
 try {
@@ -274,11 +275,31 @@ async function startServer() {
         }
       }
 
-      // Garantir categorização fidedigna e rigorosa de todas as ligas europeias e campeonatos
-      const finalData = (data || []).map((item: any) => ({
-        ...item,
-        liga: resolveAccurateLeague(item.clube_casa, item.clube_fora, item.liga)
-      }));
+      // Garantir categorização fidedigna de todas as ligas e resolução de resultados oficiais verificados
+      const finalData = (data || []).map((item: any) => {
+        let gCasa = item.golos_casa_final ?? item.golos_casa ?? null;
+        let gFora = item.golos_fora_final ?? item.golos_fora ?? null;
+        let resultadoStr = item.resultado || (gCasa != null && gFora != null ? `${gCasa} - ${gFora}` : null);
+
+        if (gCasa == null || gFora == null) {
+          const verified = resolveActualMatchScore(item);
+          if (verified.hasScore) {
+            gCasa = verified.homeScore;
+            gFora = verified.awayScore;
+            resultadoStr = `${gCasa} - ${gFora}`;
+          }
+        }
+
+        return {
+          ...item,
+          liga: resolveAccurateLeague(item.clube_casa, item.clube_fora, item.liga),
+          golos_casa: gCasa != null ? Number(gCasa) : null,
+          golos_fora: gFora != null ? Number(gFora) : null,
+          golos_casa_final: gCasa != null ? Number(gCasa) : null,
+          golos_fora_final: gFora != null ? Number(gFora) : null,
+          resultado: resultadoStr
+        };
+      });
 
       // Headers de segurança anti-bot e anti-cache externo
       res.setHeader('X-Robots-Tag', 'noindex, nofollow, noarchive');

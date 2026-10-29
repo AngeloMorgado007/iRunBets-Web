@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { resolveAccurateLeague } from './leagueResolutionService';
 import { resolveActualMatchScore } from './officialScoresData';
+import { TODAY_EUROPEAN_FIXTURES } from './todayEuropeanFixtures';
 
 export const SUPABASE_URL = 'https://ksqevxtnuyzrfohkgvfw.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_RI9xwxEToy5XSbFuKshgWg_9jDS6cFZ';
@@ -1031,65 +1032,97 @@ export async function fetchJogosDoDiaFromSupabase(options?: {
       }
     });
 
-    if (response.ok) {
-      const json = await response.json();
-      if (json && json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
-        return json.data.map((item: any) => normalizeJogoRecord(item));
+  const mergeWithEuropeanFixtures = (list: JogoDoDia[]): JogoDoDia[] => {
+    const res = [...list];
+    const keys = new Set(res.map(j => `${j.data}_${(j.clube_casa || '').trim()}_vs_${(j.clube_fora || '').trim()}`.toLowerCase()));
+    for (const ef of TODAY_EUROPEAN_FIXTURES) {
+      const k = `${ef.data}_${ef.clube_casa}_vs_${ef.clube_fora}`.toLowerCase();
+      if (!keys.has(k)) {
+        res.push(normalizeJogoRecord(ef));
+        keys.add(k);
       }
-    } else if (response.status === 429) {
-      console.warn('[Anti-Scraping] Rate limit atingido no servidor proxy.');
-      throw new Error('Limite de consultas temporário excedido por segurança anti-scraping.');
     }
-  } catch (proxyErr) {
-    console.warn('[Proxy SSR] Fallback para query direta de contingência:', proxyErr);
+    return res;
+  };
+
+  if (response.ok) {
+    const json = await response.json();
+    if (json && json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
+      const parsed = json.data.map((item: any) => normalizeJogoRecord(item));
+      return mergeWithEuropeanFixtures(parsed);
+    }
+  } else if (response.status === 429) {
+    console.warn('[Anti-Scraping] Rate limit atingido no servidor proxy.');
+    throw new Error('Limite de consultas temporário excedido por segurança anti-scraping.');
+  }
+} catch (proxyErr) {
+  console.warn('[Proxy SSR] Fallback para query direta de contingência:', proxyErr);
+}
+
+// 2. Fallback de contingência: consultar diretamente a tabela 'jogos' (dados reais)
+try {
+  const now = new Date();
+  const pastDate = new Date(now);
+  pastDate.setDate(pastDate.getDate() - 10);
+  const pastDateStr = `${pastDate.getFullYear()}-${String(pastDate.getMonth() + 1).padStart(2, '0')}-${String(pastDate.getDate()).padStart(2, '0')}`;
+  const futureDate = new Date(now);
+  futureDate.setDate(futureDate.getDate() + 60);
+  const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+
+  let queryJogos = supabase
+    .from('jogos')
+    .select('id, data_jogo, estado, odd_casa, odd_empate, odd_fora, previsao, golos_casa_final, golos_fora_final, golos_casa_intervalo, golos_fora_intervalo, equipa_casa:equipas!equipa_casa_id(id,nome), equipa_fora:equipas!equipa_fora_id(id,nome), liga:ligas!liga_id(id,nome)');
+
+  if (!includePast) {
+    queryJogos = queryJogos.gte('data_jogo', `${pastDateStr}T00:00:00Z`).lte('data_jogo', `${futureDateStr}T23:59:59Z`);
   }
 
-  // 2. Fallback de contingência: consultar diretamente a tabela 'jogos' (dados reais)
-  try {
-    const now = new Date();
-    const pastDate = new Date(now);
-    pastDate.setDate(pastDate.getDate() - 10);
-    const pastDateStr = `${pastDate.getFullYear()}-${String(pastDate.getMonth() + 1).padStart(2, '0')}-${String(pastDate.getDate()).padStart(2, '0')}`;
-    const futureDate = new Date(now);
-    futureDate.setDate(futureDate.getDate() + 60);
-    const futureDateStr = `${futureDate.getFullYear()}-${String(futureDate.getMonth() + 1).padStart(2, '0')}-${String(futureDate.getDate()).padStart(2, '0')}`;
+  const { data: dataJogos, error: errorJogos } = await queryJogos
+    .order('data_jogo', { ascending: true })
+    .limit(limit);
 
-    let queryJogos = supabase
-      .from('jogos')
-      .select('id, data_jogo, estado, odd_casa, odd_empate, odd_fora, previsao, golos_casa_final, golos_fora_final, golos_casa_intervalo, golos_fora_intervalo, equipa_casa:equipas!equipa_casa_id(id,nome), equipa_fora:equipas!equipa_fora_id(id,nome), liga:ligas!liga_id(id,nome)');
-
-    if (!includePast) {
-      queryJogos = queryJogos.gte('data_jogo', `${pastDateStr}T00:00:00Z`).lte('data_jogo', `${futureDateStr}T23:59:59Z`);
+  if (!errorJogos && Array.isArray(dataJogos) && dataJogos.length > 0) {
+    const parsed = dataJogos.map((item: any) => normalizeJogoRecord(item));
+    const keys = new Set(parsed.map(j => `${j.data}_${(j.clube_casa || '').trim()}_vs_${(j.clube_fora || '').trim()}`.toLowerCase()));
+    for (const ef of TODAY_EUROPEAN_FIXTURES) {
+      const k = `${ef.data}_${ef.clube_casa}_vs_${ef.clube_fora}`.toLowerCase();
+      if (!keys.has(k)) {
+        parsed.push(normalizeJogoRecord(ef));
+        keys.add(k);
+      }
     }
-
-    const { data: dataJogos, error: errorJogos } = await queryJogos
-      .order('data_jogo', { ascending: true })
-      .limit(limit);
-
-    if (!errorJogos && Array.isArray(dataJogos) && dataJogos.length > 0) {
-      return dataJogos.map((item: any) => normalizeJogoRecord(item));
-    }
-  } catch (errJogos) {
-    console.warn('Fallback direto à tabela jogos falhou:', errJogos);
+    return parsed;
   }
+} catch (errJogos) {
+  console.warn('Fallback direto à tabela jogos falhou:', errJogos);
+}
 
-  // 3. Fallback adicional legado à tabela 'jogos_do_dia'
-  try {
-    const { data, error } = await supabase
-      .from('jogos_do_dia')
-      .select('*')
-      .order('data', { ascending: true })
-      .order('hora', { ascending: true })
-      .limit(limit);
+// 3. Fallback adicional legado à tabela 'jogos_do_dia'
+try {
+  const { data, error } = await supabase
+    .from('jogos_do_dia')
+    .select('*')
+    .order('data', { ascending: true })
+    .order('hora', { ascending: true })
+    .limit(limit);
 
-    if (!error && Array.isArray(data) && data.length > 0) {
-      return data.map((item: any) => normalizeJogoRecord(item));
+  if (!error && Array.isArray(data) && data.length > 0) {
+    const parsed = data.map((item: any) => normalizeJogoRecord(item));
+    const keys = new Set(parsed.map(j => `${j.data}_${(j.clube_casa || '').trim()}_vs_${(j.clube_fora || '').trim()}`.toLowerCase()));
+    for (const ef of TODAY_EUROPEAN_FIXTURES) {
+      const k = `${ef.data}_${ef.clube_casa}_vs_${ef.clube_fora}`.toLowerCase();
+      if (!keys.has(k)) {
+        parsed.push(normalizeJogoRecord(ef));
+        keys.add(k);
+      }
     }
-  } catch (err) {
-    console.warn('Fallback jogos_do_dia falhou:', err);
+    return parsed;
   }
+} catch (err) {
+  console.warn('Fallback jogos_do_dia falhou:', err);
+}
 
-  return [];
+return TODAY_EUROPEAN_FIXTURES.map((item: any) => normalizeJogoRecord(item));
 }
 
 /**

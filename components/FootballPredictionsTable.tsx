@@ -398,7 +398,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
 
   const [copiedToast, setCopiedToast] = useState(false);
 
-  // Balneário UEFA DT Chat State
+  // Balneário iRB_IA Chat State
   interface DtChatMessage {
     id: string;
     role: 'user' | 'model';
@@ -4517,23 +4517,23 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                     </div>
 
                     {/* ========================================================================= */}
-                    {/* 💬 BALNEÁRIO TÉCNICO IAiRB • CHAT INTERATIVO UEFA EM TEMPO REAL          */}
+                    {/* 💬 BALNEÁRIO TÉCNICO iRB_IA • CHAT INTERATIVO EM TEMPO REAL               */}
                     {/* ========================================================================= */}
                     <div className="bg-[#0b0c12] border-2 border-amber-500/40 rounded-3xl p-5 sm:p-7 space-y-5 shadow-2xl relative overflow-hidden">
                       {/* Header do Balneário */}
                         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-500/20 to-orange-500/30 border border-amber-400/50 flex items-center justify-center text-xl shadow-inner">
-                              👔
+                              🤖
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
                                 <h4 className="text-base sm:text-lg font-black text-white tracking-tight flex items-center gap-2">
-                                  <span>Balneário Técnico IAiRB</span>
+                                  <span>Balneário Técnico iRB_IA</span>
                                 </h4>
                                 <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-black uppercase border border-emerald-500/40 flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                                  Diretor Técnico UEFA Pro • Online
+                                  iRB_IA • Online
                                 </span>
                               </div>
                               <p className="text-xs text-zinc-400 font-mono mt-0.5">
@@ -4586,8 +4586,8 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                             {[
                               {
-                                label: '📋 Parecer Completo DT UEFA',
-                                question: `Atua como Diretor Técnico UEFA Pro para a partida ${selectedMatch.jogo.clube_casa} vs ${selectedMatch.jogo.clube_fora}. Dá-me um parecer tático completo abordando a dinâmica de balneário, cargas físicas para os 70'+ e solidez defensiva com xG de ${selectedMatch.metrics.xgCasa} vs ${selectedMatch.metrics.xgFora}.`
+                                label: '📋 Parecer Completo iRB_IA',
+                                question: `Atua como iRB_IA para a partida ${selectedMatch.jogo.clube_casa} vs ${selectedMatch.jogo.clube_fora}. Dá-me um parecer tático completo abordando a dinâmica de balneário, cargas físicas para os 70'+ e solidez defensiva com xG de ${selectedMatch.metrics.xgCasa} vs ${selectedMatch.metrics.xgFora}.`
                               },
                               {
                                 label: '🧠 Efeito de Sofrer Golo Cedo',
@@ -4630,7 +4630,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                               >
                                 <div className="flex items-center gap-2 px-1">
                                   <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">
-                                    {isUser ? '👤 Tu (Utilizador)' : '👔 Diretor Técnico UEFA'}
+                                    {isUser ? '👤 Tu (Utilizador)' : '🤖 iRB_IA'}
                                   </span>
                                   <span className="text-[10px] font-mono text-zinc-600">
                                     {msg.timestamp}
@@ -4654,7 +4654,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                             <div className="flex flex-col items-start space-y-1">
                               <div className="flex items-center gap-2 px-1">
                                 <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400">
-                                  👔 Diretor Técnico UEFA
+                                  🤖 iRB_IA
                                 </span>
                                 <span className="text-[10px] font-mono text-zinc-500">a responder...</span>
                               </div>
@@ -4684,7 +4684,7 @@ export default function FootballPredictionsTable({ language = 'pt', isAdmin = fa
                               value={dtChatInput}
                               onChange={(e) => setDtChatInput(e.target.value)}
                               disabled={isDtChatThinking}
-                              placeholder={`Pergunta ao DT (Ex: "Como explorar o favoritismo de ${selectedMatch.metrics.probCasa}%?" ou "Como ajustar o meio-campo?")...`}
+                              placeholder={`Pergunta à iRB_IA (Ex: "Como explorar o favoritismo de ${selectedMatch.metrics.probCasa}%?" ou "Como ajustar o meio-campo?")...`}
                               className="flex-1 bg-black/90 border border-zinc-750 hover:border-amber-500/60 focus:border-amber-400 rounded-xl px-4 py-3 text-xs sm:text-sm font-mono text-zinc-100 placeholder-zinc-500 focus:outline-none transition-all shadow-inner disabled:opacity-50"
                             />
                             <button

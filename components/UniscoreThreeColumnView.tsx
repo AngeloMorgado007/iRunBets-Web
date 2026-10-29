@@ -830,7 +830,7 @@ export const UniscoreThreeColumnView: React.FC<UniscoreThreeColumnViewProps> = (
                   <span className="text-sm">↗</span>
                 </button>
                 <p className="text-[10px] text-zinc-400 text-center font-mono mt-1">
-                  Abre janela expansível com Raio-X Tático, Balneário DT e Simulação
+                  Abre janela expansível com Raio-X Tático, Balneário iRB_IA e Simulação
                 </p>
               </div>
 

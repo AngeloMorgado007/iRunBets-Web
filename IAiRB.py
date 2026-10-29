@@ -3,8 +3,8 @@
 Módulo de Inteligência Desportiva: IAiRB.py
 Projeto: iRunBets Sports Intelligence
 
-Atua como Diretor Técnico e Diretor Desportivo multidisciplinar,
-fundamentado nas diretrizes e matrizes curriculares dos cursos de treinadores UEFA (UEFA Pro / UEFA A).
+Atua como iRB_IA, o motor de inteligência desportiva e análise tática multidisciplinar,
+fundamentado em matrizes de treino de alta competição e métricas de desempenho.
 
 Avalia três pilares fundamentais:
 1. Dinâmica de Balneário / Psicologia (RH): Peso do favoritismo e pressão anímica.
@@ -17,8 +17,8 @@ from typing import Dict, Any, Optional
 
 class IAiRBAnalyst:
     """
-    Analista de Inteligência Desportiva iRunBets.
-    Simula a perspetiva de Diretor Técnico e Diretor Desportivo UEFA.
+    Analista de Inteligência Desportiva iRunBets (iRB_IA).
+    Simula a perspetiva tática e de desempenho de alta competição da iRB_IA.
     """
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):

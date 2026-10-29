@@ -263,15 +263,24 @@ export const GLOBAL_LEAGUES_TEAMS_MAP: Record<string, string[]> = {
   ],
   "UEFA Europa League": [
     "SL Benfica", "SL.BENFICA", "Benfica", "Heart of Midlothian", "Hearts", "HEARTS", "Manchester United", "Man Utd", "Tottenham Hotspur", "Tottenham", 
-    "AS Roma", "Roma", "Lazio", "FC Porto", "Porto", "Eintracht Frankfurt", "Real Sociedad", "Athletic Club", "Lyon", "Nice", "AZ Alkmaar", 
-    "Twente", "Galatasaray", "Fenerbahçe", "Beşiktaş", "Olympiacos", "PAOK FC", "SC Braga", "Braga", "Union Saint-Gilloise", 
-    "Anderlecht", "Bodø/Glimt", "Malmö FF", "Slavia Praha", "Viktoria Plzeň", "Rangers FC", "Midtjylland", "Ferencváros"
+    "AS Roma", "Roma", "Lazio", "SS Lazio", "FC Porto", "Porto", "Eintracht Frankfurt", "Real Sociedad", "Athletic Club", "Lyon", "Olympique Lyonnais", "Nice", "OGC Nice", "AZ Alkmaar", 
+    "Twente", "FC Twente", "Galatasaray", "Fenerbahçe", "Fenerbahçe SK", "Beşiktaş", "Beşiktaş JK", "Olympiacos", "Olympiacos FC", "PAOK FC", "SC Braga", "Braga", "Union Saint-Gilloise", 
+    "Anderlecht", "RSC Anderlecht", "Bodø/Glimt", "FK Bodø/Glimt", "Malmö FF", "Slavia Praha", "SK Slavia Praha", "Viktoria Plzeň", "FC Viktoria Plzeň", "Rangers FC", "Midtjylland", "FC Midtjylland", "Ferencváros", "Ferencvárosi TC",
+    "TSG 1899 Hoffenheim", "Hoffenheim", "FC Dynamo Kyiv", "Dynamo Kyiv", "FK RFS", "RFS", "PFC Ludogorets Razgrad", "Ludogorets", "Maccabi Tel Aviv FC", "Qarabağ FK", "Ajax", "AFC Ajax"
+  ],
+  "UEFA Europa Conference League": [
+    "Chelsea", "Chelsea FC", "Fiorentina", "ACF Fiorentina", "Real Betis", "Real Betis Balompié", "Heidenheim", "Lens", "Gent", "KAA Gent", "Cercle Brugge", "Cercle Brugge KSV", 
+    "Legia Warszawa", "Jagiellonia", "Jagiellonia Białystok", "Vitória SC", "Vitoria SC", "Panathinaikos", "Panathinaikos FC", "LASK", "LASK Linz", "Rapid Wien", "SK Rapid Wien", 
+    "St. Gallen", "FC St. Gallen", "Lugano", "Djurgårdens IF", "Djurgarden", "FC Copenhagen", "FC København", "Omonoia", "AC Omonia", "APOEL", "APOEL FC", "Maccabi Tel Aviv",
+    "Heart of Midlothian", "Hearts", "HEARTS", "Celtic FC", "Celtic", "SL.BENFICA", "SL Benfica", "Molde", "Molde FK", "FC Noah", "Noah", "FK Borac Banja Luka", "Borac Banja Luka",
+    "FK TSC Bačka Topola", "TSC", "FC Petrocub Hîncești", "Petrocub", "Shamrock Rovers", "Larne FC", "HJK Helsinki", "HJK", "FC Dinamo Minsk", "NK Olimpija Ljubljana", "The New Saints FC", "FK Astana", "NK Celje", "İstanbul Başakşehir", "Viking FK"
   ],
   "UEFA Conference League": [
-    "Chelsea", "Fiorentina", "Real Betis", "Heidenheim", "Lens", "Gent", "Cercle Brugge", 
-    "Legia Warszawa", "Jagiellonia", "Vitória SC", "Panathinaikos", "LASK", "Rapid Wien", 
-    "St. Gallen", "Lugano", "Djurgårdens IF", "FC Copenhagen", "Omonoia", "APOEL", "Maccabi Tel Aviv",
-    "Heart of Midlothian", "Hearts", "HEARTS", "Celtic FC", "Celtic", "SL.BENFICA", "SL Benfica"
+    "Chelsea", "Chelsea FC", "Fiorentina", "ACF Fiorentina", "Real Betis", "Real Betis Balompié", "Heidenheim", "Lens", "Gent", "KAA Gent", "Cercle Brugge", "Cercle Brugge KSV", 
+    "Legia Warszawa", "Jagiellonia", "Jagiellonia Białystok", "Vitória SC", "Vitoria SC", "Panathinaikos", "Panathinaikos FC", "LASK", "LASK Linz", "Rapid Wien", "SK Rapid Wien", 
+    "St. Gallen", "FC St. Gallen", "Lugano", "Djurgårdens IF", "Djurgarden", "FC Copenhagen", "FC København", "Omonoia", "AC Omonia", "APOEL", "APOEL FC", "Maccabi Tel Aviv",
+    "Heart of Midlothian", "Hearts", "HEARTS", "Celtic FC", "Celtic", "SL.BENFICA", "SL Benfica", "Molde", "Molde FK", "FC Noah", "Noah", "FK Borac Banja Luka", "Borac Banja Luka",
+    "FK TSC Bačka Topola", "TSC", "FC Petrocub Hîncești", "Petrocub", "Shamrock Rovers", "Larne FC", "HJK Helsinki", "HJK", "FC Dinamo Minsk", "NK Olimpija Ljubljana", "The New Saints FC", "FK Astana", "NK Celje", "İstanbul Başakşehir", "Viking FK"
   ],
   "Amigáveis de clubes": [
     "Benfica", "SL Benfica", "SL.BENFICA", "Sporting CP", "FC Porto", "Real Madrid", "Barcelona", "Arsenal", 

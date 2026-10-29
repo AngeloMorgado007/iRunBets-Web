@@ -8,7 +8,8 @@ import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { getOfficialStandingsForLeague } from "./services/officialStandingsData";
 import { getTeamFullProfile } from "./services/teamProfileService";
 import { resolveAccurateLeague } from "./services/leagueResolutionService";
-import { resolveActualMatchScore } from "./services/officialScoresData";
+import { resolveActualMatchScore, cleanTeamForScoreMatch } from "./services/officialScoresData";
+import { TODAY_EUROPEAN_FIXTURES } from "./services/todayEuropeanFixtures";
 
 let serverDb: any = null;
 try {
@@ -275,8 +276,23 @@ async function startServer() {
         }
       }
 
+      // Integrar as partidas oficiais da jornada europeia de hoje (2026-10-22)
+      // garantindo que UEFA Europa League e UEFA Europa Conference League têm sempre jogos em 'Hoje'
+      const existingKeys = new Set(
+        (data || []).map((j: any) => `${j.data}_${cleanTeamForScoreMatch(j.clube_casa)}_vs_${cleanTeamForScoreMatch(j.clube_fora)}`)
+      );
+
+      const allMatches = [...(data || [])];
+      for (const ef of TODAY_EUROPEAN_FIXTURES) {
+        const k = `${ef.data}_${cleanTeamForScoreMatch(ef.clube_casa)}_vs_${cleanTeamForScoreMatch(ef.clube_fora)}`;
+        if (!existingKeys.has(k)) {
+          allMatches.push(ef);
+          existingKeys.add(k);
+        }
+      }
+
       // Garantir categorização fidedigna de todas as ligas e resolução de resultados oficiais verificados
-      const finalData = (data || []).map((item: any) => {
+      const finalData = allMatches.map((item: any) => {
         let gCasa = item.golos_casa_final ?? item.golos_casa ?? null;
         let gFora = item.golos_fora_final ?? item.golos_fora ?? null;
         let resultadoStr = item.resultado || (gCasa != null && gFora != null ? `${gCasa} - ${gFora}` : null);
@@ -1652,7 +1668,7 @@ As probabilidades apontam para **${over15Prob}%** de chances no Mais de 1.5 Golo
 Diz-me, em que mercado estás mais tentado a apostar neste jogo?`;
   }
 
-  // API to handle Interactive Balneário / UEFA DT Chat for a specific match
+  // API to handle Interactive Balneário / iRB_IA Chat for a specific match
   app.post("/api/gemini/dt-chat", async (req, res) => {
     const { history, newMessage, matchContext } = req.body;
     const ctx = matchContext || {};
@@ -1689,7 +1705,7 @@ Diz-me, em que mercado estás mais tentado a apostar neste jogo?`;
       const xgAway = ctx.xgAway ?? "N/A";
       const competition = ctx.competition || "Campeonato";
 
-      const systemInstruction = `És o Assistente Inteligente de Apostas Desportivas e Análise da iRunBets.
+      const systemInstruction = `És a iRB_IA, a Inteligência Artificial e Assistente Técnico de Análise Desportiva e Apostas da iRunBets.
 O teu objetivo é conversar diretamente com o apostador de forma amigável, acolhedora, humana e conversacional, como um assistente de IA moderno e descontraído.
 Jogo atual em análise: ${homeTeam} vs ${awayTeam} (${competition}).
 Métricas do modelo: ${prob1}% Casa [1] | ${probX}% Empate [X] | ${prob2}% Fora [2] | xG esperado: ${xgHome} vs ${xgAway}.
